@@ -19,34 +19,49 @@ class BlogController extends Controller
         return response()->json($blogs, 200);
     }
 
-    public function create(Request $request)
+   public function create(Request $request)
     {
-        try{
+        $validator = Validator::make($request->all(), [
+            'id_blog_head' => 'required|integer|exists:blog_heads,id_blog_head',
+            'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
+            'id_blog_footer' => 'required|integer|exists:blog_footers,id_blog_footer',
+            'fecha' => 'required|date',
+        ]);
 
-            $validator = Validator::make($request->all(), [
-                'id_blog_head' => 'required|integer|exists:blog_heads,id_blog_head',
-                'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
-                'id_blog_footer' => 'required|integer|exists:blog_footers,id_blog_footer',
-                'fecha' => 'required|date'
-            ]);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
+        }
 
-            if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()], 400);
+        DB::beginTransaction();
+
+        try {
+            $blogHead = \App\Models\BlogHead::findOrFail($request->id_blog_head);
+            $titulo = $blogHead->titulo ?? 'blog';
+
+            // Generar slug único para el campo 'link'
+            $originalSlug = Str::slug($titulo);
+            $link = $originalSlug;
+            $counter = 1;
+
+            while (\App\Models\Blog::where('link', $link)->exists()) {
+                $link = $originalSlug . '-' . $counter++;
             }
 
-            DB::beginTransaction();
+            $data = $request->all();
+            $data['link'] = $link;
 
-            $blog = Blog::create($request->all());
+            $blog = \App\Models\Blog::create($data);
 
             DB::commit();
 
             return response()->json([
                 "status" => 200,
-                "message" => "Blog creada correctamente",
-                "id" => $blog->id_blog
+                "message" => "Blog creado correctamente",
+                "id" => $blog->id_blog,
+                "link" => $blog->link,
             ], 200);
 
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             DB::rollback();
             return response()->json(['error' => $e->getMessage()], 500);
         }

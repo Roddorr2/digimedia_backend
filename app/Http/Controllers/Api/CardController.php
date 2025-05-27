@@ -26,7 +26,9 @@ class CardController extends Controller
     public function index()
     {
         try {
-            $cards = Card::orderBy('id_card', 'asc')->get();
+            // Traer cards con su relación blog para acceder al campo link
+            $cards = Card::with('blog')->orderBy('id_card', 'asc')->get();
+
             return response()->json($cards, 200);
         } catch (\Exception $ex) {
             return response()->json([
@@ -36,7 +38,6 @@ class CardController extends Controller
             ], 500);
         }
     }
-
     public function get($id = null)
     {
         try {
