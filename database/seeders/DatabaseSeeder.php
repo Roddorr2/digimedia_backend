@@ -23,11 +23,12 @@ class DatabaseSeeder extends Seeder
             ReclamacionSeeder::class,
             ModalservicioSeeder::class,
             RolSeeder::class,
+            SubtipoAdminSeeder::class,
             EmpleadoSeeder::class,
             CardSeeder::class,
             MailModalSeeder::class,
             WatModalSeeder::class,
-            PermisosSeeder::class,
+            PermisosSeeder::class
         ]);
     }
 }
