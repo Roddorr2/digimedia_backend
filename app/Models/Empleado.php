@@ -93,4 +93,35 @@ class Empleado extends Model
             default => 0
         };
     }
+
+    /**
+     * Retorna si la instancia de empleado puede ser modificada por otra de mayor jerarquía
+     * @return boolean
+     */
+    public function canBeModifiedBy(Empleado $currentEmpleado)
+    {
+        // Automodificación
+        if($this->id_empleado === $currentEmpleado->id_empleado)
+        {
+            return true;
+        }
+
+        $currentLevel = $currentEmpleado->getPrivilegeLevel();
+        $targetLevel = $this->getPrivilegeLevel();
+
+        // Modificado/Eliminado por Superadmin
+        if($currentLevel === 100)
+        {
+            return true;
+        }
+
+        // Modificado por desarrollador o administrador común
+        if($currentLevel >= 80)
+        {
+            return $targetLevel < $currentLevel;
+        }
+
+        // Ventas/Marketing no pueden modificar
+        return false;
+    } 
 }
