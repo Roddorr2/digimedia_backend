@@ -100,6 +100,11 @@ class Empleado extends Model
      */
     public function canBeModifiedBy(Empleado $currentEmpleado)
     {
+        if(!$currentEmpleado)
+        {
+            return false;
+        }
+        
         // Automodificación
         if($this->id_empleado === $currentEmpleado->id_empleado)
         {
