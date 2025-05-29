@@ -133,7 +133,7 @@ class BlogController extends Controller
     {
         try{
 
-            $blog = Blog::with('card')->where('link', $link)->first();
+            $blog = Blog::with(['card', 'body'])->where('link', $link)->first();
 
             if (!$blog) {
                 return response()->json([

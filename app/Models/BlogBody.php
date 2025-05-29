@@ -22,6 +22,7 @@ class BlogBody extends Model
         'url_image2',
         'public_image3',
         'url_image3',
+        'service_url'
     ];
 
     public function blog(){

@@ -25,6 +25,7 @@ class BlogBodyController extends Controller
                 'url_image2' => 'nullable|string',
                 'public_image3' => 'nullable|string',
                 'url_image3' => 'nullable|string',
+                'service_url' => 'nullable|string|max:255',
             ]);
 
             if ($validator->fails()) {
@@ -65,6 +66,7 @@ class BlogBodyController extends Controller
                 'url_image2' => 'nullable|string',
                 'public_image3' => 'nullable|string',
                 'url_image3' => 'nullable|string',
+                'service_url' => 'nullable|string|max:255',
             ]);
 
             if ($validator->fails()) {
