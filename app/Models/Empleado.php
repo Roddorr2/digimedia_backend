@@ -23,6 +23,7 @@ class Empleado extends Model
         'imagen_perfil_url',
         'id_user',
         'id_rol',
+        'id_subtipo_admin'
     ];
 
 
@@ -34,6 +35,11 @@ class Empleado extends Model
     public function rol()
     {
         return $this->belongsTo(Rol::class, 'id_rol', 'id_rol');
+    }
+
+    public function subtipoAdmin()
+    {
+        return $this->belongsTo(SubtipoAdmin::class, 'id_subtipo_admin', 'id');
     }
 
     public function getImagenPerfilUrlAttribute()
@@ -67,4 +73,60 @@ class Empleado extends Model
     {
         return $this->hasMany(Blog::class, 'id_empleado', 'id_empleado');
     }
+
+    public function getPrivilegeLevel()
+    {
+        $rolNombre = strtolower($this->rol->nombre);
+
+        if ($rolNombre === "administrador" && $this->subtipoAdmin) {
+            return $this->subtipoAdmin->hierarchy;
+        }
+
+        // Caso en que no se asigne un subtipo a administrador
+        if ($rolNombre === "administrador") {
+            return 80;
+        }
+
+        return match($rolNombre) {
+            'ventas' => 30,
+            'marketing' => 20,
+            default => 0
+        };
+    }
+
+    /**
+     * Retorna si la instancia de empleado puede ser modificada por otra de mayor jerarquía
+     * @return boolean
+     */
+    public function canBeModifiedBy(Empleado $currentEmpleado)
+    {
+        if(!$currentEmpleado)
+        {
+            return false;
+        }
+        
+        // Automodificación
+        if($this->id_empleado === $currentEmpleado->id_empleado)
+        {
+            return true;
+        }
+
+        $currentLevel = $currentEmpleado->getPrivilegeLevel();
+        $targetLevel = $this->getPrivilegeLevel();
+
+        // Modificado/Eliminado por Superadmin
+        if($currentLevel === 100)
+        {
+            return true;
+        }
+
+        // Modificado por desarrollador o administrador común
+        if($currentLevel >= 80)
+        {
+            return $targetLevel < $currentLevel;
+        }
+
+        // Ventas/Marketing no pueden modificar
+        return false;
+    } 
 }

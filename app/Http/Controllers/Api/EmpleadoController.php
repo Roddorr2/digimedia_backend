@@ -27,21 +27,21 @@ class EmpleadoController extends Controller
 
     private const PRIVILEGED_EMAIL = "tmlighting@hotmail.com";
 
-    private function hasPermissionToModify($employeeEmail, $employeeId)
-    {
-        $user = Auth::user();
-        $authenticatedUserEmail = $user->email;
-        $empleadoUsuario = Empleado::where('id_user', $user->id)->first();
-        $editarMiPerfil = $empleadoUsuario && $empleadoUsuario->id_empleado == $employeeId;
+    // private function hasPermissionToModify($employeeEmail, $employeeId)
+    // {
+    //     $user = Auth::user();
+    //     $authenticatedUserEmail = $user->email;
+    //     $empleadoUsuario = Empleado::where('id_user', $user->id)->first();
+    //     $editarMiPerfil = $empleadoUsuario && $empleadoUsuario->id_empleado == $employeeId;
 
-        if ($authenticatedUserEmail === self::PRIVILEGED_EMAIL) {
-            return true;
-        }
-        if ($editarMiPerfil) {
-            return true;
-        }
-        return !in_array($employeeEmail, self::RESTRICTED_EMAILS);
-    }
+    //     if ($authenticatedUserEmail === self::PRIVILEGED_EMAIL) {
+    //         return true;
+    //     }
+    //     if ($editarMiPerfil) {
+    //         return true;
+    //     }
+    //     return !in_array($employeeEmail, self::RESTRICTED_EMAILS);
+    // }
 
     private function checkPermissionMiddleware($id)
     {
@@ -54,7 +54,10 @@ class EmpleadoController extends Controller
             ], 404);
         }
 
-        if (!$this->hasPermissionToModify($empleado->email, $id)) {
+        $currentEmployee = Empleado::where('id_empleado', Auth::user()->id)->first();
+        $hasPermissonToModified = $empleado->canBeModifiedBy($currentEmployee);
+
+        if (!$hasPermissonToModified) {
             Log::warning("Intento no autorizado de modificar empleado restringido", [
                 'target_id' => $id,
                 'target_email' => $empleado->email,

@@ -126,6 +126,7 @@ class AuthController extends Controller
             'status'   => 'success',
             'user'     => $user,
             'empleado' => $empleado,
+            'jerarquia' => $empleado->getPrivilegeLevel(),
             'rol'      => $rol->nombre,
             'permisos' => $permisos,
             'token'    => $token,
