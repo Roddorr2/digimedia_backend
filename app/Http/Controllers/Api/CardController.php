@@ -42,9 +42,9 @@ class CardController extends Controller
     {
         try {
             if (!$id) {
-                $cards = Card::with('empleado')->get();
+                $cards = Card::with('empleado','blog')->get();
             } else {
-                $cards = Card::with('empleado')->where('id_empleado', $id)->get();
+                $cards = Card::with('empleado','blog')->where('id_empleado', $id)->get();
             }
             return response()->json($cards, 200);
         } catch (\Exception $ex) {
