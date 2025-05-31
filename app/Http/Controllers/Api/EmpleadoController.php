@@ -133,10 +133,13 @@ class EmpleadoController extends Controller
             'dni' => 'required|string|max:20|unique:empleados',
             'telefono' => 'nullable|string|max:20',
             'id_rol' => 'required|exists:roles,id_rol',
+        ],  [
+            'email.unique' => 'El correo ya esta en uso.',
+            'dni.unique' => 'El DNI ya está registrado.',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['errors' => $validator->errors()->first()], 422);
         }
 
         DB::beginTransaction();
@@ -170,7 +173,6 @@ class EmpleadoController extends Controller
                 "user" => $user,
                 "empleado" => $empleado,
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json([
@@ -191,7 +193,7 @@ class EmpleadoController extends Controller
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $charactersLength = strlen($characters);
 
-        $password= "{$apellidoIniciales}{$dniParte}";
+        $password = "{$apellidoIniciales}{$dniParte}";
 
         for ($i = 0; $i < 5; $i++) {
             $password .= $characters[rand(0, $charactersLength - 1)];
@@ -304,7 +306,6 @@ class EmpleadoController extends Controller
                     $cloudinary = new Cloudinary();
 
                     $result = $cloudinary->uploadApi()->destroy($empleado->imagen_perfil);
-
                 } catch (\Exception $e) {
                     Log::warning("Error al eliminar imagen anterior, continuando con actualización: " . $e->getMessage());
                 }
@@ -326,7 +327,6 @@ class EmpleadoController extends Controller
                     'version' => time()
                 ]
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -506,7 +506,6 @@ class EmpleadoController extends Controller
                 'status' => 200,
                 'message' => 'Imagen eliminada correctamente'
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error eliminando imagen de perfil: " . $e->getMessage(), [
                 'exception' => $e,
