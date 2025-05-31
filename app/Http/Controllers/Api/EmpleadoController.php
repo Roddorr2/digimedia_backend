@@ -239,10 +239,17 @@ class EmpleadoController extends Controller
             'dni'       => 'sometimes|string|max:20|unique:empleados,dni,' . $id . ',id_empleado',
             'telefono'  => 'nullable|string|max:20',
             'id_rol'    => 'sometimes|exists:roles,id_rol',
+        ], [
+            'nombre.string' => 'Debes ingresar un nombre',
+            'apellido.string' => 'Debes ingresar un apellido',
+            'email.string' => 'Debes ingresar un email',
+            'dni.string' => 'Debes ingresar un DNI',
+            'dni.unique' => 'Este número de DNI ya ha sido registrado.',
+            'email.unique' => 'Este correo ya está en uso.',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['errors' => $validator->errors()->first()], 422);
         }
 
         $user = User::find($empleado->id_user);
