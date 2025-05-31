@@ -99,7 +99,7 @@ class EmpleadoController extends Controller
     public function getAllByPage(Request $request)
     {
         try {
-            $empleados = Empleado::with('rol')->orderBy('id_empleado', 'asc')->paginate(5);
+            $empleados = Empleado::with('rol', 'subtipoAdmin')->orderBy('id_empleado', 'asc')->paginate(5);
             $empleados->getCollection()->transform(function ($empleado) {
                 return [
                     'id_empleado' => $empleado->id_empleado,
@@ -109,6 +109,8 @@ class EmpleadoController extends Controller
                     'dni' => $empleado->dni,
                     'telefono' => $empleado->telefono,
                     'rol' => $empleado->rol->nombre,
+                    'id_rol' => $empleado->rol->id_rol,
+                    'subtipo_admin' =>$empleado->subtipoAdmin
                 ];
             });
 
@@ -266,7 +268,11 @@ class EmpleadoController extends Controller
         }
 
         $empleado->update($request->all());
-
+        if($request->id_rol != 1)
+        {
+            $empleado->id_subtipo_admin = null;
+            $empleado->save();
+        }
         return response()->json([
             "status"  => 200,
             "message" => "Empleado actualizado correctamente",
