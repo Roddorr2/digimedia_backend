@@ -99,7 +99,31 @@ class EmpleadoController extends Controller
     public function getAllByPage(Request $request)
     {
         try {
-            $empleados = Empleado::with('rol', 'subtipoAdmin')->orderBy('id_empleado', 'asc')->paginate(5);
+            /**
+             * Parámetros de la request
+             * De no enviar tales parámetros en la petición, se establece valores por defecto
+             */
+            $search = $request->get('search', '');
+            $pagination = $request->get('limit', 5);
+            $sortBy = $request->get('sortBy', 'id_empleado');
+            $sortOrder = $request->get('sortOrder', 'asc');
+
+            $data = Empleado::with('rol', 'subtipoAdmin');
+
+            if(!empty($search) && trim($search) !== '')
+            {
+                $data->where(function($subQuery) use ($search)
+                {
+                   $subQuery->where('nombre', 'LIKE', '%' . $search . '%')
+                            ->orWhere('apellido', 'LIKE', '%' . $search . '%')
+                            ->orWhere('email', 'LIKE', '%' . $search . '%')
+                            ->orWhere('dni', 'LIKE', '%' . $search . '%')
+                            ->orWhere('telefono', 'LIKE', '%' . $search . '%'); 
+                });
+            }
+            $data->orderBy($sortBy, $sortOrder);
+
+            $empleados = $data->paginate($pagination);
             $empleados->getCollection()->transform(function ($empleado) {
                 return [
                     'id_empleado' => $empleado->id_empleado,
