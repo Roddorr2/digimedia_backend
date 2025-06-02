@@ -18,31 +18,6 @@ use Illuminate\Support\Facades\Auth;
 
 class EmpleadoController extends Controller
 {
-
-    private const RESTRICTED_EMAILS = [
-        "joseluisjlgd123@gmail.com",
-        "keving.kpg@gmail.com",
-        "tmlighting@hotmail.com"
-    ];
-
-    private const PRIVILEGED_EMAIL = "tmlighting@hotmail.com";
-
-    // private function hasPermissionToModify($employeeEmail, $employeeId)
-    // {
-    //     $user = Auth::user();
-    //     $authenticatedUserEmail = $user->email;
-    //     $empleadoUsuario = Empleado::where('id_user', $user->id)->first();
-    //     $editarMiPerfil = $empleadoUsuario && $empleadoUsuario->id_empleado == $employeeId;
-
-    //     if ($authenticatedUserEmail === self::PRIVILEGED_EMAIL) {
-    //         return true;
-    //     }
-    //     if ($editarMiPerfil) {
-    //         return true;
-    //     }
-    //     return !in_array($employeeEmail, self::RESTRICTED_EMAILS);
-    // }
-
     private function checkPermissionMiddleware($id)
     {
         $empleado = Empleado::where('id_empleado', $id)->first();
