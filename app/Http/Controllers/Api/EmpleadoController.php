@@ -79,6 +79,7 @@ class EmpleadoController extends Controller
              * De no enviar tales parámetros en la petición, se establece valores por defecto
              */
             $search = $request->get('search', '');
+            $rol = $request->get('rol', 'all');
             $pagination = $request->get('limit', 5);
             $sortBy = $request->get('sortBy', 'id_empleado');
             $sortOrder = $request->get('sortOrder', 'asc');
@@ -95,6 +96,10 @@ class EmpleadoController extends Controller
                             ->orWhere('dni', 'LIKE', '%' . $search . '%')
                             ->orWhere('telefono', 'LIKE', '%' . $search . '%'); 
                 });
+            }
+            if($rol !== 'all' && !empty($rol))
+            {
+                $data->where('id_rol', $rol);
             }
             $data->orderBy($sortBy, $sortOrder);
 
