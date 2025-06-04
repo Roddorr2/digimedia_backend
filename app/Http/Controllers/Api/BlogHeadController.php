@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
 use App\Models\BlogHead;
 use Illuminate\Http\Request;
@@ -76,22 +77,39 @@ class BlogHeadController extends Controller
 
             $blogHead->update($request->all());
 
+            $blog = \App\Models\Blog::where('id_blog_head', $blogHead->id_blog_head)->first();
+
+            if ($blog) {
+
+                $originalSlug = Str::slug($blogHead->titulo);
+                $link = $originalSlug;
+                $counter = 1;
+
+                while (\App\Models\Blog::where('link', $link)->where('id_blog', '<>', $blog->id_blog)->exists()) {
+                    $link = $originalSlug . '-' . $counter++;
+                }
+
+                $blog->link = $link;
+                $blog->save();
+            }
+
             DB::commit();
 
             return response()->json([
-                'status'=> 200,
-                'message'=> 'BlogHead actualizado',
-                'id'=> $blogHead->id_blog_head
+                'status' => 200,
+                'message' => 'BlogHead y slug del blog actualizado correctamente',
+                'id' => $blogHead->id_blog_head,
+                'link' => $blog ? $blog->link : null, 
             ], 200);
 
-        }catch(\Exception $ex){
-            DB::rollback();
-            return response()->json([
-                'status'=> 500,
-                'message'=> 'Error interno del servidor',
-                'error'=> $ex->getMessage()
-            ], 500);
-        }
+            }catch(\Exception $ex){
+                DB::rollback();
+                return response()->json([
+                    'status' => 500,
+                    'message' => 'Error interno del servidor',
+                    'error' => $ex->getMessage()
+                ], 500);
+            }
     }
 
 
