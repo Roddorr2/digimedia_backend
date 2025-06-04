@@ -15,7 +15,6 @@ use Cloudinary\Cloudinary;
 use App\Mail\CredencialesEmpleadoMail;
 use Illuminate\Support\Facades\Auth;
 
-
 class EmpleadoController extends Controller
 {
     private function checkPermissionMiddleware($id)
@@ -99,7 +98,7 @@ class EmpleadoController extends Controller
             }
             if($rol !== 'all' && !empty($rol))
             {
-                $data->where('id_rol', $rol);
+                $data->where('id_rol', (int)$rol);
             }
             $data->orderBy($sortBy, $sortOrder);
 
