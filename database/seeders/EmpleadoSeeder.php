@@ -22,6 +22,7 @@ class EmpleadoSeeder extends Seeder
                 'telefono' => '929686486',
                 'id_user' => 1,
                 'id_rol' => 1,
+                'id_subtipo_admin' => 2
             ],
             [
                 'nombre' => 'Jose Luis',
@@ -31,6 +32,7 @@ class EmpleadoSeeder extends Seeder
                 'telefono' => '927249150',
                 'id_user' => 2,
                 'id_rol' => 1,
+                'id_subtipo_admin' => 2
             ],
             [
                 'nombre' => 'Juan Carlos',
@@ -40,6 +42,7 @@ class EmpleadoSeeder extends Seeder
                 'telefono' => '936910425',
                 'id_user' => 3,
                 'id_rol' => 1,
+                'id_subtipo_admin' => 1
             ],
             [
                 'nombre' => 'Krizzia Martina',
@@ -49,6 +52,7 @@ class EmpleadoSeeder extends Seeder
                 'telefono' => '938405611',
                 'id_user' => 4,
                 'id_rol' => 1,
+                'id_subtipo_admin' => 3
             ],
             [
                 'nombre' => 'Gonzalo Fernando',
@@ -58,6 +62,7 @@ class EmpleadoSeeder extends Seeder
                 'telefono' => '924783666',
                 'id_user' => 5,
                 'id_rol' => 1,
+                'id_subtipo_admin' => 3
             ],
             [
                 'nombre' => 'Diego Arturo',
@@ -67,6 +72,7 @@ class EmpleadoSeeder extends Seeder
                 'telefono' => '986377441',
                 'id_user' => 6,
                 'id_rol' => 1,
+                'id_subtipo_admin' => 3
             ],
             [
                 'nombre' => 'Marco Andres',
@@ -76,6 +82,7 @@ class EmpleadoSeeder extends Seeder
                 'telefono' => '942135168',
                 'id_user' => 7,
                 'id_rol' => 1,
+                'id_subtipo_admin' => 3
             ],
         ];
         DB::table('empleados')->insert($empleados);

@@ -17,10 +17,11 @@ class Blog extends Model
         'id_blog_head',
         'id_blog_body',
         'id_blog_footer',
-        'fecha'
+        'fecha',
+        'link'
     ];
 
-    public function head(){
+   public function head(){
         return $this->hasOne(BlogHead::class, 'id_blog_head', 'id_blog_head');
     }
 
@@ -35,5 +36,6 @@ class Blog extends Model
     public function card(){
         return $this->belongsTo(Card::class, 'id_blog', 'id_blog');
     }
+
 
 }

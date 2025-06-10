@@ -33,12 +33,13 @@ Route::post('/modales', [ModalesController::class, "create"]);
 // blogs públicos para ver los clientes
 Route::get('/cards', [CardController::class, "index"]);
 Route::get('/blogs/{id}', [BlogController::class, "show"]);
+Route::get('/blogs/links/{link}', [BlogController::class, 'showLink']);
 Route::get('/blogs', [BlogController::class, "index"]);
 Route::get('/blog_head/{id}', [BlogHeadController::class, "show"]);
 Route::get('/blog_footer/{id}', [BlogFooterController::class, "show"]);
 Route::get('/blog_body/{id}', [BlogBodyController::class, "show"]);
 
-//Modelo       Controlador
+//ModeloControlador
 
 Route::get('/modales/send_wat/{id}', [ModalWatController::class, "sendWat"]);
 
