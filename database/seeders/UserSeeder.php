@@ -40,8 +40,8 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('dnqatC8V%st!'),
             ],
             [
-                'name' => 'Piero Alexander',
-                'email' => 'pierocatacorayt13@gmail.com',
+                'name' => 'Diego Torres',
+                'email' => 'diego_torres_11@hotmail.com',
                 'password' => Hash::make('wmMXj$KDY9RF'),
             ],
             [
@@ -49,6 +49,7 @@ class UserSeeder extends Seeder
                 'email' => 'marcoandresha@gmail.com',
                 'password' => Hash::make('Tq$duGzhsQ6P'),
             ],
+
         ];
 
         DB::table('users')->insert($users);
