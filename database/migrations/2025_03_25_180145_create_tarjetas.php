@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id('id_tarjeta');
             $table->string('titulo');
             $table->text('descripcion');
+            $table->string('enlace')->nullable();
+            $table->string('palabra')->nullable();
             $table->foreignId('id_blog_body')->references('id_blog_body')->on('blog_bodies')->onDelete('cascade');
         });
     }
