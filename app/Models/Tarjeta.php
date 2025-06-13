@@ -15,6 +15,8 @@ class Tarjeta extends Model
         'titulo',
         'descripcion',
         'id_blog_body',
+        'enlace',
+        'palabra',
     ];
 
     public function blog_body(){

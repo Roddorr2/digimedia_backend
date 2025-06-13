@@ -65,11 +65,11 @@ class EmpleadoSeeder extends Seeder
                 'id_subtipo_admin' => 3
             ],
             [
-                'nombre' => 'Piero Alexander',
-                'apellido' => 'Catacora Mamani',
-                'email' => 'pierocatacorayt13@gmail.com',
-                'dni' => '70430224',
-                'telefono' => '985237799',
+                'nombre' => 'Diego Arturo',
+                'apellido' => 'Torres Pacherres',
+                'email' => 'diego_torres_11@hotmail.com',
+                'dni' => '48314547',
+                'telefono' => '986377441',
                 'id_user' => 6,
                 'id_rol' => 1,
                 'id_subtipo_admin' => 3
