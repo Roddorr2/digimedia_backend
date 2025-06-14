@@ -15,34 +15,8 @@ use Cloudinary\Cloudinary;
 use App\Mail\CredencialesEmpleadoMail;
 use Illuminate\Support\Facades\Auth;
 
-
 class EmpleadoController extends Controller
 {
-
-    private const RESTRICTED_EMAILS = [
-        "joseluisjlgd123@gmail.com",
-        "keving.kpg@gmail.com",
-        "tmlighting@hotmail.com"
-    ];
-
-    private const PRIVILEGED_EMAIL = "tmlighting@hotmail.com";
-
-    // private function hasPermissionToModify($employeeEmail, $employeeId)
-    // {
-    //     $user = Auth::user();
-    //     $authenticatedUserEmail = $user->email;
-    //     $empleadoUsuario = Empleado::where('id_user', $user->id)->first();
-    //     $editarMiPerfil = $empleadoUsuario && $empleadoUsuario->id_empleado == $employeeId;
-
-    //     if ($authenticatedUserEmail === self::PRIVILEGED_EMAIL) {
-    //         return true;
-    //     }
-    //     if ($editarMiPerfil) {
-    //         return true;
-    //     }
-    //     return !in_array($employeeEmail, self::RESTRICTED_EMAILS);
-    // }
-
     private function checkPermissionMiddleware($id)
     {
         $empleado = Empleado::where('id_empleado', $id)->first();
@@ -99,7 +73,36 @@ class EmpleadoController extends Controller
     public function getAllByPage(Request $request)
     {
         try {
-            $empleados = Empleado::with('rol', 'subtipoAdmin')->orderBy('id_empleado', 'asc')->paginate(5);
+            /**
+             * Parámetros de la request
+             * De no enviar tales parámetros en la petición, se establece valores por defecto
+             */
+            $search = $request->get('search', '');
+            $rol = $request->get('rol', 'all');
+            $pagination = $request->get('limit', 5);
+            $sortBy = $request->get('sortBy', 'id_empleado');
+            $sortOrder = $request->get('sortOrder', 'asc');
+
+            $data = Empleado::with('rol', 'subtipoAdmin');
+
+            if(!empty($search) && trim($search) !== '')
+            {
+                $data->where(function($subQuery) use ($search)
+                {
+                   $subQuery->where('nombre', 'LIKE', '%' . $search . '%')
+                            ->orWhere('apellido', 'LIKE', '%' . $search . '%')
+                            ->orWhere('email', 'LIKE', '%' . $search . '%')
+                            ->orWhere('dni', 'LIKE', '%' . $search . '%')
+                            ->orWhere('telefono', 'LIKE', '%' . $search . '%'); 
+                });
+            }
+            if($rol !== 'all' && !empty($rol))
+            {
+                $data->where('id_rol', (int)$rol);
+            }
+            $data->orderBy($sortBy, $sortOrder);
+
+            $empleados = $data->paginate($pagination);
             $empleados->getCollection()->transform(function ($empleado) {
                 return [
                     'id_empleado' => $empleado->id_empleado,
@@ -138,10 +141,13 @@ class EmpleadoController extends Controller
             'dni' => 'required|string|max:20|unique:empleados',
             'telefono' => 'nullable|string|max:20',
             'id_rol' => 'required|exists:roles,id_rol',
+        ],  [
+            'email.unique' => 'El correo ya esta en uso.',
+            'dni.unique' => 'El DNI ya está registrado.',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['errors' => $validator->errors()->first()], 422);
         }
 
         DB::beginTransaction();
@@ -175,7 +181,6 @@ class EmpleadoController extends Controller
                 "user" => $user,
                 "empleado" => $empleado,
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json([
@@ -196,7 +201,7 @@ class EmpleadoController extends Controller
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $charactersLength = strlen($characters);
 
-        $password= "{$apellidoIniciales}{$dniParte}";
+        $password = "{$apellidoIniciales}{$dniParte}";
 
         for ($i = 0; $i < 5; $i++) {
             $password .= $characters[rand(0, $charactersLength - 1)];
@@ -242,10 +247,17 @@ class EmpleadoController extends Controller
             'dni'       => 'sometimes|string|max:20|unique:empleados,dni,' . $id . ',id_empleado',
             'telefono'  => 'nullable|string|max:20',
             'id_rol'    => 'sometimes|exists:roles,id_rol',
+        ], [
+            'nombre.string' => 'Debes ingresar un nombre',
+            'apellido.string' => 'Debes ingresar un apellido',
+            'email.string' => 'Debes ingresar un email',
+            'dni.string' => 'Debes ingresar un DNI',
+            'dni.unique' => 'Este número de DNI ya ha sido registrado.',
+            'email.unique' => 'Este correo ya está en uso.',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['errors' => $validator->errors()->first()], 422);
         }
 
         $user = User::find($empleado->id_user);
@@ -313,7 +325,6 @@ class EmpleadoController extends Controller
                     $cloudinary = new Cloudinary();
 
                     $result = $cloudinary->uploadApi()->destroy($empleado->imagen_perfil);
-
                 } catch (\Exception $e) {
                     Log::warning("Error al eliminar imagen anterior, continuando con actualización: " . $e->getMessage());
                 }
@@ -335,7 +346,6 @@ class EmpleadoController extends Controller
                     'version' => time()
                 ]
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -515,7 +525,6 @@ class EmpleadoController extends Controller
                 'status' => 200,
                 'message' => 'Imagen eliminada correctamente'
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error eliminando imagen de perfil: " . $e->getMessage(), [
                 'exception' => $e,

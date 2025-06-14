@@ -11,11 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tarjetas', function (Blueprint $table) {
-            $table->id('id_tarjeta');
-            $table->string('titulo');
-            $table->text('descripcion');       
-            $table->foreignId('id_blog_body')->references('id_blog_body')->on('blog_bodies')->onDelete('cascade');
+        Schema::table('tarjetas', function (Blueprint $table) {
+            $table->string('enlace')->nullable();
+            $table->string('palabra')->nullable();
         });
     }
 
@@ -24,6 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('blog_tarjetas');
+        Schema::table('tarjetas', function (Blueprint $table) {
+            //
+        });
     }
 };

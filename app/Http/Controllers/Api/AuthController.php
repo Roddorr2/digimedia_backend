@@ -69,7 +69,6 @@ class AuthController extends Controller
                 'rol' => $rol->nombre,
                 'token' => $token,
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json([
@@ -82,55 +81,65 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required',
-        ]);
+        try {
+            $request->validate([
+                'email'    => 'required|email',
+                'password' => 'required',
+            ]);
 
-        $user = User::where('email', $request->email)->first();
+            $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
+            if (!$user) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Esta cuenta no está registrada en Digimedia.'
+                ], 404);
+            }
+
+            if (!Hash::check($request->password, $user->password)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'El email o la contraseña son incorrectos.'
+                ], 401);
+            }
+
+
+            $empleado = $user->empleado;
+            if (!$empleado || !$empleado->rol) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'El usuario no tiene un rol asignado'
+                ], 403);
+            }
+
+            $rol = $empleado->rol;
+            $abilities = [$rol->nombre];
+
+            $permisos = $rol->permisos->pluck('slug')->toArray();
+
+            // quitar tokens anteriores
+            $user->tokens()->delete();
+            // token incluyendo rol (capcidad)
+            $token = $user->createToken('auth_token', $abilities)->plainTextToken;
+
             return response()->json([
-                'status'  => 'error',
-                'message' => 'Esta cuenta no está registrada en Digimedia.'
-            ], 404);
+                'status'   => 'success',
+                'user'     => $user,
+                'empleado' => $empleado,
+                'rol'      => $rol->nombre,
+                'permisos' => $permisos,
+                'token'    => $token,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(
+                [
+                    'status' => 'error',
+                    'message' => 'Ocurrió un error en el servidor',
+                    'error' => config('app.debug') ? $e->getMessage() : null
+                ],
+                500
+            );
         }
-
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'El email o la contraseña son incorrectos.'
-            ], 401);
-        }
-
-
-        $empleado = $user->empleado;
-        if (!$empleado || !$empleado->rol) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'El usuario no tiene un rol asignado'
-            ], 403);
-        }
-
-        $rol = $empleado->rol;
-        $abilities = [$rol->nombre];
-
-        $permisos = $rol->permisos->pluck('slug')->toArray();
-
-        // quitar tokens anteriores
-        $user->tokens()->delete();
-        // token incluyendo rol (capcidad)
-        $token = $user->createToken('auth_token', $abilities)->plainTextToken;
-
-        return response()->json([
-            'status'   => 'success',
-            'user'     => $user,
-            'empleado' => $empleado,
-            'jerarquia' => $empleado->getPrivilegeLevel(),
-            'rol'      => $rol->nombre,
-            'permisos' => $permisos,
-            'token'    => $token,
-        ]);
     }
 
 
@@ -178,50 +187,51 @@ class AuthController extends Controller
         ]);
     }
 
-    public function updatePassword(Request $request){
+    public function updatePassword(Request $request)
+    {
         $validator = Validator::make($request->all(), [
             'token' => 'required|string',
             'password' => 'required|min:6|confirmed',
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json(['message' => $validator->errors()->first()], 400);
         }
-    
+
         Log::info('Token recibido: ' . $request->token);
-        
+
         $tokenUser = DB::table('password_reset_tokens')
             ->whereRaw('LOWER(token) = ?', [strtolower($request->token)])
             ->first();
-    
+
         if (!$tokenUser) {
             $exactToken = DB::table('password_reset_tokens')
                 ->where('token', $request->token)
                 ->first();
-                
-            Log::info('Token no encontrado. Tokens disponibles: ' . 
+
+            Log::info('Token no encontrado. Tokens disponibles: ' .
                 json_encode(DB::table('password_reset_tokens')->pluck('token')->toArray()));
-                
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Token inválido o expirado'
             ], 404);
         }
-    
+
         $user = User::where('email', $tokenUser->email)->first();
-    
+
         if (!$user) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Usuario no encontrado'
             ], 404);
         }
-    
+
         $user->password = Hash::make($request->password);
         $user->save();
-    
+
         DB::table('password_reset_tokens')->where('token', $request->token)->delete();
-    
+
         return response()->json(['message' => 'Contraseña actualizada correctamente, ingresa desde el login'], 200);
     }
 
