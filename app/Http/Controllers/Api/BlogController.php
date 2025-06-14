@@ -91,7 +91,23 @@ class BlogController extends Controller
 
             DB::beginTransaction();
 
-            $blog->update($request->all());
+            // Get the blog head to generate link from title
+            $blogHead = \App\Models\BlogHead::findOrFail($request->id_blog_head);
+            $titulo = $blogHead->titulo ?? 'blog';
+
+            // Generate unique slug for the 'link' field, excluding current blog
+            $originalSlug = Str::slug($titulo);
+            $link = $originalSlug;
+            $counter = 1;
+
+            while (\App\Models\Blog::where('link', $link)->where('id_blog', '!=', $id)->exists()) {
+                $link = $originalSlug . '-' . $counter++;
+            }
+
+            $data = $request->all();
+            $data['link'] = $link;
+
+            $blog->update($data);
 
             DB::commit();
 
@@ -99,6 +115,7 @@ class BlogController extends Controller
                 'status'=> 200,
                 'message'=> 'Blog actualizado',
                 'id'=> $blog->id_blog,
+                'link'=> $blog->link,
             ],200);
         }catch(\Exception $e){
             DB::rollback();
