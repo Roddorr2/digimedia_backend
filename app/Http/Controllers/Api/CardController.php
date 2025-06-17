@@ -170,7 +170,9 @@ class CardController extends Controller
                 $blog_header = BlogHead::find($blog->id_blog_head);
 
                 $file = $request->file('file');
-                $relativePath = "images/templates/plantilla{$card->id_plantilla}/" . Str::slug($blog_header->titulo) . "{$card->id_blog}/head";
+                $relativePath = "images/templates/plantilla{$card->id_plantilla}/" 
+                // . Str::slug($blog_header->titulo) 
+                ."{$card->id_blog}/head";
                 $fileName = "imagenPrincipal.webp";
                 $filePath = $relativePath . "/" . $fileName;
 
@@ -276,7 +278,9 @@ class CardController extends Controller
                 $file = $request->file('file');
                 $fileName = $request->name . ".webp";
 
-                $relativePath = "images/templates/plantilla{$card->id_plantilla}/" . Str::slug($blog_header->titulo) . "{$card->id_blog}/body";
+                $relativePath = "images/templates/plantilla{$card->id_plantilla}/" 
+                // . Str::slug($blog_header->titulo) 
+                . "{$card->id_blog}/body";
                 $filePath = $relativePath . "/" . $fileName;
 
                 if (Storage::disk('public')->exists($filePath)) {
@@ -355,7 +359,9 @@ class CardController extends Controller
                 $file = $request->file('file');
                 $fileName = $request->name . ".webp";
 
-                $relativePath = "images/templates/plantilla{$card->id_plantilla}/" . Str::slug($blog_header->titulo) . "{$card->id_blog}/footer";
+                $relativePath = "images/templates/plantilla{$card->id_plantilla}/" 
+                // . Str::slug($blog_header->titulo) 
+                . "{$card->id_blog}/footer";
                 $filePath = $relativePath . "/" . $fileName;
 
                 if (Storage::disk('public')->exists($filePath)) {
