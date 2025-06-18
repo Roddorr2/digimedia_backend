@@ -15,34 +15,8 @@ use Cloudinary\Cloudinary;
 use App\Mail\CredencialesEmpleadoMail;
 use Illuminate\Support\Facades\Auth;
 
-
 class EmpleadoController extends Controller
 {
-
-    private const RESTRICTED_EMAILS = [
-        "joseluisjlgd123@gmail.com",
-        "keving.kpg@gmail.com",
-        "tmlighting@hotmail.com"
-    ];
-
-    private const PRIVILEGED_EMAIL = "tmlighting@hotmail.com";
-
-    // private function hasPermissionToModify($employeeEmail, $employeeId)
-    // {
-    //     $user = Auth::user();
-    //     $authenticatedUserEmail = $user->email;
-    //     $empleadoUsuario = Empleado::where('id_user', $user->id)->first();
-    //     $editarMiPerfil = $empleadoUsuario && $empleadoUsuario->id_empleado == $employeeId;
-
-    //     if ($authenticatedUserEmail === self::PRIVILEGED_EMAIL) {
-    //         return true;
-    //     }
-    //     if ($editarMiPerfil) {
-    //         return true;
-    //     }
-    //     return !in_array($employeeEmail, self::RESTRICTED_EMAILS);
-    // }
-
     private function checkPermissionMiddleware($id)
     {
         $empleado = Empleado::where('id_empleado', $id)->first();
@@ -99,7 +73,36 @@ class EmpleadoController extends Controller
     public function getAllByPage(Request $request)
     {
         try {
-            $empleados = Empleado::with('rol', 'subtipoAdmin')->orderBy('id_empleado', 'asc')->paginate(5);
+            /**
+             * Parámetros de la request
+             * De no enviar tales parámetros en la petición, se establece valores por defecto
+             */
+            $search = $request->get('search', '');
+            $rol = $request->get('rol', 'all');
+            $pagination = $request->get('limit', 5);
+            $sortBy = $request->get('sortBy', 'id_empleado');
+            $sortOrder = $request->get('sortOrder', 'asc');
+
+            $data = Empleado::with('rol', 'subtipoAdmin');
+
+            if(!empty($search) && trim($search) !== '')
+            {
+                $data->where(function($subQuery) use ($search)
+                {
+                   $subQuery->where('nombre', 'LIKE', '%' . $search . '%')
+                            ->orWhere('apellido', 'LIKE', '%' . $search . '%')
+                            ->orWhere('email', 'LIKE', '%' . $search . '%')
+                            ->orWhere('dni', 'LIKE', '%' . $search . '%')
+                            ->orWhere('telefono', 'LIKE', '%' . $search . '%'); 
+                });
+            }
+            if($rol !== 'all' && !empty($rol))
+            {
+                $data->where('id_rol', (int)$rol);
+            }
+            $data->orderBy($sortBy, $sortOrder);
+
+            $empleados = $data->paginate($pagination);
             $empleados->getCollection()->transform(function ($empleado) {
                 return [
                     'id_empleado' => $empleado->id_empleado,
