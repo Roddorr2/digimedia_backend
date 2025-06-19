@@ -15,7 +15,7 @@ class CardSeeder extends Seeder
             [
                 'titulo' => 'Tu Bar, en la Mira',
                 'descripcion' => 'Haz que el nombre de tu bar destaque con letras neón LED. Crea un ambiente único que atraiga miradas y clientes. ¡Ilumina tu identidad! 🍹🔆',
-                'public_image' => '/blog/fondo_blog_extend.png',
+                'public_image' => '/blog/fondo_blog_extend.webp',
                 'id_plantilla' => 3,
                 'id_blog' => 1,
                 'id_empleado' => 2,
