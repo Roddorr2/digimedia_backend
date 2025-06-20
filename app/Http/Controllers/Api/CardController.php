@@ -20,7 +20,12 @@ use Intervention\Image\Laravel\Facades\Image;
 class CardController extends Controller
 {
 
-    private const url_api = "http://localhost:8000";
+     private string $url_api;
+
+    public function __construct()
+    {
+        $this->url_api = config('app.url');
+    }
     //private const url_api = "http://back.digimediamkt.com";
 
     public function index()
@@ -172,7 +177,7 @@ class CardController extends Controller
                 $file = $request->file('file');
                 $relativePath = "images/templates/plantilla{$card->id_plantilla}/" 
                 // . Str::slug($blog_header->titulo) 
-                . "{$card->id_blog}/head";
+                ."{$card->id_blog}/head";
                 $fileName = "imagenPrincipal.webp";
                 $filePath = $relativePath . "/" . $fileName;
 
@@ -184,7 +189,7 @@ class CardController extends Controller
                 Storage::disk('public')->put("{$relativePath}/{$fileName}", (string) $image->toWebp());
 
                 $basePath = '/storage/';
-                $fullUrl = self::url_api . $basePath . $relativePath . '/' . $fileName;
+                $fullUrl = $this->url_api . $basePath . $relativePath . '/' . $fileName;
                 $relativeUrl = $basePath . $relativePath . '/' . $fileName;
 
                 $card->public_image = $fullUrl;
@@ -284,7 +289,7 @@ class CardController extends Controller
                 Storage::disk('public')->put("{$relativePath}/{$fileName}", (string) $image->toWebp());
 
                 $basePath = '/storage/';
-                $fullUrl = self::url_api . $basePath . $relativePath . '/' . $fileName;
+                $fullUrl = $this->url_api . $basePath . $relativePath . '/' . $fileName;
                 $relativeUrl = $basePath . $relativePath . '/' . $fileName;
 
                 switch ($request->name) {
@@ -365,7 +370,7 @@ class CardController extends Controller
                 Storage::disk('public')->put("{$relativePath}/{$fileName}", (string) $image->toWebp());
 
                 $basePath = '/storage/';
-                $fullUrl = self::url_api . $basePath . $relativePath . '/' . $fileName;
+                $fullUrl = $this->url_api . $basePath . $relativePath . '/' . $fileName;
                 $relativeUrl = $basePath . $relativePath . '/' . $fileName;
 
                 switch ($request->name) {
