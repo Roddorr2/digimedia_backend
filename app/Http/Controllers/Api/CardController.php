@@ -188,7 +188,11 @@ class CardController extends Controller
                 $image = Image::read($file)->cover(1900, 800);
                 Storage::disk('public')->put("{$relativePath}/{$fileName}", (string) $image->toWebp());
 
-                $basePath = '/storage/';
+                if($this->url_api != "http://localhost:8000") {
+                    $basePath = '/storage/app/public/';
+                } else {
+                    $basePath = '/storage/';
+                }
                 $fullUrl = $this->url_api . $basePath . $relativePath . '/' . $fileName;
                 $relativeUrl = $basePath . $relativePath . '/' . $fileName;
 
@@ -288,7 +292,11 @@ class CardController extends Controller
                 $image = Image::read($file)->cover(600, 350);
                 Storage::disk('public')->put("{$relativePath}/{$fileName}", (string) $image->toWebp());
 
-                $basePath = '/storage/';
+                if($this->url_api != "http://localhost:8000") {
+                    $basePath = '/storage/app/public/';
+                } else {
+                    $basePath = '/storage/';
+                }
                 $fullUrl = $this->url_api . $basePath . $relativePath . '/' . $fileName;
                 $relativeUrl = $basePath . $relativePath . '/' . $fileName;
 
@@ -369,7 +377,11 @@ class CardController extends Controller
                 $image = Image::read($file)->cover(250, 200);
                 Storage::disk('public')->put("{$relativePath}/{$fileName}", (string) $image->toWebp());
 
-                $basePath = '/storage/';
+                if($this->url_api != "http://localhost:8000") {
+                    $basePath = '/storage/app/public/';
+                } else {
+                    $basePath = '/storage/';
+                }
                 $fullUrl = $this->url_api . $basePath . $relativePath . '/' . $fileName;
                 $relativeUrl = $basePath . $relativePath . '/' . $fileName;
 
