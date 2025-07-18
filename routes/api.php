@@ -20,7 +20,7 @@ use App\Http\Controllers\Api\ContactanosController;
 use App\Http\Controllers\Api\ReclamacionesController;
 use App\Http\Controllers\Api\CommendTarjetaController;
 
-// rutas públicas
+// public routes test
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/reset_password', [AuthController::class, "forgotPassword"]);
