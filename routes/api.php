@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\BlogFooterController;
 use App\Http\Controllers\Api\ContactanosController;
 use App\Http\Controllers\Api\ReclamacionesController;
 use App\Http\Controllers\Api\CommendTarjetaController;
+use App\Http\Controllers\ImagePathController;
 
 // public routes test
 Route::post('/register', [AuthController::class, 'register']);
@@ -38,6 +39,7 @@ Route::get('/blogs', [BlogController::class, "index"]);
 Route::get('/blog_head/{id}', [BlogHeadController::class, "show"]);
 Route::get('/blog_footer/{id}', [BlogFooterController::class, "show"]);
 Route::get('/blog_body/{id}', [BlogBodyController::class, "show"]);
+Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
 
 //ModeloControlador
 
