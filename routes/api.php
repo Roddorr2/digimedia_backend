@@ -145,5 +145,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:eliminar-permisos')->delete('/permisos/{id}', [PermisoController::class, "destroy"]);
 
     // fixes
-    Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
+    // Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
 });
