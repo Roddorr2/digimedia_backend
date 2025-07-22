@@ -26,6 +26,14 @@ class ImagePathController extends Controller
                 ]);
 
             $rowsAffected += $rows;
+            
+            $rows = DB::table('cards')
+                ->where('public_image', 'like', "$oldDomainName%")
+                ->update([
+                    'public_image' => DB::raw($replaceDomain('public_image'))
+                ]);
+
+            $rowsAffected += $rows;
 
             $rows = DB::table('blog_bodies')
                 ->where(function($q) use ($oldDomainName) {
@@ -54,7 +62,7 @@ class ImagePathController extends Controller
                 ]);
             
             $rowsAffected += $rows;
-
+            
             DB::commit();
         } catch(Exception $e) {
             DB::rollBack();
