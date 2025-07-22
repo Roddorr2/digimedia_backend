@@ -39,7 +39,6 @@ Route::get('/blogs', [BlogController::class, "index"]);
 Route::get('/blog_head/{id}', [BlogHeadController::class, "show"]);
 Route::get('/blog_footer/{id}', [BlogFooterController::class, "show"]);
 Route::get('/blog_body/{id}', [BlogBodyController::class, "show"]);
-Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
 
 //ModeloControlador
 
@@ -144,4 +143,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:crear-permisos')->post('/permisos', [PermisoController::class, "store"]);
     Route::middleware('permission:editar-permisos')->put('/permisos/{id}', [PermisoController::class, "update"]);
     Route::middleware('permission:eliminar-permisos')->delete('/permisos/{id}', [PermisoController::class, "destroy"]);
+
+    // fixes
+    Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
 });
