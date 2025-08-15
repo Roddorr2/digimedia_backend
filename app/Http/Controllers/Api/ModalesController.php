@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Mail\ModalMail;
 use App\Models\WatModal;
-use App\Mail\MailService;
 use App\Models\EmailModal;
 use Illuminate\Http\Request;
 use App\Models\modalservicios;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Mail;
+use App\Jobs\SendCustomEmailJob;
 class ModalesController extends Controller
 {
     public function get(Request $request)
@@ -90,9 +87,16 @@ class ModalesController extends Controller
                     'telefono' => $request->telefono
                 ];
 
-                Mail::to($request->correo)->send(
-                    new MailService(1, $data, $request->id_servicio)
-                );
+                //AQUI SE ENVÍA EL PRIMER CORREO
+                dispatch(new SendCustomEmailJob($request->correo, $data, $request->id_servicio,1));
+            
+                //AQUI SE ENVÍA EL SEGUNDO CORREO
+                dispatch(new SendCustomEmailJob($request->correo, $data, $request->id_servicio,2))
+                        ->delay(now()->addMinutes(5));
+                
+                //AQUI SE ENVÍA EL TERCER CORREO
+                dispatch(new SendCustomEmailJob($request->correo, $data, $request->id_servicio,3))
+                        ->delay(now()->addMinutes(10));
 
                 if (isset($first_email_modal)) {
                     $first_email_modal->update([
