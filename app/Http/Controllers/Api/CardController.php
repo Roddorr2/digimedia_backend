@@ -187,8 +187,9 @@ class CardController extends Controller
 
                 $image = Image::read($file)->cover(1900, 800);
                 Storage::disk('public')->put("{$relativePath}/{$fileName}", (string) $image->toWebp());
-
+                
                 $basePath = '/storage/';
+        
                 $fullUrl = $this->url_api . $basePath . $relativePath . '/' . $fileName;
                 $relativeUrl = $basePath . $relativePath . '/' . $fileName;
 
@@ -289,6 +290,7 @@ class CardController extends Controller
                 Storage::disk('public')->put("{$relativePath}/{$fileName}", (string) $image->toWebp());
 
                 $basePath = '/storage/';
+
                 $fullUrl = $this->url_api . $basePath . $relativePath . '/' . $fileName;
                 $relativeUrl = $basePath . $relativePath . '/' . $fileName;
 
@@ -370,6 +372,7 @@ class CardController extends Controller
                 Storage::disk('public')->put("{$relativePath}/{$fileName}", (string) $image->toWebp());
 
                 $basePath = '/storage/';
+                
                 $fullUrl = $this->url_api . $basePath . $relativePath . '/' . $fileName;
                 $relativeUrl = $basePath . $relativePath . '/' . $fileName;
 

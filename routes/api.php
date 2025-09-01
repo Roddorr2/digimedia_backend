@@ -19,8 +19,9 @@ use App\Http\Controllers\Api\BlogFooterController;
 use App\Http\Controllers\Api\ContactanosController;
 use App\Http\Controllers\Api\ReclamacionesController;
 use App\Http\Controllers\Api\CommendTarjetaController;
+use App\Http\Controllers\ImagePathController;
 
-// rutas públicas
+// public routes test
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/reset_password', [AuthController::class, "forgotPassword"]);
@@ -142,4 +143,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:crear-permisos')->post('/permisos', [PermisoController::class, "store"]);
     Route::middleware('permission:editar-permisos')->put('/permisos/{id}', [PermisoController::class, "update"]);
     Route::middleware('permission:eliminar-permisos')->delete('/permisos/{id}', [PermisoController::class, "destroy"]);
+
+    // fixes
+    // Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
 });

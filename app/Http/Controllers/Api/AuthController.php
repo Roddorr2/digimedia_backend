@@ -112,6 +112,12 @@ class AuthController extends Controller
                 ], 403);
             }
 
+            /**
+             * Aquí se carga la información necesaria para la cookie que almacenará la jerarquía
+             * de administrador
+             */
+            $empleado->load(['rol', 'subtipoAdmin']);
+
             $rol = $empleado->rol;
             $abilities = [$rol->nombre];
 
