@@ -242,7 +242,7 @@
                     Para restablecer tu contraseña, haz clic en el botón de abajo:
                 </div>
 
-                <a href="{{ url('http://digimediamkt.com/login/res?token=' . $token) }}" class="cta-button">
+                <a href="{{ url('https://digimedia-marketing.com/login/res?token=' . $token) }}" class="cta-button">
                     Restablecer contraseña
                 </a>
             </div>

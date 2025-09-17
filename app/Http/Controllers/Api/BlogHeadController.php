@@ -21,7 +21,11 @@ class BlogHeadController extends Controller
                 'texto_frase' => 'required|string|max:70',
                 'texto_descripcion' => 'required|string|max:120',
                 'public_image' => 'required|string',
-                'url_image' => 'nullable|string'
+                'url_image' => 'nullable|string',
+                'alt'=> 'nullable|string',
+                'title'=> 'nullable|string',
+                'meta_title'=> 'nullable|string',
+                'meta_descripcion'=> 'nullable|string'
             ]);
 
             if ($validator->fails()) {
@@ -57,7 +61,11 @@ class BlogHeadController extends Controller
                 'texto_frase' => 'required|string|max:70',
                 'texto_descripcion' => 'required|string|max:120',
                 'public_image' => 'required|string',
-                'url_image' => 'nullable|string'
+                'url_image' => 'nullable|string',
+                'alt'=> 'nullable|string',
+                'title'=> 'nullable|string',
+                'meta_title'=> 'nullable|string',
+                'meta_descripcion'=> 'nullable|string'
             ]);
 
             if ($validator->fails()) {
@@ -99,7 +107,7 @@ class BlogHeadController extends Controller
                 'status' => 200,
                 'message' => 'BlogHead y slug del blog actualizado correctamente',
                 'id' => $blogHead->id_blog_head,
-                'link' => $blog ? $blog->link : null, 
+                'link' => $blog ? $blog->link : null,
             ], 200);
 
             }catch(\Exception $ex){
