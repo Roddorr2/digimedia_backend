@@ -26,27 +26,27 @@ class MailService extends Mailable
     $images = [
         // Desarrollo y Diseño
         [
-            asset('assets/images/desarrollo-diseño/flyer-modal-1-1.jpg'),
-            asset('assets/images/desarrollo-diseño/flyer-modal-1-2.jpg'),
-            asset('assets/images/desarrollo-diseño/flyer-modal-1-3.jpg')
+            url('assets/images/desarrollo-diseño/flyer-modal-1-1.jpg'),
+            url('assets/images/desarrollo-diseño/flyer-modal-1-2.jpg'),
+            url('assets/images/desarrollo-diseño/flyer-modal-1-3.jpg')
         ],
         // Gestión de Redes Sociales
         [
-            asset('assets/images/gestion-redes/flyer-modal-2-1.jpg'),
-            asset('assets/images/gestion-redes/flyer-modal-2-2.jpg'),
-            asset('assets/images/gestion-redes/flyer-modal-2-3.jpg')
+            url('assets/images/gestion-redes/flyer-modal-2-1.jpg'),
+            url('assets/images/gestion-redes/flyer-modal-2-2.jpg'),
+            url('assets/images/gestion-redes/flyer-modal-2-3.jpg')
         ],
         // Marketing y Gestión Digital
         [
-            asset('assets/images/marketing-gestion/flyer-modal-3-1.jpg'),
-            asset('assets/images/marketing-gestion/flyer-modal-3-2.jpg'),
-            asset('assets/images/marketing-gestion/flyer-modal-3-3.jpg')
+            url('assets/images/marketing-gestion/flyer-modal-3-1.jpg'),
+            url('assets/images/marketing-gestion/flyer-modal-3-2.jpg'),
+            url('assets/images/marketing-gestion/flyer-modal-3-3.jpg')
         ],
         // Branding y Diseño
         [
-            asset('assets/images/branding-diseño/flyer-modal-4-1.jpg'),
-            asset('assets/images/branding-diseño/flyer-modal-4-2.jpg'),
-            asset('assets/images/branding-diseño/flyer-modal-4-3.jpg')
+            url('assets/images/branding-diseño/flyer-modal-4-1.jpg'),
+            url('assets/images/branding-diseño/flyer-modal-4-2.jpg'),
+            url('assets/images/branding-diseño/flyer-modal-4-3.jpg')
         ]
     ];
 
