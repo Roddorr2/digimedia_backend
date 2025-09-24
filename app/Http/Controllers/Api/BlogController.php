@@ -150,7 +150,7 @@ class BlogController extends Controller
     {
         try{
 
-            $blog = Blog::with(['card', 'body'])->where('link', $link)->first();
+            $blog = Blog::with(['card', 'body', 'head'])->where('link', $link)->first();
 
             if (!$blog) {
                 return response()->json([
@@ -161,7 +161,7 @@ class BlogController extends Controller
 
             return response()->json([
                 "status" => 200,
-                'data' => $blog
+                'data' => $blog,
             ],200);
 
         }catch(\Exception $e){
