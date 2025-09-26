@@ -14,9 +14,9 @@ class BlogFooterController extends Controller
     {
         try{
             $validator = Validator::make($request->all(), [
-                'titulo' => 'required|string|max:255',
-                'descripcion' => 'required|string',
-                'public_image1' => 'required|string',
+                'titulo' => 'nullable|string|max:255',
+                'descripcion' => 'nullable|string',
+                'public_image1' => 'nullable|string',
                 'url_image1' => 'nullable|string',
                 'public_image2' => 'nullable|string',
                 'url_image2' => 'nullable|string',
@@ -61,9 +61,9 @@ class BlogFooterController extends Controller
     {
         try{
             $validator = Validator::make($request->all(), [
-                'titulo' => 'required|string|max:255',
-                'descripcion' => 'required|string',
-                'public_image1' => 'required|string',
+                'titulo' => 'nullable|string|max:255',
+                'descripcion' => 'nullable|string',
+                'public_image1' => 'nullable|string',
                 'url_image1' => 'nullable|string',
                 'public_image2' => 'nullable|string',
                 'url_image2' => 'nullable|string',
