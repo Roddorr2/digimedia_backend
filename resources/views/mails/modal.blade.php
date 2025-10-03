@@ -97,6 +97,12 @@
         .cta-button:hover {
             background-color: #7825c1;
         }
+        .extra-message {
+            margin-bottom: 30px;
+            color: #444;
+            font-size: 16px;
+            line-height: 1.7;
+        }
         .footer {
             background-color: #f9f9f9;
             padding: 25px 20px;
@@ -135,7 +141,12 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1 class="header-title">DigiMedia Marketing</h1>
+            @if($id_service == 1 && isset($head_title))
+                <h1 class="header-title">{!! $head_title !!}</h1>
+            @else
+             <h1 class="header-title">DigiMedia Marketing</h1>
+            @endif
+            
         </div>
 
         <div class="content">
@@ -143,7 +154,7 @@
             <img src="{{ $image }}" alt="DigiMedia Marketing" class="featured-image">
             @endif
 
-            @if(isset($title))
+            @if(isset($title) && $id_service != 1)
             <h2 class="message-title">{!! $title !!}</h2>
             @endif
 
@@ -153,6 +164,19 @@
             </div>
             @endif
 
+            @if($id_service == 1)
+            <div class="cta-container">
+                <a href="https://wa.me/51983027828?text=Hola%2C%20me%20gustar%C3%ADa%20obtener%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20servicios." 
+                    class="cta-button" style="color:white;">¡EMPIEZA AHORA!</a>
+            </div>
+
+                @if(isset($extra_message))
+                <div class="extra-message">
+                    {!! $extra_message !!}
+                </div>
+                @endif
+
+            @else
             <div class="user-info">
                 <h3 class="user-info-title">Información del Cliente</h3>
                 <p class="user-detail"><span class="user-label">Nombre:</span> {{ $data["nombre"] ?? 'No proporcionado' }}</p>
@@ -163,6 +187,8 @@
             <div class="cta-container">
                 <a href="https://digimedia-marketing.com/" class="cta-button" style="color:white;">Visitar Nuestro Sitio</a>
             </div>
+            @endif
+
         </div>
 
         <div class="footer">
