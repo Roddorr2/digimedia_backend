@@ -25,7 +25,7 @@ class modalservicios extends Model
 
     public function servicio()
     {
-        return $this->belongsTo(Servicios::class, 'id_servicio', 'id_servicio');
+        return $this->belongsTo(servicios::class, 'id_servicio', 'id_servicio');
     }
 
     public function watModal()
