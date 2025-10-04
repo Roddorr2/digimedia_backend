@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class modalservicios extends Model
 {
+    use HasFactory;
     protected $table = 'modalservicios';
     protected $primaryKey = 'id_modalservicio';
 
@@ -14,7 +16,7 @@ class modalservicios extends Model
         'nombre',
         'telefono',
         'correo',
-        'id_servicio',
+        'id_servicio', // FK
         'fecha',
         'estado'
     ];
@@ -23,7 +25,7 @@ class modalservicios extends Model
 
     public function servicio()
     {
-        return $this->belongsTo(servicios::class, 'id_servicio');
+        return $this->belongsTo(Servicios::class, 'id_servicio', 'id_servicio');
     }
 
     public function watModal()
