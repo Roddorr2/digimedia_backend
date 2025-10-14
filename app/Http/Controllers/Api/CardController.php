@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Laravel\Facades\Image;
+use Illuminate\Support\Carbon;
 
 
 class CardController extends Controller
@@ -174,11 +175,26 @@ class CardController extends Controller
 
                 $blog_header = BlogHead::find($blog->id_blog_head);
 
+                $oldRelativeUrl = $card->url_image;
+
+                if ($oldRelativeUrl) {
+                    $oldFilePath = str_replace('/storage/', '', $oldRelativeUrl);
+
+                    if (Storage::disk('public')->exists($oldFilePath)) {
+                        Storage::disk('public')->delete($oldFilePath);
+                        Log::info("Archivo antiguo eliminado: " . $oldFilePath);
+                    }
+                }
+
                 $file = $request->file('file');
                 $relativePath = "images/templates/plantilla{$card->id_plantilla}/"
                 // . Str::slug($blog_header->titulo)
                 ."{$card->id_blog}/head";
-                $fileName = "imagenPrincipal.webp";
+
+                $baseName = "imagenPrincipal";
+                $timestamp = Carbon::now()->format('Ymd_His');
+
+                $fileName = "{$baseName}_{$timestamp}.webp";
                 $filePath = $relativePath . "/" . $fileName;
 
                 if (Storage::disk('public')->exists($filePath)) {
