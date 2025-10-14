@@ -87,16 +87,16 @@ class ModalesController extends Controller
                     'telefono' => $request->telefono
                 ];
 
-                //AQUI SE ENVÍA EL PRIMER CORREO
+                //AQUI SE ENVÍA EL PRIMER CORREO (inmediato)
                 dispatch(new SendCustomEmailJob($request->correo, $data, $request->id_servicio,1));
             
-                //AQUI SE ENVÍA EL SEGUNDO CORREO
+                //AQUI SE ENVÍA EL SEGUNDO CORREO (+2 días después)
                 dispatch(new SendCustomEmailJob($request->correo, $data, $request->id_servicio,2))
-                        ->delay(now()->addMinutes(5));
+                        ->delay(now()->addDays(2));
                 
-                //AQUI SE ENVÍA EL TERCER CORREO
+                //AQUI SE ENVÍA EL TERCER CORREO (+4 días después)
                 dispatch(new SendCustomEmailJob($request->correo, $data, $request->id_servicio,3))
-                        ->delay(now()->addMinutes(10));
+                        ->delay(now()->addDays(4));
 
                 if (isset($first_email_modal)) {
                     $first_email_modal->update([
