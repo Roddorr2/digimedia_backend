@@ -34,8 +34,8 @@ class TarjetaController extends Controller
             $validator = Validator::make($request->all(), [
                 'titulo' => 'required|string|max:70',
                 'descripcion' => 'required|string',
-                'enlace'=>'nullable|string',
-                'palabra'=>'nullable|string',
+                'enlace'=>'nullable|string|max:255',
+                'palabra'=>'nullable|string|max:255',
                 'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
             ]);
 
@@ -67,6 +67,8 @@ class TarjetaController extends Controller
                 'titulo' => 'required|string|max:70',
                 'descripcion' => 'required|string',
                 'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
+                'enlace'=>'nullable|string|max:255',
+                'palabra'=>'nullable|string|max:255',
             ]);
 
             if ($validator->fails()) {

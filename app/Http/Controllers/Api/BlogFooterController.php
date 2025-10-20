@@ -14,20 +14,20 @@ class BlogFooterController extends Controller
     {
         try{
             $validator = Validator::make($request->all(), [
-                'titulo' => 'nullable|string|max:255',
-                'descripcion' => 'nullable|string',
+                'titulo' => 'required|string|max:255',
+                'descripcion' => 'required|string',
                 'public_image1' => 'nullable|string',
                 'url_image1' => 'nullable|string',
                 'public_image2' => 'nullable|string',
                 'url_image2' => 'nullable|string',
                 'public_image3' => 'nullable|string',
                 'url_image3' => 'nullable|string',
-                'alt_image1' => 'nullable|string',
-                'title_image1' => 'nullable|string',
-                'alt_image2' => 'nullable|string',
-                'title_image2' => 'nullable|string',
-                'alt_image3' => 'nullable|string',
-                'title_image3' => 'nullable|string',
+                'alt_image1' => 'nullable|string|min:60|max:120',
+                'title_image1' => 'nullable|string|min:50|max:70',
+                'alt_image2' => 'nullable|string|min:60|max:120',
+                'title_image2' => 'nullable|string|min:50|max:70',
+                'alt_image3' => 'nullable|string|min:60|max:120',
+                'title_image3' => 'nullable|string|min:50|max:70',
                 'estado' => 'nullable|boolean',
             ]);
 
@@ -61,20 +61,20 @@ class BlogFooterController extends Controller
     {
         try{
             $validator = Validator::make($request->all(), [
-                'titulo' => 'nullable|string|max:255',
-                'descripcion' => 'nullable|string',
+                'titulo' => 'required|string|max:255',
+                'descripcion' => 'required|string',
                 'public_image1' => 'nullable|string',
                 'url_image1' => 'nullable|string',
                 'public_image2' => 'nullable|string',
                 'url_image2' => 'nullable|string',
                 'public_image3' => 'nullable|string',
                 'url_image3' => 'nullable|string',
-                'alt_image1' => 'nullable|string',
-                'title_image1' => 'nullable|string',
-                'alt_image2' => 'nullable|string',
-                'title_image2' => 'nullable|string',
-                'alt_image3' => 'nullable|string',
-                'title_image3' => 'nullable|string',
+                'alt_image1' => 'nullable|string|min:60|max:120',
+                'title_image1' => 'nullable|string|min:50|max:70',
+                'alt_image2' => 'nullable|string|min:60|max:120',
+                'title_image2' => 'nullable|string|min:50|max:70',
+                'alt_image3' => 'nullable|string|min:60|max:120',
+                'title_image3' => 'nullable|string|min:50|max:70',
                 'estado' => 'nullable|boolean',
             ]);
 
