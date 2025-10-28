@@ -8,13 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 class EmailModal extends Model
 {
     use HasFactory;
-
     protected $table = 'modal_emails';
     protected $primaryKey = 'id_modal_email';
     protected $fillable = [
         'estado',
         'error',
-        'id_modalservicio',
+        'id_modalservicio', // FK
         'number_message',
         'fecha',
     ];
@@ -25,6 +24,6 @@ class EmailModal extends Model
     public $timestamps = false;
 
     public function modalServicio(){
-        return $this->belongsTo(modalservicios::class,'id_modal_servicio');
+        return $this->belongsTo(modalservicios::class,'id_modalservicio', 'id_modalservicio');
     }
 }
