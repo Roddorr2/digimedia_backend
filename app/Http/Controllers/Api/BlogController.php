@@ -20,7 +20,7 @@ class BlogController extends Controller
         return response()->json($blogs, 200);
     }
 
-   public function create(Request $request)
+    public function create(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'id_blog_head' => 'required|integer|exists:blog_heads,id_blog_head',
@@ -84,12 +84,18 @@ class BlogController extends Controller
                 'id_blog_head' => 'required|integer|exists:blog_heads,id_blog_head',
                 'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
                 'id_blog_footer' => 'required|integer|exists:blog_footers,id_blog_footer',
-                'fecha' => 'required|date'
+                'fecha' => 'required|date',
+                'id_empleado' => 'required|integer|exists:empleados,id_empleado', // No necesario
+                'descripcion' => 'nullable|string',
             ]);
 
             if ($validator->fails()) {
                 return response()->json(['errors'=> $validator->errors()], 400);
             }
+
+            // $id_empleado = $request->id_empleado;
+            $id_empleado = $blog->card->id_empleado ?? null;
+            $descripcion = $request->descripcion;
 
             $blog = Blog::find($id);
 
@@ -123,7 +129,8 @@ class BlogController extends Controller
             AuditoriaService::registrar(
                 $blog->id_blog,
                 $request->id_empleado,
-                'ACTUALIZAR'
+                'ACTUALIZAR',
+                $descripcion
             );
 
             DB::commit();

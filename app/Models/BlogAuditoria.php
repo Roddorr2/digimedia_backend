@@ -17,7 +17,8 @@ class BlogAuditoria extends Model
         'id_blog',
         'id_empleado',
         'accion',
-        'fecha_hora',
+        'descripcion',
+        'fecha_hora'
     ];
 
     protected $casts = [
