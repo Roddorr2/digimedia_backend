@@ -29,6 +29,8 @@ class BlogFooter extends Model
         'alt_image3',
         'title_image3',
         'estado',
+        'palabra',
+        'enlace'
     ];
 
     public function blog(){
