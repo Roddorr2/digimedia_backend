@@ -57,4 +57,9 @@ class Blog extends Model
         return $this->hasOne(Card::class, 'id_blog', 'id_blog');
     }
 
+    public function blogAuditoria()
+    {
+        return $this->hasMany(BlogAuditoria::class, 'id_blog', 'id_blog');
+    }
+
 }
