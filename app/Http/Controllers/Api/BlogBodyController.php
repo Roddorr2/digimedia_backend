@@ -35,6 +35,7 @@ class BlogBodyController extends Controller
                 'flag_consejos' => 'nullable|boolean',
                 'flag_informacion' => 'nullable|boolean',
                 'service_url' => 'nullable|string|max:255',
+                'titulo_tarjeta'=>'nullable|string', // titulo tarjetas
             ]);
 
             if ($validator->fails()) {
@@ -85,6 +86,7 @@ class BlogBodyController extends Controller
                 'flag_consejos' => 'nullable|boolean',
                 'flag_informacion' => 'nullable|boolean',
                 'service_url' => 'nullable|string|max:255',
+                'titulo_tarjeta'=>'nullable|string', // titulo tarjetas
             ]);
 
             if ($validator->fails()) {

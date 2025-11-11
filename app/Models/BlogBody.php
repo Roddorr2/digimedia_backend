@@ -31,7 +31,8 @@ class BlogBody extends Model
         'flag_galeria',
         'flag_consejos',
         'flag_informacion',
-        'service_url'
+        'service_url',
+        'titulo_tarjeta',
     ];
 
     public function blog(){
