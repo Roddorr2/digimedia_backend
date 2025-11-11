@@ -180,7 +180,7 @@ class BlogController extends Controller
         }
     }
 
-    public function showByLink(string $link)
+    public function showLink(string $link)
     {
         $blog = Blog::with(['card', 'body', 'head'])->where('link', $link)->first();
 
