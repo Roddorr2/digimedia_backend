@@ -129,4 +129,9 @@ class Empleado extends Model
         // Ventas/Marketing no pueden modificar
         return false;
     } 
+
+    public function blogAuditoria()
+    {
+        return $this->hasMany(BlogAuditoria::class, 'id_empleado', 'id_empleado');
+    }
 }

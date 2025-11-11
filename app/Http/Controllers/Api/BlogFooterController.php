@@ -14,7 +14,7 @@ class BlogFooterController extends Controller
     {
         try{
             $validator = Validator::make($request->all(), [
-                'titulo' => 'nullable|string|max:255',
+                'titulo' => 'nullable|string',
                 'descripcion' => 'nullable|string',
                 'public_image1' => 'nullable|string',
                 'url_image1' => 'nullable|string',
@@ -22,12 +22,12 @@ class BlogFooterController extends Controller
                 'url_image2' => 'nullable|string',
                 'public_image3' => 'nullable|string',
                 'url_image3' => 'nullable|string',
-                'alt_image1' => 'nullable|string',
-                'title_image1' => 'nullable|string',
-                'alt_image2' => 'nullable|string',
-                'title_image2' => 'nullable|string',
-                'alt_image3' => 'nullable|string',
-                'title_image3' => 'nullable|string',
+                'alt_image1' => 'nullable|string|min:60|max:240',
+                'title_image1' => 'nullable|string|min:50|max:140',
+                'alt_image2' => 'nullable|string|min:60|max:240',
+                'title_image2' => 'nullable|string|min:50|max:140',
+                'alt_image3' => 'nullable|string|min:60|max:240',
+                'title_image3' => 'nullable|string|min:50|max:140',
                 'estado' => 'nullable|boolean',
             ]);
 
@@ -69,13 +69,15 @@ class BlogFooterController extends Controller
                 'url_image2' => 'nullable|string',
                 'public_image3' => 'nullable|string',
                 'url_image3' => 'nullable|string',
-                'alt_image1' => 'nullable|string',
-                'title_image1' => 'nullable|string',
-                'alt_image2' => 'nullable|string',
-                'title_image2' => 'nullable|string',
-                'alt_image3' => 'nullable|string',
-                'title_image3' => 'nullable|string',
+                'alt_image1' => 'nullable|string|min:60|max:240',
+                'title_image1' => 'nullable|string|min:50|max:140',
+                'alt_image2' => 'nullable|string|min:60|max:240',
+                'title_image2' => 'nullable|string|min:50|max:140',
+                'alt_image3' => 'nullable|string|min:60|max:240',
+                'title_image3' => 'nullable|string|min:50|max:140',
                 'estado' => 'nullable|boolean',
+                'palabra' => 'nullable|string|max:255',
+                'enlace' => 'nullable|string|max:255',
             ]);
 
             if ($validator->fails()) {
