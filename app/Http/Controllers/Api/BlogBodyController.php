@@ -21,6 +21,7 @@ class BlogBodyController extends Controller
                 'id_commend_tarjeta' => 'nullable|integer|exists:commend_tarjetas,id_commend_tarjeta',
                 'public_image1' => 'nullable|string',
                 'url_image1' => 'nullable|string',
+<<<<<<< HEAD
                 'alt_image1' => 'nullable|string|min:60|max:240', // alt 60-240
                 'title_image1' => 'nullable|string|min:50|max:140', // title 50 - 140
                 'public_image2' => 'nullable|string',
@@ -31,6 +32,18 @@ class BlogBodyController extends Controller
                 'url_image3' => 'nullable|string',
                 'alt_image3' => 'nullable|string|min:60|max:240',
                 'title_image3' => 'nullable|string||min:50|max:140',
+=======
+                'alt_image1' => 'nullable|string|min:60|max:120',
+                'title_image1' => 'nullable|string|min:50|max:70',
+                'public_image2' => 'nullable|string',
+                'url_image2' => 'nullable|string',
+                'alt_image2' => 'nullable|string|min:60|max:120',
+                'title_image2' => 'nullable|string|min:50|max:70',
+                'public_image3' => 'nullable|string',
+                'url_image3' => 'nullable|string',
+                'alt_image3' => 'nullable|string|min:60|max:120',
+                'title_image3' => 'nullable|string|min:50|max:70',
+>>>>>>> f922d4db137afbdda5c3013103efc0f204528d23
                 'flag_galeria' => 'nullable|boolean',
                 'flag_consejos' => 'nullable|boolean',
                 'flag_informacion' => 'nullable|boolean',
