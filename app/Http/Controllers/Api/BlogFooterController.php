@@ -14,34 +14,20 @@ class BlogFooterController extends Controller
     {
         try{
             $validator = Validator::make($request->all(), [
-<<<<<<< HEAD
-                'titulo' => 'nullable|string',
+                'titulo' => 'nullable|string|max:255',
                 'descripcion' => 'nullable|string',
-=======
-                'titulo' => 'required|string|max:255',
-                'descripcion' => 'required|string',
->>>>>>> f922d4db137afbdda5c3013103efc0f204528d23
                 'public_image1' => 'nullable|string',
                 'url_image1' => 'nullable|string',
                 'public_image2' => 'nullable|string',
                 'url_image2' => 'nullable|string',
                 'public_image3' => 'nullable|string',
                 'url_image3' => 'nullable|string',
-<<<<<<< HEAD
                 'alt_image1' => 'nullable|string|min:60|max:240',
                 'title_image1' => 'nullable|string|min:50|max:140',
                 'alt_image2' => 'nullable|string|min:60|max:240',
                 'title_image2' => 'nullable|string|min:50|max:140',
                 'alt_image3' => 'nullable|string|min:60|max:240',
                 'title_image3' => 'nullable|string|min:50|max:140',
-=======
-                'alt_image1' => 'nullable|string|min:60|max:120',
-                'title_image1' => 'nullable|string|min:50|max:70',
-                'alt_image2' => 'nullable|string|min:60|max:120',
-                'title_image2' => 'nullable|string|min:50|max:70',
-                'alt_image3' => 'nullable|string|min:60|max:120',
-                'title_image3' => 'nullable|string|min:50|max:70',
->>>>>>> f922d4db137afbdda5c3013103efc0f204528d23
                 'estado' => 'nullable|boolean',
             ]);
 

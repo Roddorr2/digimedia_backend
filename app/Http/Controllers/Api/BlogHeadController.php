@@ -18,7 +18,6 @@ class BlogHeadController extends Controller
         try{
             $validator = Validator::make($request->all(), [
                 'titulo' => 'required|string|max:50',
-<<<<<<< HEAD
                 'texto_frase' => 'required|string|max:140',
                 'texto_descripcion' => 'required|string|max:240',
                 'public_image' => 'required|string',
@@ -27,16 +26,6 @@ class BlogHeadController extends Controller
                 'title'=> 'nullable|string|min:50|max:140',
                 'meta_title'=> 'nullable|string|min:50|max:120',
                 'meta_descripcion'=> 'nullable|string|min:150|max:255'
-=======
-                'texto_frase' => 'required|string|max:70',
-                'texto_descripcion' => 'required|string|max:120',
-                'public_image' => 'nullable|string',
-                'url_image' => 'nullable|string',
-                'alt'=> 'nullable|string|min:60|max:120',
-                'title'=> 'nullable|string|min:50|max:70',
-                'meta_title'=> 'nullable|string|min:50|max:60',
-                'meta_descripcion'=> 'nullable|string|min:150|max:160'
->>>>>>> f922d4db137afbdda5c3013103efc0f204528d23
             ]);
 
             if ($validator->fails()) {
