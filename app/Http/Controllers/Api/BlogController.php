@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Blog;
 use App\Models\BlogBody;
+use App\Models\BlogHead;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -39,7 +40,7 @@ class BlogController extends Controller
         DB::beginTransaction();
 
         try {
-            $blogHead = \App\Models\BlogHead::findOrFail($request->id_blog_head);
+            $blogHead = BlogHead::findOrFail($request->id_blog_head);
             $titulo = $blogHead->titulo ?? 'blog';
 
             // Generar slug único para el campo 'link'
@@ -47,23 +48,24 @@ class BlogController extends Controller
             $link = $originalSlug;
             $counter = 1;
 
-            while (\App\Models\Blog::where('link', $link)->exists()) {
+            while (Blog::where('link', $link)->exists()) {
                 $link = $originalSlug . '-' . $counter++;
             }
 
             $data = $request->all();
             $data['link'] = $link;
 
-            $blog = \App\Models\Blog::create($data);
-
+            $blog = Blog::create($data);
+            DB::commit();
             // Registrar en la tabla de auditoría
             AuditoriaService::registrar(
                 $blog->id_blog,
                 $id_empleado,
-                'CREAR'
+                'CREAR',
+                (BlogHead::findOrFail($request->id_blog_head))->titulo, 
             );
 
-            DB::commit();
+            
 
             return response()->json([
                 "status" => 200,
@@ -109,7 +111,7 @@ class BlogController extends Controller
             DB::beginTransaction();
 
             // Get the blog head to generate link from title
-            $blogHead = \App\Models\BlogHead::findOrFail($request->id_blog_head);
+            $blogHead = BlogHead::findOrFail($request->id_blog_head);
             $titulo = $blogHead->titulo ?? 'blog';
 
             // Generate unique slug for the 'link' field, excluding current blog
@@ -117,7 +119,7 @@ class BlogController extends Controller
             $link = $originalSlug;
             $counter = 1;
 
-            while (\App\Models\Blog::where('link', $link)->where('id_blog', '!=', $id)->exists()) {
+            while (Blog::where('link', $link)->where('id_blog', '!=', $id)->exists()) {
                 $link = $originalSlug . '-' . $counter++;
             }
 
@@ -130,7 +132,8 @@ class BlogController extends Controller
                 $blog->id_blog,
                 $request->id_empleado,
                 'ACTUALIZAR',
-                $descripcion
+                (\App\Models\BlogHead::findOrFail($request->id_blog_head))->titulo, 
+                $descripcion,
             );
 
             DB::commit();
@@ -220,6 +223,13 @@ class BlogController extends Controller
             if (Storage::disk('public')->exists($relativePath)) {
                 Storage::disk('public')->deleteDirectory($relativePath);
             }
+            //Registrar blog_auditoria
+            AuditoriaService::registrar(
+                $id,
+                $id_empleado,
+                'ELIMINAR',
+                (BlogHead::findOrFail((Blog::findOrFail($id))->id_blog_head))->titulo,
+            );
 
             //primero card
             $card_object = new CardController();
@@ -245,12 +255,6 @@ class BlogController extends Controller
             $blog_body_model = BlogBody::find($id_body_blog);
             $commend_tarjeta = new CommendTarjetaController();
             $commend_tarjeta->destroy($blog_body_model->id_commend_tarjeta);
-
-            AuditoriaService::registrar(
-                $id,
-                $id_empleado,
-                'ELIMINAR'
-            );
 
             //por ultimo blog_body
             $blog_body_model->delete();
