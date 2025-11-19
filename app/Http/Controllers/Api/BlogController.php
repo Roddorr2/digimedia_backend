@@ -27,6 +27,7 @@ class BlogController extends Controller
             'id_blog_head' => 'required|integer|exists:blog_heads,id_blog_head',
             'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
             'id_blog_footer' => 'required|integer|exists:blog_footers,id_blog_footer',
+            'mode' => 'nullable|in:BORRADOR,PUBLICADO,ARCHIVADO', // BY DEFAULT IS BORRADOR
             'fecha' => 'required|date',
             'id_empleado' => 'required|integer|exists:empleados,id_empleado',
         ]);
@@ -86,6 +87,7 @@ class BlogController extends Controller
                 'id_blog_head' => 'required|integer|exists:blog_heads,id_blog_head',
                 'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
                 'id_blog_footer' => 'required|integer|exists:blog_footers,id_blog_footer',
+                'mode' => 'nullable|in:BORRADOR,PUBLICADO,ARCHIVADO', // BY DEFAULT IS BORRADOR
                 'fecha' => 'required|date',
                 'id_empleado' => 'required|integer|exists:empleados,id_empleado', // No necesario
                 'descripcion' => 'nullable|string',
@@ -132,7 +134,7 @@ class BlogController extends Controller
                 $blog->id_blog,
                 $request->id_empleado,
                 'ACTUALIZAR',
-                (\App\Models\BlogHead::findOrFail($request->id_blog_head))->titulo, 
+                (BlogHead::findOrFail($request->id_blog_head))->titulo, 
                 $descripcion,
             );
 
@@ -266,6 +268,39 @@ class BlogController extends Controller
 
 
         }catch(\Exception $e){
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    public function changeMode(Request $request, $id)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'mode' => 'required|in:BORRADOR,PUBLICADO,ARCHIVADO',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 400);
+            }
+
+            $blog = Blog::find($id);
+
+            if (!$blog) {
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'Blog no encontrado'
+                ], 404);
+            }
+
+            $blog->mode = $request->mode;
+            $blog->save();
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Modo de blog actualizado',
+                'id' => $blog->id_blog,
+                'mode' => $blog->mode,
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
