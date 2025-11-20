@@ -132,7 +132,7 @@ class BlogController extends Controller
                 $blog->id_blog,
                 $request->id_empleado,
                 'ACTUALIZAR',
-                (\App\Models\BlogHead::findOrFail($request->id_blog_head))->titulo, 
+                $titulo = $blogHead->titulo ?? 'blog',
                 $descripcion,
             );
 
@@ -228,7 +228,8 @@ class BlogController extends Controller
                 $id,
                 $id_empleado,
                 'ELIMINAR',
-                (BlogHead::findOrFail((Blog::findOrFail($id))->id_blog_head))->titulo,
+                //(BlogHead::findOrFail((Blog::findOrFail($id))->id_blog_head))->titulo,
+                $titulo = $blog->head->titulo ?? 'blog', //CAMBIAR SI FUNCA
             );
 
             //primero card

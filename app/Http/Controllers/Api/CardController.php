@@ -29,6 +29,23 @@ class CardController extends Controller
     }
     //private const url_api = "http://back.digimediamkt.com";
 
+    public function index_public()
+    {
+        try {
+            $cards = Card::with(['blog.head'])
+                            ->where('estado_publicacion', true)
+                            ->orderBy('id_card', 'asc')
+                            ->get();
+            return response()->json($cards, 200);
+        } catch (\Exception $ex) {
+            return response()->json([
+                "status" => 500,
+                "message" => "Error interno del servidor",
+                "error" => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     public function index()
     {
         try {
@@ -74,6 +91,7 @@ class CardController extends Controller
                 'id_plantilla' => 'required|integer|min:1|max:3',
                 'id_blog' => 'required|integer|exists:blogs,id_blog',
                 'id_empleado' => 'required|integer|exists:empleados,id_empleado',
+                'estado_publicacion' => 'required|boolean',
             ]);
 
             if ($validator->fails()) {
@@ -113,6 +131,7 @@ class CardController extends Controller
                 'id_plantilla' => 'required|integer|min:1|max:3',
                 'id_blog' => 'required|integer|exists:blogs,id_blog',
                 'id_empleado' => 'required|integer|exists:empleados,id_empleado',
+                'estado_publicacion' => 'required|boolean',
             ]);
 
             if ($validator->fails()) {
