@@ -101,6 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //rutas update blog
     Route::middleware('permission:editar-blogs')->put('/card/{id}', [CardController::class, "update"]);
     Route::middleware('permission:editar-blogs')->put('/blog/{id}', [BlogController::class, "update"]);
+    Route::middleware('permission:editar-blogs')->put('/blog_mode/{id}', [BlogController::class, "changeMode"]);//Prueba cambio modo Blog
     Route::middleware('permission:editar-blogs')->put('/blog_head/{id}', [BlogHeadController::class, "update"]);
     Route::middleware('permission:editar-blogs')->put('/blog_body/{id}', [BlogBodyController::class, "update"]);
     Route::middleware('permission:editar-blogs')->put('/blog_footer/{id}', [BlogFooterController::class, "update"]);
