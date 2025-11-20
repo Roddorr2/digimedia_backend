@@ -17,7 +17,6 @@ class Blog extends Model
         'id_blog_head',
         'id_blog_body',
         'id_blog_footer',
-        'mode',
         'fecha',
         'link'
     ];
