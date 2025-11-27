@@ -12,7 +12,7 @@ use App\Http\Controllers\Api\BlogBodyController;
 use App\Http\Controllers\Api\BlogHeadController;
 use App\Http\Controllers\Api\EmpleadoController;
 use App\Http\Controllers\Api\ModalWatController;
-
+use App\Http\Controllers\Api\BlogAutoSaveController;
 use App\Http\Controllers\Api\ModalMailController;
 use App\Http\Controllers\Api\ServiciosController;
 use App\Http\Controllers\Api\BlogFooterController;
@@ -46,6 +46,10 @@ Route::get('/blog_body/{id}', [BlogBodyController::class, "show"]);
 Route::get('/modales/send_wat/{id}', [ModalWatController::class, "sendWat"]);
 
 Route::middleware('ver-servicios')->get('/servicios', [ServiciosController::class, "get"]);
+
+
+// autoguardado get
+Route::get('/blog/temporal_blog/{id_blog}', [BlogAutoSaveController::class, 'obtenerTemporal']);
 
 // rutas autenticadas
 Route::middleware('auth:sanctum')->group(function () {
@@ -116,6 +120,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('permission:editar-blogs')->delete('/delete_carpet/{id}', [CardController::class, "deleteCarpetaImages"]);
 
+    //rutas autoguardado blog
+    Route::middleware('permission:editar-blogs')->post('/blog/autoguardar', [BlogAutoSaveController::class, 'guardarTemporal']);
+    // Route::middleware('permission:editar-blogs')->get('/blog/temporal/{id_blog}', [BlogAutoSaveController::class, 'obtenerTemporal']);
 
     Route::middleware('permission:eliminar-contactos')->delete('/contactanos/{id}', [ContactanosController::class, "delete"]);
     Route::middleware('permission:eliminar-reclamaciones')->delete('/reclamaciones/{id}', [ReclamacionesController::class, "delete"]);
