@@ -12,8 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('blog_bodies', function (Blueprint $table) {
-            $table->text('public_image1')->nullable()->change();
-            $table->text('public_image2')->nullable()->change();
+            $table->text('titulo_tarjeta')->nullable()->after('service_url');
         });
     }
 
@@ -23,8 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('blog_bodies', function (Blueprint $table) {
-            $table->text('public_image1')->nullable(false)->change();
-            $table->text('public_image2')->nullable(false)->change();
+            $table->dropColumn('titulo_tarjeta');
         });
     }
 };

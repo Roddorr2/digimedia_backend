@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('blog_heads', function (Blueprint $table) {
-            $table->text('public_image')->nullable()->change();
+        Schema::table('blog_auditoria', function (Blueprint $table) {
+            $table->string('titulo')->after('accion')->nullable();
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('blog_heads', function (Blueprint $table) {
-            $table->text('public_image')->nullable(false)->change();
+        Schema::table('blog_auditoria', function (Blueprint $table) {
+            $table->dropColumn('titulo');
         });
     }
 };

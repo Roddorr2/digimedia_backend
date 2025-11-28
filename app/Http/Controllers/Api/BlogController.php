@@ -6,11 +6,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Blog;
 use App\Models\BlogBody;
-use App\Services\AuditoriaService;
+use App\Models\BlogHead;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use App\Services\AuditoriaService;
 
 class BlogController extends Controller
 {
@@ -22,63 +23,58 @@ class BlogController extends Controller
 
     public function create(Request $request)
     {
-        try{
+        $validator = Validator::make($request->all(), [
+            'id_blog_head' => 'required|integer|exists:blog_heads,id_blog_head',
+            'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
+            'id_blog_footer' => 'required|integer|exists:blog_footers,id_blog_footer',
+            'fecha' => 'required|date',
+            'id_empleado' => 'required|integer|exists:empleados,id_empleado',
+        ]);
 
-            $validator = Validator::make($request->all(), [
-                'id_blog_head' => 'required|integer|exists:blog_heads,id_blog_head',
-                'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
-                'id_blog_footer' => 'required|integer|exists:blog_footers,id_blog_footer',
-                'fecha' => 'required|date',
-                'id_empleado' => 'required|integer|exists:empleados,id_empleado',
-                'link' => 'nullable|string|max:255' // Campo opcional para el link
-            ]);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
+        }
 
-            if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()], 400);
-            }
+        $id_empleado = $request->id_empleado;
 
-            $id_empleado = $request->id_empleado;
+        DB::beginTransaction();
 
-            DB::beginTransaction();
+        try {
+            $blogHead = BlogHead::findOrFail($request->id_blog_head);
+            $titulo = $blogHead->titulo ?? 'blog';
 
-            // Generar link desde el request o usar blog_heads.titulo como fallback
-            if ($request->has('link') && !empty($request->link)) {
-                $link = Str::slug($request->link);
-            } else {
-                $blogHead = \App\Models\BlogHead::findOrFail($request->id_blog_head);
-                $titulo = $blogHead->titulo ?? "blog";
-                $link = Str::slug($titulo);
-            }
-
-            // Asegurar unicidad del link
-            $baseLink = $link;
+            // Generar slug único para el campo 'link'
+            $originalSlug = Str::slug($titulo);
+            $link = $originalSlug;
             $counter = 1;
-            while (Blog::where("link", $link)->exists()) {
-                $link = $baseLink . '-' . $counter;
-                $counter++;
+
+            while (Blog::where('link', $link)->exists()) {
+                $link = $originalSlug . '-' . $counter++;
             }
 
             $data = $request->all();
-            $data["link"] = $link;
+            $data['link'] = $link;
 
             $blog = Blog::create($data);
-
+            DB::commit();
+            // Registrar en la tabla de auditoría
             AuditoriaService::registrar(
                 $blog->id_blog,
                 $id_empleado,
-                'CREAR'
+                'CREAR',
+                (BlogHead::findOrFail($request->id_blog_head))->titulo, 
             );
 
-            DB::commit();
+            
 
             return response()->json([
                 "status" => 200,
                 "message" => "Blog creado correctamente",
                 "id" => $blog->id_blog,
-                "link" => $link
+                "link" => $blog->link,
             ], 200);
 
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             DB::rollback();
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -91,15 +87,17 @@ class BlogController extends Controller
                 'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
                 'id_blog_footer' => 'required|integer|exists:blog_footers,id_blog_footer',
                 'fecha' => 'required|date',
-                'id_empleado' => 'required|integer|exists:empleados,id_empleado',
-                'link' => 'nullable|string|max:255'
+                'id_empleado' => 'required|integer|exists:empleados,id_empleado', // No necesario
+                'descripcion' => 'nullable|string',
             ]);
 
             if ($validator->fails()) {
                 return response()->json(['errors'=> $validator->errors()], 400);
             }
 
-            $id_empleado = $request->id_empleado;
+            // $id_empleado = $request->id_empleado;
+            $id_empleado = $blog->card->id_empleado ?? null;
+            $descripcion = $request->descripcion;
 
             $blog = Blog::find($id);
 
@@ -112,35 +110,30 @@ class BlogController extends Controller
 
             DB::beginTransaction();
 
-            // Generar link desde el request o usar blog_heads.titulo como fallback
-            if ($request->has('link') && !empty($request->link)) {
-                $link = Str::slug($request->link);
-            } else {
-                $blogHead = \App\Models\BlogHead::findOrFail($request->id_blog_head);
-                $titulo = $blogHead->titulo ?? "blog";
-                $link = Str::slug($titulo);
-            }
+            // Get the blog head to generate link from title
+            $blogHead = BlogHead::findOrFail($request->id_blog_head);
+            $titulo = $blogHead->titulo ?? 'blog';
 
-            // Asegurar unicidad del link (excluyendo el blog actual)
-            $baseLink = $link;
+            // Generate unique slug for the 'link' field, excluding current blog
+            $originalSlug = Str::slug($titulo);
+            $link = $originalSlug;
             $counter = 1;
-            while (Blog::where("link", $link)
-                       ->where("id_blog", "!=", $id)
-                       ->exists())
-            {
-                $link = $baseLink . '-' . $counter;
-                $counter++;
+
+            while (Blog::where('link', $link)->where('id_blog', '!=', $id)->exists()) {
+                $link = $originalSlug . '-' . $counter++;
             }
 
             $data = $request->all();
-            $data["link"] = $link;
+            $data['link'] = $link;
 
             $blog->update($data);
 
             AuditoriaService::registrar(
                 $blog->id_blog,
-                $id_empleado,
-                'ACTUALIZAR'
+                $request->id_empleado,
+                'ACTUALIZAR',
+                (\App\Models\BlogHead::findOrFail($request->id_blog_head))->titulo, 
+                $descripcion,
             );
 
             DB::commit();
@@ -149,7 +142,7 @@ class BlogController extends Controller
                 'status'=> 200,
                 'message'=> 'Blog actualizado',
                 'id'=> $blog->id_blog,
-                'link' => $link
+                'link'=> $blog->link,
             ],200);
         }catch(\Exception $e){
             DB::rollback();
@@ -166,7 +159,7 @@ class BlogController extends Controller
             if (!$blog) {
                 return response()->json([
                     "status" => 404,
-                    "message" => "Blog no encontrado"
+                    "message" => "Blog no encontrada"
                 ],400);
             }
 
@@ -180,73 +173,74 @@ class BlogController extends Controller
         }
     }
 
-    public function showLink(string $link)
-    {
-        $blog = Blog::with(['card', 'body', 'head'])->where('link', $link)->first();
-
-        if(!$blog) {
-            return response()->json([
-                "status" => 400,
-                "message" => "Blog no encontrado"
-            ], 400);
-        }
-
-        return response()->json([
-            "status" => 200,
-            "message" => "Blog encontrado",
-            "blog" => $blog
-        ], 200);
-    }
-
-    public function destroy(int $id, Request $request)
+     public function showLink(string $link)
     {
         try{
-            $validator = Validator::make($request->all(), [
-                'id_empleado' => 'required|integer|exists:empleados,id_empleado',
-            ]);
 
-            if ($validator->fails()) {
-                return response()->json(['errors'=> $validator->errors()], 400);
+            $blog = Blog::with(['card', 'body', 'head'])->where('link', $link)->first();
+
+            if (!$blog) {
+                return response()->json([
+                    "status" => 404,
+                    "message" => "Blog no encontrada"
+                ],400);
             }
 
-            $id_empleado = $request->id_empleado;
+            return response()->json([
+                "status" => 200,
+                'data' => $blog,
+            ],200);
+
+        }catch(\Exception $e){
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    public function destroy(int $id)
+    {
+        try{
 
             $blog = Blog::with(['card', 'head'])->find($id);
-
+            $id_empleado = $blog->card->id_empleado ?? null;
+            
             if (!$blog){
                 return response()->json([
                     'status'=> 404,
                     'message'=> 'Blog no encontrado'
                 ], 404);
             }
-
-            DB::beginTransaction();
-
-            AuditoriaService::registrar(
-                $id,
-                $id_empleado,
-                'ELIMINAR'
-            );
-
+            
             $id_header_blog = $blog->id_blog_head;
+
             $id_body_blog = $blog->id_blog_body;
+
             $id_footer_blog = $blog->id_blog_footer;
 
-            $relativePath = "images/templates/plantilla{$blog->card->id_plantilla}/" . Str::slug($blog->head->titulo) . $blog->id_blog;
+            $relativePath = "images/templates/plantilla{$blog->card->id_plantilla}/"
+            //  . Str::slug($blog->head->titulo)
+             . $blog->id_blog;
 
             //eliminarla pero ver si existe asi que normal obvia la anterior
             if (Storage::disk('public')->exists($relativePath)) {
                 Storage::disk('public')->deleteDirectory($relativePath);
             }
+            //Registrar blog_auditoria
+            AuditoriaService::registrar(
+                $id,
+                $id_empleado,
+                'ELIMINAR',
+                //(BlogHead::findOrFail((Blog::findOrFail($id))->id_blog_head))->titulo,
+                $titulo = $blog->head->titulo ?? 'blog', //CAMBIAR SI FUNCA
+            );
 
             //primero card
             $card_object = new CardController();
+
             $card_object->destroy($blog->card->id_card);
 
             //segundo blog
             $blog->delete();
 
-            //tercero blog_head
+            //tecero blog_head
             $blog_head = new BlogHeadController();
             $blog_head->destroy($id_header_blog);
 
@@ -266,15 +260,13 @@ class BlogController extends Controller
             //por ultimo blog_body
             $blog_body_model->delete();
 
-            DB::commit();
-
             return response()->json([
                 "status" => 200,
                 "message" => "Blog eliminado correctamente"
             ],200);
 
+
         }catch(\Exception $e){
-            DB::rollback();
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

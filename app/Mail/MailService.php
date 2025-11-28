@@ -22,7 +22,7 @@ class MailService extends Mailable
 
     public function build()
     {
-
+        
 
         $images = [
             // Desarrollo y Diseño
@@ -51,24 +51,24 @@ class MailService extends Mailable
             ]
         ];
 
-        $subject = [
+        $title = [
             // Desarrollo y Diseño
             [
-                "IMPULSA TU ÉXITO ONLINE CON DIGIMEDIA! 🌐",
+                "¡IMPULSA TU ÉXITO ONLINE CON DIGIMEDIA! 🌐",
                 "¡FORTALECE TU PRESENCIA EN LÍNEA 💻!",
                 "¡MAXIMIZA TU PRESENCIA ONLINE! 💻"
             ],
             // Gestión de Redes Sociales
             [
-                "POTENCIA TU NEGOCIO DIGITAL CON DIGIMEDIA",
+                "¡POTENCIA TU NEGOCIO DIGITAL CON DIGIMEDIA! 📈",
                 "¡SUMÉRGETE EN EL MUNDO DIGITAL 📱!",
                 "¡AUMENTA TU PRESENCIA EN LAS REDES Y CONQUISTA NUEVAS AUDIENCIAS CON NOSOTROS! 💻🚀 "
             ],
             // Marketing y Gestión Digital
             [
-                "¡CRECE TU NEGOCIO CON DIGIMEDIA 📈!",
+                "¡CRECE TU NEGOCIO CON DIGIMEDIA!📈",
                 "¡INNOVA EN TUS ESTRATEGIAS DIGITALES!",
-                "¡Aprovecha los beneficios del Mundo Digital! 💻 📈"
+                "¡Aprovecha los beneficios del mundo digital! 👩🏻💻🖥 "
             ],
             // Branding y Diseño
             [
@@ -78,151 +78,155 @@ class MailService extends Mailable
             ]
         ];
 
-        $title = [
+        $subject = [
             // Desarrollo y Diseño
+
             [
-                "Renueva tu web y conquista a tu competencia",
-                "Antes de que tus clientes huyan de tu web, lee esto.",
-                "¿Listo para incrementar el valor de tu marca?"
+                "IMPULSA TU ÉXITO ONLINE CON DIGIMEDIA! 🌐",
+                "¡FORTALECE TU PRESENCIA EN LÍNEA 💻!",
+                "¡MAXIMIZA TU PRESENCIA ONLINE! 💻"
             ],
             // Gestión de Redes Sociales
             [
-                "Haz crecer tu marca con estrategia",
+                "POTENCIA TU NEGOCIO DIGITAL CON DIGIMEDIA 📈",
                 "¡SUMÉRGETE EN EL MUNDO DIGITAL 📱!",
-                "¿Publicas… pero no creces? tu estrategia necesita esto.."
+                "¡AUMENTA TU PRESENCIA EN LAS REDES Y CONQUISTA NUEVAS AUDIENCIAS CON NOSOTROS! 💻🚀 "
             ],
             // Marketing y Gestión Digital
             [
-                "💡Haz crecer y destacar tu negocio con DigiMedia.",
-                "Lo que tu competencia ya está haciendo… y tú no",
-                "Crece online o te quedas atrás. ¿Hablamos?"
+                "¡CRECE TU NEGOCIO CON DIGIMEDIA 📈!",
+                "¡INNOVA EN TUS ESTRATEGIAS DIGITALES!",
+                "¡Aprovecha los beneficios del Mundo Digital! 👩🏻💻🖥 * "
             ],
             // Branding y Diseño
             [
-                "🚀 ¡Haz que tu marca despegue con DigiMedia!",
-                "Destaca entre tu competencia con una marca que impacte",
-                "Tu marca merece destacar. ¡ Hazlo inolvidable con DIGIMEDIA!"
+                "¡DESTACA TU NEGOCIO DIGITAL CON DIGIMEDIA! 🙌🏼",
+                "¡MARCA LA DIFERENCIA! 😉",
+                "¡TEN UNA IDENTIDAD ÚNICA! 😉"
             ]
         ];
 
         $message = [
             // Desarrollo y Diseño
             [
-                "En Digimedia diseñamos experiencias digitales que combinan <strong>diseño atractivo, carga rápida y navegación intuitiva</strong>, adaptadas a cada tipo de cliente.<br><br>
-                Tu web no solo debe verse bien, debe <strong>funcionar y convertir.<br><br>
-                📈 Haz que tu presencia digital sea tan sólida como tu esfuerzo.<br><br>
-                🚀 Agenda tu asesoría gratuita hoy mismo</strong><br><br>
-                y descubre cómo convertir tu página en una aliada para tu crecimiento.",
+                "En <b>DigiMedia</b> diseñamos y desarrollamos sitios web modernos, rápidos y visualmente atractivos, pensados para que tu negocio destaque desde el <b>PRIMER CLICK</b>.<br><br>
+                Lo que obtendrás con nosotros:<br><br>
+                🌐 Diseños que enamoran a primera vista.<br>
+                ⚡ Experiencias de usuario ágiles y memorables.<br>
+                📈 Resultados que impulsan ventas y fidelizan clientes",
 
-                "¿Sabías que un cliente decide en menos de <strong>5 segundos</strong> si confía en tu marca… solo por tu página web? ⏳💻<br><br>
-                Si tu sitio es lento, desordenado o poco profesional, tu marca pierde <strong>credibilidad</strong> y oportunidades de venta sin que lo notes. ❌📉<br><br>
-                Tu web no es solo un espacio digital… es tu vitrina principal. 🛍️✨<br>
-                <strong>¿Está transmitiendo lo que realmente quieres?</strong><br><br>
-                <strong>👉 Haz que tu web impacte desde el primer segundo.</strong><br>
-                Tu asesoría gratuita te espera. 🚀",
+                "En Digimedia te ayudamos a crecer con una identidad visual sólida para tu marca, experiencias digitales diseñadas para convertir visitas en ventas y estrategias innovadoras que generan resultados reales.<br><br>
+                Lo que obtendrás con nosotros:<br><br>
+                🌐 Visuales que cautivan desde el primer segundo.<br>
+                ⚡Estética que inspira y conecta.<br>
+                📈 Imágenes que hablan por ti.",
 
-                "Creemos en el cambio como parte clave del crecimiento de tu marca. Tus clientes cambian a diario, tu página web debe seguirles el ritmo.<br>
-                Que tu página web no se limite a un buen diseño y un buen eslogan; hoy en día tus clientes valoran la conexión que pueden lograr contigo.<br><br>
-                En Digimedia te damos los conocimientos y las herramientas para mantener tu marca actualizada."
+                "Impulsamos tu éxito digital con beneficios exclusivos: mayor visibilidad y tráfico web, experiencias de usuario que convierten visitantes en clientes leales y estrategias innovadoras que harán que tu negocio brille en la web.<br><br>
+                En Digimedia te damos las herramientas para lograrlo con:<br><br>
+                🔍 Visibilidad digital que atrae más clientes.<br>
+                🎨 Identidad de marca reflejada en cada detalle.<br>
+                🚀 Tecnología actualizada para un sitio rápido y seguro."
             ],
             // Gestión de Redes Sociales
             [
-                "Te ayudamos a crear una presencia digital sólida, con contenido coherente.<br><br>
-                Con una gestión estratégica de redes sociales, tu negocio puede lograr mucho más que solo likes.<br><br>
-                ✅ Aumenta tu visibilidad ante el público correcto.<br>
-                ✅ Crea contenido que conecte y genere confianza.<br>
-                ✅ Transforma seguidores en clientes reales.<br><br>
-                Hagamos que tu marca destaque y genere conversación cada día.<br><br>
-                Reserva tu <strong>asesoría gratuita</strong> hoy mismo",
 
-                "<strong>DigiMedia Marketing</strong><br><br>
-                <strong>¡Haz que tu marca enamore desde el primer vistazo! ✨</strong><br>
-                En un mundo lleno de información, solo los contenidos bien hechos logran destacar.<br><br>
-                Por eso en <strong>DigiMedia</strong> creamos <strong>contenidos que atraen, conquistan y abren puertas</strong> para que tu negocio conecte con las personas correctas.<br>
-                Potencia tu presencia digital con ideas frescas, mensajes claros y piezas visuales diseñadas para generar resultados reales.<br><br>
-                <strong>💡 ¿Lo mejor? Tu primera asesoría es completamente GRATIS.</strong><br>
-                Descubre cómo podemos transformar tu comunicación y llevar tu marca al siguiente nivel.",
+                "¿Tus redes sociales no generan interacciones? En DigiMedia, estamos comprometidos en potenciar tu presencia en línea a través de la gestión de redes sociales. Al confiarnos la administración de tus plataformas digitales, experimentarás un aumento significativo en la visibilidad y participación de tu marca. Nuestros beneficios:\n\n
 
-                "Sabemos que gestionar redes sociales solo puede ser complicado: crear contenido, mantener constancia y entender qué funciona… agota a cualquiera.<br><br>
-                ✨ Pero potenciar tus redes va más allá de “estar presente”.<br>
-                🎯 Con una estrategia real, tus publicaciones dejan de ser un esfuerzo perdido y se convierten en oportunidades para atraer clientes y generar confianza.<br><br>
-                En Digimedia te ayudamos con:<br>
-                <ul style='margin-top: 0; margin-bottom: 0; padding-left: 20px;'>
-                <li>Contenido que conecta.</li>
-                <li>Estrategias según tu público y objetivos.</li>
-                <li>Optimización constante.</li>
-                <li>Mayor visibilidad y mejores resultados.</li>
-                </ul>
-                <p style='margin: 0; padding: 0; line-height: 25px; mso-line-height-rule: exactly;'>&nbsp;</p>
-                🚀 Tu crecimiento no debería depender del algoritmo.<br>
-                🤝 Deja que te guiemos para que tus redes trabajen por ti.<br>
-                👉 Tu crecimiento comienza con un solo clic. ¡Aprovecha la asesoría gratuita!"
+                🚀 Potenciación de tu presencia digital.\n
+                🚀 Contenido estratégico y de valor.\n\n
+
+                Transformemos juntos tu presencia digital! ¡Háznoslo saber!",
+
+                "¿Quieres tener contenido de calidad? Deja la gestión de tus redes sociales en manos expertas con DigiMedia y haz crecer tu negocio de la mejor manera con nuestros beneficios: \n\n
+
+                - Planificación y organización de contenidos.\n
+                - Análisis de resultados con informes mensuales.",
+
+                "¿Buscas contenido de alto impacto? Confía en los especialistas de DigiMedia Marketing para gestionar tus redes sociales y lleva tu negocio al siguiente nivel con nuestro servicio de Gestión Redes Sociales.\n\n
+
+                ✅ Diseño estratégico y calendario de contenido en redes.
+                ✅ Análisis de desempeño con reportes mensuales y más!"
             ],
-            // Marketing y Gestión Digital
+
             [
-                "En un mundo donde todos quieren ser notados, <strong>asegura que tu marca no solo sea vista, sino recordada.</strong><br><br>
-                📈 Nuestro equipo está preparado para llevar tu presencia online al siguiente nivel con soluciones creativas, efectivas y medibles.<br><br>
-                ✨ <strong>Beneficios exclusivos:</strong><br>
-                <ul style='margin-top: 0; margin-bottom: 0; padding-left: 20px;'>
-                <li>Mayor visibilidad y posicionamiento online.</li>
-                <li>Estrategias que generan conexión y lealtad con tus clientes.</li>
-                <li>Presencia digital sólida y diferenciada.</li>
-                </ul>
-                <p style='margin: 0; padding: 0; line-height: 25px; mso-line-height-rule: exactly;'>&nbsp;</p>
-                🚀 ¡No te quedes atrás en la era digital! Transforma tu negocio con estrategias innovadoras diseñadas para maximizar tu rentabilidad.<br><br>
-                📩 Contáctanos hoy y comencemos a construir tu crecimiento digital.",
+                "En DigiMedia Marketing, estamos comprometidos en el mejor desarrollo en marketing digital. Tendremos el placer de armar estrategias que promuevan tu marca a través de diferentes entornos digitales. ¿Las estrategias que planteas no logran los objetivos de tu empresa?, entonces adquiere nuestro servicio con beneficios exclusivos: \n\n
 
-                "<strong>¿Quieres que tu negocio por fin despegue en el mundo digital?</strong><br>
-                En <strong>DigiMedia</strong> tenemos las estrategias exactas para que tu marca gane visibilidad, clientes y resultados reales. Dominamos el entorno online y te acompañamos para que tu presencia digital sea sólida, atractiva y rentable.<br>
-                Si buscas crecer, digitalizarte y generar mayores ganancias, este es el momento.<br><br>
-                ¡Contáctanos ahora!",
+                📌 Mejorar tu visibilidad online. \n
+                📌 Vínculo de lealtad con los clientes. \n\n
 
-                "En DigiMedia transformamos tu presencia online con estrategias que sí venden.<br><br>
-                ✨ ¿Qué logramos contigo?<br>
-                <ul style='margin-top: 0; margin-bottom: 0; padding-left: 20px;'>
-                <li>Clientes más fieles</li>
-                <li>Publicidad digital que convierte</li>
-                <li>Estrategias a tu medida</li>
-                <li>Mejor rendimiento de tu inversión</li>
-                </ul>
-                <p style='margin: 0; padding: 0; line-height: 25px; mso-line-height-rule: exactly;'>&nbsp;</p>
-                Digitaliza tu negocio y empieza a ver resultados reales.<br>
-                Escríbenos y activemos tu crecimiento hoy. 🚀"
+                ¡No te quedes atrás en la era digital y transforma tu marca con soluciones innovadoras! Contacto y que comience tu presencia digital.",
+
+                "¿Quieres tener las mejores estrategias online de marketing? En DigiMedia somos expertos dominando el mundo digital y juntos potenciaremos tu presencia digital. \n\n
+
+                - Vínculo de lealtad con los clientes\n
+                - Desarrollar publicidad en línea\n\n
+
+                💻 Obtén mayores ganancias digitalizando tu negocio junto a DigiMedia Marketing 💰📈. Con el servicio de marketing y gestión digital podrás tener:\n\n
+
+                ✅ Estrategias digitales personalizadas.\n
+                ✅ Mejor rendimiento de tu presupuesto.\n\n
+
+                Comunícate con nosotros/responde este mensaje para obtener más información y comienza a ver resultados.",
+
+                "¿Quieres tener las mejores estrategias online de marketing? En DigiMedia somos expertos dominando el mundo digital y juntos potenciaremos tu presencia digital.\n\n
+
+                - Vínculo de lealtad con los clientes\n
+                - Desarrollar publicidad en línea\n\n
+
+                💻 Obtén mayores ganancias digitalizando tu negocio junto a DigiMedia Marketing 💰📈. Con el servicio de marketing y gestión digital podrás tener:\n\n
+
+                ✅ Estrategias digitales personalizadas.\n
+                ✅ Mejor rendimiento de tu presupuesto.\n\n
+
+                Comunícate con nosotros/responde este mensaje para obtener más información y comienza a ver resultados.",
             ],
             // Branding y Diseño
             [
-                "¿Sientes que tu negocio se pierde entre la competencia?<br>
-                En <strong>DigiMedia</strong>, te ayudamos a <strong>mantenerte en la mente de tus clientes.</strong> No se trata solo de estar presente, sino de ser <strong>relevante.</strong><br><br>
-                ✨ Somos especialistas en <strong>branding cautivador, diseño irresistible y asesorías personalizadas</strong> que harán que tu marca refleje lo que realmente representa.<br><br>
-                💡 <strong>Beneficios que obtendrás:</strong><br>
-                <ul style='margin-top: 0; margin-bottom: 0; padding-left: 20px;'>
-                <li>Mayor reconocimiento y diferenciación en tu rubro.</li>
-                <li>Identidad visual coherente y profesional.</li>
-                <li>Estrategias que fortalecen la conexión con tus clientes.</li>
-                </ul>
-                <p style='margin: 0; padding: 0; line-height: 25px; mso-line-height-rule: exactly;'>&nbsp;</p>
-                📩 Conoce cómo transformar tu presencia digital y llevar tu negocio al siguiente nivel.<br><br>
-                👉 <strong>No seas uno más, sé relevante.</strong>",
+                "¿Sientes que tu negocio no se diferencia del resto? ¡Haz que tu marca sea inolvidable!
+                En DigiMedia, estamos preparados para llevar la identidad de tu marca a otro nivel. Somos especialistas en crear diseños irresistibles y branding cautivador.\n
+                Adquiere nuestros beneficios exclusivos\n\n
 
-                "¿Tu marca está dejando huella o solo pasando desapercibida?<br>
-                En DIGIMEDIA te ayudamos a construir una identidad visual fuerte, coherente y auténtica, para que tu negocio destaque entre la competencia y conecte con sus clientes.<br>
-                Con nuestro servicio de Branding y Diseño, obtendrás:<br>
-                <ul style='margin-top: 0; margin-bottom: 0; padding-left: 20px;'>
-                <li>Identidad visual profesional que refleje los valores de tu marca.</li>
-                <li>Conceptos creativos y originales que te diferencien del resto.</li>
-                <li>Posicionamiento visual que inspire confianza y recordación.</li>
-                </ul>
-                <p style='margin: 0; padding: 0; line-height: 25px; mso-line-height-rule: exactly;'>&nbsp;</p>",
+                📌 Diferenciación y Reconocimiento\n
 
-                "¿Tu marca transmite lo que realmente quieres decir?<br>
-                En DIGIMEDIA te ayudamos a construir una identidad única y profesional que conecte con tu público desde el primer vistazo.<br>
-                Nuestro servicio de Branding y Diseño te permitirá:<br>
-                <ul style='margin-top: 0; margin-bottom: 0; padding-left: 20px;'>
-                <li>Crear una identidad visual auténtica y coherente.</li>
-                <li>Ganar confianza y credibilidad en el entorno digital.</li>
-                <li>Diferenciarte de tu competencia y posicionarse con fuerza.</li>
-                </ul>
-                <p style='margin: 0; padding: 0; line-height: 25px; mso-line-height-rule: exactly;'>&nbsp;</p>"
+                Prepárate para darle un giro a tu negocio con todos nuestros beneficios ¡Contacte con nosotros!",
+
+                "¿Quieres destacar entre tu competencia? Con DigiMedia podrás tener una marca sólida gracias a nuestro servicio de Branding y diseño que te ayudarán a ser reconocida entre tus clientes 🚀.\n\n
+
+                - ✅ Desarrollo en identidad visual de tu marca\n
+                - ✅ Originalidad en conceptos de marca ",
+
+                "En DigiMedia garantizamos crear experiencias visuales impactantes y memorables para que puedas conectar con tu audiencia, nuestro servicio de Branding y diseño te ayudarán a lograr esto 🚀. Nuestros beneficios:\n\n
+                - Originalidad en conceptos de marca\n
+                - Construcción de confianza y credibilidad\n\n
+
+                ¡Sé parte del mundo digital y potencia tu marca con nosotros! 🙌🏼"
+            ]
+        ];
+
+        $extra_message = [
+            // Desarrollo y Diseño
+            [
+                "¿Deseas potenciar tu marca en el mundo digital? Ven y hazlo con nuestros beneficios exclusivos. Marca la diferencia con una página web personalizada.<br>
+                Saludos cordiales,<br>
+                El equipo de Digimedia",
+                "¿Quieres destacar en el mundo digital y atraer más clientes? No te quedes atrás en la era digital.<br>
+                Contáctanos hoy y haz despegar tu marca.<br>
+                Saludos cordiales,<br>
+                El equipo de Digimedia",
+                "¿Quieres multiplicar tus ventas y destacar en el mundo digital? El momento de crecer es ahora. Contáctanos y haz que tu marca conquiste el mundo digital.<br>
+                Saludos cordiales,<br>
+                El equipo de Digimedia"
+            ]
+        ];
+
+        $head_title = [
+            // Desarrollo y Diseño
+            [
+                "¿LISTO PARA POTENCIAR TU PÁGINA WEB?",
+                "¿QUIERES MÁS VISIBILIDAD Y CLIENTES ONLINE?<br>
+                ¡EMPIEZA CON DIGIMEDIA!",
+                "HAZ QUE TE ENCUENTREN EN INTERNET<br>
+                CONVIERTE TUS VISITAS EN VENTAS REALES"
             ]
         ];
 
@@ -230,6 +234,8 @@ class MailService extends Mailable
         $image_send = $images[$this->id_service - 1][$this->number_message - 1];
         $title_send = $title[$this->id_service - 1][$this->number_message - 1];
         $subject_send = $subject[$this->id_service - 1][$this->number_message - 1];
+        $extra_message_send = $extra_message[$this->id_service - 1][$this->number_message - 1] ?? null;
+        $head_title_send = $head_title[$this->id_service - 1][$this->number_message - 1] ?? null;
 
         return $this->subject($subject_send)
                 ->view('mails.modal')
@@ -238,6 +244,8 @@ class MailService extends Mailable
                     'send_message' => $message_send,
                     'title' => $title_send,
                     'image' => $image_send,
+                    'extra_message' => $extra_message_send,
+                    'head_title' => $head_title_send,
                     'id_service' => $this->id_service,
                 ]);
     }
