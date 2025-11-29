@@ -145,6 +145,9 @@ class BlogController extends Controller
 
             DB::commit();
 
+            $redisKey = "blog:{$$blog->id_blog}:";
+            Redis::del($redisKey);
+
             return response()->json([
                 'status'=> 200,
                 'message'=> 'Blog actualizado',

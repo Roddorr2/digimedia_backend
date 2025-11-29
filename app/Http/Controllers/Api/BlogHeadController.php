@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api;
 use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
 use App\Models\BlogHead;
+use App\Models\Blog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Cloudinary\Cloudinary;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 
 class BlogHeadController extends Controller
 {
@@ -85,7 +87,7 @@ class BlogHeadController extends Controller
 
             $blogHead->update($request->all());
 
-            $blog = \App\Models\Blog::where('id_blog_head', $blogHead->id_blog_head)->first();
+            $blog = Blog::where('id_blog_head', $blogHead->id_blog_head)->first();
 
             if ($blog) {
 
@@ -93,7 +95,7 @@ class BlogHeadController extends Controller
                 $link = $originalSlug;
                 $counter = 1;
 
-                while (\App\Models\Blog::where('link', $link)->where('id_blog', '<>', $blog->id_blog)->exists()) {
+                while (Blog::where('link', $link)->where('id_blog', '<>', $blog->id_blog)->exists()) {
                     $link = $originalSlug . '-' . $counter++;
                 }
 
@@ -121,30 +123,53 @@ class BlogHeadController extends Controller
     }
 
 
-    public function show(int $id){
-        try{
-
+    public function show(int $id)
+    {
+        try {
             $blogHead = BlogHead::find($id);
+
             if (!$blogHead) {
                 return response()->json([
                     "status" => 404,
                     "message" => "BlogHead no encontrado"
-                ],404);
+                ], 404);
             }
+
+            // 1. Convertir MySQL → array
+            $data = $blogHead->toArray();
+
+            // 2. Revisar si hay autoguardado en Redis
+            $redisKey = "blog:{$blogHead->id_blog_head}";
+            $temporal = Redis::get($redisKey);
+            $temporal = $temporal ? json_decode($temporal, true) : null;
+
+            // 3. Si NO hay autoguardado en Redis → devolver datos normales
+            if (!$temporal) {
+                return response()->json([
+                    "status" => 200,
+                    "autoguardado" => false,
+                    "data" => $data
+                ], 200);
+            }
+
+            // 4. Si hay datos en Redis → fusionar Redis SOBRE MySQL
+            $data = array_merge($data, $temporal);
 
             return response()->json([
                 "status" => 200,
-                "data" => $blogHead
+                "autoguardado" => true,
+                "data" => $data
             ], 200);
 
-        }catch(\Exception $ex){
+        } catch (\Exception $ex) {
             return response()->json([
                 "status" => 500,
                 "message" => "Error interno del servidor",
                 "error" => $ex->getMessage()
-                ], 500);
+            ], 500);
         }
     }
+
 
     public function destroy($id)
     {
