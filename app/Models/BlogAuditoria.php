@@ -17,6 +17,7 @@ class BlogAuditoria extends Model
         'id_blog',
         'id_empleado',
         'accion',
+        'titulo',
         'descripcion',
         'fecha_hora'
     ];
