@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\BlogFooter;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 
 class BlogFooterController extends Controller
 {
@@ -123,6 +124,30 @@ class BlogFooterController extends Controller
                     "message" => "BlogFooter no encontrado"
                 ],404);
             }
+
+            // Convertir MySQL → array
+            $data = $blogFooter->toArray();
+
+            // Revisar si hay autoguardado en Redis
+            $redisKey = "blog:{$blogFooter->id_blog_footer}";
+            $temporal = Redis::get($redisKey);
+            $temporal = $temporal ? json_decode($temporal, true) : null;
+
+            // Si NO hay autoguardado en Redis → devolver datos normales
+            if (!$temporal) {
+                return response()->json([
+                    "status" => 200,
+                    "autoguardado" => false,
+                    "data" => $data
+                ], 200);
+            }
+
+            // Fusionar Redis sobre mysql
+            if (isset($temporal['blog_footers'])) {
+                $temporal = $temporal['blog_footers'];
+            }
+
+            $data = array_replace_recursive($data, $temporal);
 
             return response()->json([
                 "status" => 200,

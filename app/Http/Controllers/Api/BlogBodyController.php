@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\BlogBody;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 
 class BlogBodyController extends Controller
 {
@@ -131,6 +132,57 @@ class BlogBodyController extends Controller
                     "message" => "BlogBody no encontrada"
                 ],404);
             }
+
+            // Convertir MySQL → array
+            $data = $blogBody->toArray();
+
+            // Revisar si hay autoguardado en Redis
+            $redisKey = "blog:{$blogBody->id_blog_body}";
+            $temporal = Redis::get($redisKey);
+            $temporal = $temporal ? json_decode($temporal, true) : null;
+
+            // Si NO hay autoguardado en Redis → devolver datos normales
+            if (!$temporal) {
+                return response()->json([
+                    "status" => 200,
+                    "autoguardado" => false,
+                    "data" => $data
+                ], 200);
+            }
+
+            // Fusionar Redis sobre mysql
+            if (isset($temporal['blog_bodies'])) {
+                $temporal = $temporal['blog_bodies'];
+            }
+
+            // FUSION DE CADA PARTE
+            // blog_bodies
+            if (isset($temporal['blog_bodies'])) {
+                $data = array_replace_recursive($data, $temporal['blog_bodies']);
+            }
+
+            // commend_tarjeta (relación 1:1)
+            if (isset($temporal['commend_tarjeta'])) {
+                $data['commend_tarjeta'] = array_replace_recursive(
+                    $data['commend_tarjeta'],
+                    $temporal['commend_tarjeta']
+                );
+            }
+
+            // tarjetas (relación 1:N)
+            if (isset($temporal['tarjetas'])) {
+                foreach ($data['tarjetas'] as &$tarjeta) {
+                    $id = $tarjeta['id_tarjeta'];
+
+                    if (isset($temporal['tarjetas'][$id])) {
+                        $tarjeta = array_replace_recursive(
+                            $tarjeta,
+                            $temporal['tarjetas'][$id]
+                        );
+                    }
+                }
+            }
+
             return response()->json([
                 "status" => 200,
                 "data" => $blogBody

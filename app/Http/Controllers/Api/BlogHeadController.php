@@ -135,15 +135,15 @@ class BlogHeadController extends Controller
                 ], 404);
             }
 
-            // 1. Convertir MySQL → array
+            // Convertir MySQL → array
             $data = $blogHead->toArray();
 
-            // 2. Revisar si hay autoguardado en Redis
+            // Revisar si hay autoguardado en Redis
             $redisKey = "blog:{$blogHead->id_blog_head}";
             $temporal = Redis::get($redisKey);
             $temporal = $temporal ? json_decode($temporal, true) : null;
 
-            // 3. Si NO hay autoguardado en Redis → devolver datos normales
+            // Si NO hay autoguardado en Redis → devolver datos normales
             if (!$temporal) {
                 return response()->json([
                     "status" => 200,
@@ -152,8 +152,12 @@ class BlogHeadController extends Controller
                 ], 200);
             }
 
-            // 4. Si hay datos en Redis → fusionar Redis SOBRE MySQL
-            $data = array_merge($data, $temporal);
+            // Fusionar Redis sobre mysql
+            if (isset($temporal['blog_heads'])) {
+                $temporal = $temporal['blog_heads'];
+            }
+
+            $data = array_replace_recursive($data, $temporal);
 
             return response()->json([
                 "status" => 200,
