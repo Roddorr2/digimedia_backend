@@ -148,6 +148,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:editar-permisos')->put('/permisos/{id}', [PermisoController::class, "update"]);
     Route::middleware('permission:eliminar-permisos')->delete('/permisos/{id}', [PermisoController::class, "destroy"]);
 
+    // metricas
+    Route::middleware('permission:ver-blogs')->get('/metrics/cards_by_plantilla', [CardController::class, "listOfCardsByPlantilla"]);
+    Route::middleware('permission:ver-blogs')->get('/metrics/count_cards_by_plantilla', [CardController::class, "countListOfCardsByPlantilla"]);
+    Route::middleware('permission:ver-blogs')->get('/metrics/count_total_cards', [CardController::class, "tableCardsByIdPlantilla"]);
+    Route::middleware('permission:ver-blogs')->get('/metrics/list_empleado_cards', [CardController::class, "listEmpleadoWithCards"]);
+    Route::middleware('permission:ver-blogs')->get('/metrics/count_cards_by_empleado', [CardController::class, "countListOfCardsByEmpleado"]);
+
     // fixes
     // Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
 });

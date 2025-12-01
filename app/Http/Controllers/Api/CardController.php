@@ -6,6 +6,7 @@ use App\Models\Blog;
 use App\Models\Card;
 use App\Models\BlogBody;
 use App\Models\BlogHead;
+use App\Models\Empleado;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -469,4 +470,114 @@ class CardController extends Controller
             ], 500);
         }
     }
+    //nuevos features
+    public function listOfCardsByPlantilla(Request $request) {
+    try {
+        $plantillaFilter = $request->input('id_plantilla');
+        $cards = Card::all();
+        if ($plantillaFilter > 3 || $plantillaFilter < 1) {
+            return response()->json([
+                "message" => "Sin Blogs de esta plantilla"
+            ], 400);
+        }
+        $filteredCards = $cards->filter(function($card) use ($plantillaFilter) {
+            return $card->id_plantilla == $plantillaFilter;
+        });
+        if ($filteredCards->isEmpty()) {
+            return response()->json([
+                "message" => "No se encontraron blogs para esta plantilla"
+            ], 404);
+        }
+        return response()->json([
+            "status" => 200,
+            'data' => $filteredCards->values()
+        ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    public function countListOfCardsByPlantilla(Request $request) {
+    try {
+        $plantillaFilter = $request->input('id_plantilla');
+        $response = $this->listOfCardsByPlantilla($request);
+        if ($response->status() === 200) {
+            $countCards = count($response->original['data']);
+            return response()->json([
+                "status" => 200,
+                'count' => $countCards
+            ], 200);
+        } else {
+            return $response;
+        }
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    public function tableCardsByIdPlantilla() {
+        try {
+            $tableCards = [];
+            for ($i = 1; $i <= 3; $i++) {
+                $request = new Request(['id_plantilla' => $i]);
+                $cardsByPlantilla = $this->listOfCardsByPlantilla($request);
+                if ($cardsByPlantilla->status() === 200) {
+                    $countCards = count($cardsByPlantilla->original['data']);
+                } else {
+                    $countCards = 0;
+                }
+                $tableCards[] = [
+                    'id_plantilla' => $i,
+                    'count_cards' => $countCards
+                ];
+            }
+            return response()->json([
+                "status" => 200,
+                'data' => $tableCards
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    public function listEmpleadoWithCards(Request $request) {
+        try {
+            $id = $request->input('id_empleado');
+            $empleado = Empleado::find($id);
+            if ($empleado === null || ($empleado->id_rol != 1)) {
+                return response()->json([
+                    "status" => 404,
+                    "message" => "Empleado no encontrado o no tiene el rol adecuado"
+                ], 404);
+            }
+            $cards = Card::where('id_empleado', $id)->get();
+            if ($cards->isEmpty()) {
+                return response()->json([
+                    "status" => 404,
+                    "message" => "No se encontraron blogs/cards para este empleado"
+                ], 404);
+            }
+            return response()->json([
+                "status" => 200,
+                'data' => $cards
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    public function countListOfCardsByEmpleado(Request $request) {
+        try {
+            $id = $request->input('id_empleado');
+            $response = $this->listEmpleadoWithCards($request);
+            if ($response->status() === 200) {
+                $countCards = count($response->original['data']);
+                return response()->json([
+                    "status" => 200,
+                    'count' => $countCards
+                ], 200);
+            } else {
+                return $response;
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    //nuevos features
 }
