@@ -88,20 +88,14 @@
             background-color: #8a2be2;
             color: #fefefe;
             text-decoration: none;
-            padding: 14px 30px;
+            padding: 22px 50px;
             border-radius: 30px;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 20px;
             transition: background-color 0.3s;
         }
         .cta-button:hover {
             background-color: #7825c1;
-        }
-        .extra-message {
-            margin-bottom: 30px;
-            color: #444;
-            font-size: 16px;
-            line-height: 1.7;
         }
         .footer {
             background-color: #f9f9f9;
@@ -141,12 +135,9 @@
 <body>
     <div class="container">
         <div class="header">
-            @if($id_service == 1 && isset($head_title))
-                <h1 class="header-title">{!! $head_title !!}</h1>
-            @else
-             <h1 class="header-title">DigiMedia Marketing</h1>
+            @if(isset($title))
+            <h1 class="header-title">{!! $title !!}</h1>
             @endif
-            
         </div>
 
         <div class="content">
@@ -154,41 +145,21 @@
             <img src="{{ $image }}" alt="DigiMedia Marketing" class="featured-image">
             @endif
 
-            @if(isset($title) && $id_service != 1)
-            <h2 class="message-title">{!! $title !!}</h2>
-            @endif
-
             @if(isset($send_message))
             <div class="message-content">
+                <p>¡Hola {{ $data["nombre"] }}! 👋🏼</p>
                 {!! $send_message !!}
             </div>
             @endif
 
-            @if($id_service == 1)
             <div class="cta-container">
-                <a href="https://wa.me/51983027828?text=Hola%2C%20me%20gustar%C3%ADa%20obtener%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20servicios." 
-                    class="cta-button" style="color:white;">¡EMPIEZA AHORA!</a>
+                <a href="https://wa.me/51983027828?text=Hola%2C%20me%20gustar%C3%ADa%20obtener%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20servicios."
+                    class="cta-button" style="color:white;">ASESORIA GRATUITA!</a>
             </div>
 
-                @if(isset($extra_message))
-                <div class="extra-message">
-                    {!! $extra_message !!}
-                </div>
-                @endif
-
-            @else
-            <div class="user-info">
-                <h3 class="user-info-title">Información del Cliente</h3>
-                <p class="user-detail"><span class="user-label">Nombre:</span> {{ $data["nombre"] ?? 'No proporcionado' }}</p>
-                <p class="user-detail"><span class="user-label">Teléfono:</span> {{ $data["telefono"] ?? 'No proporcionado' }}</p>
-                <p class="user-detail"><span class="user-label">Email:</span> {{ $data["correo"] ?? 'No proporcionado' }}</p>
+            <div class="extra-message">
+                <p><strong>Saludos,</strong><br>Equipo Digimedia</p>
             </div>
-
-            <div class="cta-container">
-                <a href="https://digimedia-marketing.com/" class="cta-button" style="color:white;">Visitar Nuestro Sitio</a>
-            </div>
-            @endif
-
         </div>
 
         <div class="footer">
