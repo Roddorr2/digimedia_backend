@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Blog;
 use App\Models\Card;
+use App\Models\BlogAuditoria;
 use App\Models\BlogBody;
 use App\Models\BlogHead;
 use App\Models\Empleado;
@@ -579,5 +580,68 @@ class CardController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+    //Frecuencia de publicacion de cards por empleado
+    public function frecuenciaPublicacionCardsPorEmpleado(Request $request) {
+        try {
+            $id = $request->input('id_empleado');
+            $empleado = Empleado::find($id);
+            if ($empleado === null || ($empleado->id_rol != 1))
+            {
+                return response()->json([
+                    "status" => 404,
+                    "message" => "Empleado no encontrado o no tiene el rol adecuado"
+                ], 404);
+            }
+            $totalCards = BlogAuditoria::where('id_empleado', $id)->count();
+            if ($totalCards === 0) {
+                return response()->json([
+                    "status" => 404,
+                    "message" => "No se encontraron blogs/cards para este empleado"
+                ], 404);
+            }
+            $primerCard = BlogAuditoria::where('id_empleado', $id)->orderBy('fecha_hora', 'asc')->first();
+            $fechaPrimerCard = Carbon::parse($primerCard->fecha_hora);
+            $fechaActual = Carbon::now();
+            $diasTranscurridos = $fechaPrimerCard->diffInDays($fechaActual);
+            $frecuencia = $diasTranscurridos > 0 ? $totalCards / $diasTranscurridos : $totalCards;
+            return response()->json([
+                "status" => 200,
+                'data' => [
+                    'total_cards' => $totalCards,
+                    'dias_transcurridos' => $diasTranscurridos,
+                    'frecuencia_publicacion_por_dia' => round($frecuencia, 2)
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    //Tiempo de creacion, edicion y publicacion de una card
+    public function tiempoCreacionEdicionPublicacionCard(Request $request, $id) {
+        try {
+            $card = Card::find($id);
+            if (!$card) {
+                return response()->json([
+                    "status" => 404,
+                    "message" => "Card no encontrada"
+                ], 404);
+            }
+            $fechaCreacion = Carbon::parse($card->created_at);
+            $fechaActual = Carbon::now();
+            $tiempoDesdeCreacion = $fechaCreacion->diffForHumans($fechaActual, [
+                'parts' => 3,
+                'join' => true,
+                'short' => true,
+            ]);
+            return response()->json([
+                "status" => 200,
+                'data' => [
+                    'tiempo_desde_creacion' => $tiempoDesdeCreacion
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }   
     //nuevos features
 }
