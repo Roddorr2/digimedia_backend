@@ -164,16 +164,16 @@
 
         <div class="footer">
             <div class="social-links">
-                <a href="#" class="social-link">
+                <a href="https://www.facebook.com/DigiMedia.Marketing1" class="social-link">
                     <img src="https://cdn-icons-png.flaticon.com/512/733/733547.png" alt="Facebook">
                 </a>
-                <a href="#" class="social-link">
-                    <img src="https://cdn-icons-png.flaticon.com/512/733/733579.png" alt="Twitter">
+                <a href="https://www.tiktok.com/@digimediamkt" class="social-link">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3046/3046121.png" alt="TikTok">
                 </a>
-                <a href="#" class="social-link">
+                <a href="https://www.instagram.com/digimediamkt/" class="social-link">
                     <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram">
                 </a>
-                <a href="#" class="social-link">
+                <a href="https://www.linkedin.com/company/digimedia-mkt/" class="social-link">
                     <img src="https://cdn-icons-png.flaticon.com/512/3536/3536505.png" alt="LinkedIn">
                 </a>
             </div>
