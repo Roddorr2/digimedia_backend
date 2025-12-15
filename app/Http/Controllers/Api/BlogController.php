@@ -62,10 +62,8 @@ class BlogController extends Controller
                 $blog->id_blog,
                 $id_empleado,
                 'CREAR',
-                (BlogHead::findOrFail($request->id_blog_head))->titulo, 
+                (BlogHead::findOrFail($request->id_blog_head))->titulo,
             );
-
-            
 
             return response()->json([
                 "status" => 200,
@@ -132,7 +130,7 @@ class BlogController extends Controller
                 $blog->id_blog,
                 $request->id_empleado,
                 'ACTUALIZAR',
-                (\App\Models\BlogHead::findOrFail($request->id_blog_head))->titulo, 
+                (\App\Models\BlogHead::findOrFail($request->id_blog_head))->titulo,
                 $descripcion,
             );
 
@@ -201,14 +199,14 @@ class BlogController extends Controller
 
             $blog = Blog::with(['card', 'head'])->find($id);
             $id_empleado = $blog->card->id_empleado ?? null;
-            
+
             if (!$blog){
                 return response()->json([
                     'status'=> 404,
                     'message'=> 'Blog no encontrado'
                 ], 404);
             }
-            
+
             $id_header_blog = $blog->id_blog_head;
 
             $id_body_blog = $blog->id_blog_body;
