@@ -159,8 +159,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:ver-blogs')->get('/metrics/list_empleado_cards', [MetricasController::class, "listEmpleadoWithCards"]);//3.1 Lista de empleados con cantidad de cards creadas
     Route::middleware('permission:ver-blogs')->get('/metrics/count_cards_by_empleado', [MetricasController::class, "countListOfCardsByEmpleado"]);//3.2 Cantidad de cards creadas por empleado
     Route::middleware('permission:ver-blogs')->get('/metrics/count_total_cards_by_empleado', [MetricasController::class, "tableCardsByEmpleado"]);//3.3 Top 5 empleados con más cards creadas
-    Route::middleware('permission:ver-blogs')->get('/metrics/frecuencia_publicacion_cards_todos_empleados', [MetricasController::class, "frecuenciaPublicacionCardsTodosEmpleados"]);//3.4 Frecuencia de publicación de cards por empleado
-    Route::middleware('permission:ver-blogs')->get('/metrics/tiempo_creacion_edicion_publicacion_card', [MetricasController::class, "tiempoCreacionEdicionPublicacionCard"]);//3.5 Tiempo promedio de creación, edición y publicación de una card por empleado
+    Route::middleware('permission:ver-blogs')->get('/metrics/frecuencia_publicacion_cards_todos_empleados', [MetricasController::class, "frecuenciaPublicacionCardsTodosEmpleados"]);//4.1 Frecuencia de publicación de cards por empleado
+    Route::middleware('permission:ver-blogs')->get('/metrics/tiempo_creacion_edicion_publicacion_card', [MetricasController::class, "tiempoCreacionEdicionPublicacionCard"]);//4.2 Tiempo promedio de creación, edición y publicación de una card por empleado
+    /*
+    // metricas con filtro y sin filtro
+    Route::middleware('permission:ver-blogs')->get('/metrics/resumenMensualAcciones', [MetricasController::class, "resumenMensualAcciones"]);//4.1 Cantidad total de cards creadas por un empleado específico
+    Route::middleware('permission:ver-blogs')->get('/metrics/resumenMensualPorEmpleado', [MetricasController::class, "resumenMensualPorEmpleado"]);//4.2 Resumen mensual de acciones (creación, edición, publicación) por empleado
+    Route::middleware('permission:ver-blogs')->get('/metrics/resumenMensualPorPlantilla', [MetricasController::class, "resumenMensualPorPlantilla"]);//4.3 Tiempo promedio de creación, edición y publicación de cards por empleado específico
+    Route::middleware('permission:ver-blogs')->get('/metrics/serie12MesesPorAccion', [MetricasController::class, "serie12MesesPorAccion"]);//4.4 Actividad diaria de un empleado específico
+    Route::middleware('permission:ver-blogs')->get('/metrics/topEmpleadosActividad12Meses', [MetricasController::class, "topEmpleadosActividad12Meses"]);//4.5 Serie de 12 meses de creación, edición y publicación de cards por plantilla específica
+    Route::middleware('permission:ver-blogs')->get('/metrics/distribucionPorPlantilla', [MetricasController::class, "distribucionPorPlantilla"]);//4.6 Top 5 empleados con más actividad en los últimos 12 meses
+    Route::middleware('permission:ver-blogs')->get('/metrics/promedioTiempoEdicion12Meses', [MetricasController::class, "promedioTiempoEdicion12Meses"]);//4.7 Distribución de cards creadas por plantilla para un empleado específico
+    */
     // fixes
     // Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
 });
