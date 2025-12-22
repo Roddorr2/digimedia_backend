@@ -19,6 +19,7 @@ class BlogAuditoriaController extends Controller
                 'blog.card:id_card,titulo,descripcion,public_image,url_image,id_blog', //card asociada al blog
             ])
                 ->orderBy('fecha_hora', 'desc')
+                ->paginate(20)
                 ->get();
 
             if ($auditorias->isEmpty()) {
