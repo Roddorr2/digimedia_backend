@@ -15,6 +15,10 @@ class SendWhatsAppJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $watModal;
+    public $data;
+    public $id_servicio;
+
     public function __construct(WatModal $watModal, array $data, int $id_servicio)
     {
         $this->watModal = $watModal;
@@ -30,12 +34,29 @@ class SendWhatsAppJob implements ShouldQueue
                 return;
             }
 
+            Log::info('Enviando WhatsApp', [
+                'url' => config('services.whatsapp.url') . '/api/send-message',
+                'payload' => [
+                    'telefono' => '51' . $this->data['telefono'],
+                    'nombre' => $this->data['nombre'],
+                    'templateOption' => (int) $this->watModal->number_message,
+                    'id_servicio' => (int) $this->id_servicio,
+                ]
+            ]);
+
+
             $response = Http::post(config('services.whatsapp.url') . '/api/send-message', [
                 'telefono' => '51' . $this->data['telefono'],
                 'nombre' => $this->data['nombre'],
                 'templateOption' => (int) $this->watModal->number_message,
-                'id_servicio' => $this->productoName,
+                'id_servicio' => (int) $this->id_servicio,
             ]);
+
+            Log::info('Respuesta WhatsApp', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
 
             if ($response->failed()) {
                 throw new \Exception($response->body());

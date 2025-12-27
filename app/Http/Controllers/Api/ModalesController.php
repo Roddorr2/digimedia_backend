@@ -9,6 +9,8 @@ use App\Models\modalservicios;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendCustomEmailJob;
+use App\Jobs\SendWhatsAppJob;
+
 class ModalesController extends Controller
 {
     public function get(Request $request)
