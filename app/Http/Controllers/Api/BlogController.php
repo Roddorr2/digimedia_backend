@@ -20,6 +20,18 @@ class BlogController extends Controller
         $blogs = Blog::with('card')->get();
         return response()->json($blogs, 200);
     }
+    
+    //nuevos features
+    public function blogByMonthYear($request)
+    {
+        $blogs = Blog::with(['card', 'body', 'head']);
+        if ($request->has('month') && $request->input('month')!=''){
+            $month = $request->input('month');
+            $blogs->array_filter('fecha', $month);
+        }
+        return response()->json($blogs->get(), 200);
+    }
+    //nuevos features
 
     public function create(Request $request)
     {
