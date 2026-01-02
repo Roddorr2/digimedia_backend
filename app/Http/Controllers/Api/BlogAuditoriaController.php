@@ -19,10 +19,9 @@ class BlogAuditoriaController extends Controller
                 'blog.card:id_card,titulo,descripcion,public_image,url_image,id_blog', //card asociada al blog
             ])
                 ->orderBy('fecha_hora', 'desc')
-                ->paginate(20)
-                ->get();
+                ->paginate(20);
 
-            if ($auditorias->isEmpty()) {
+            if ($auditorias->count() === 0) {
                 return response()->json([
                     'status' => 404,
                     'message' => 'No se encontraron registros de auditoría para este blog'
