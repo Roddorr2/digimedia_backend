@@ -92,13 +92,13 @@ class ModalesController extends Controller
                 //AQUI SE ENVÍA EL PRIMER CORREO (inmediato)
                 dispatch(new SendCustomEmailJob($request->correo, $data, $request->id_servicio,1));
 
-                //AQUI SE ENVÍA EL SEGUNDO CORREO (+2 días después)
+                //AQUI SE ENVÍA EL SEGUNDO CORREO (+30 minutos después)
                 dispatch(new SendCustomEmailJob($request->correo, $data, $request->id_servicio,2))
-                        ->delay(now()->addDays(2));
+                        ->delay(now()->addMinutes(30));
 
-                //AQUI SE ENVÍA EL TERCER CORREO (+4 días después)
+                //AQUI SE ENVÍA EL TERCER CORREO (+3 horas después)
                 dispatch(new SendCustomEmailJob($request->correo, $data, $request->id_servicio,3))
-                        ->delay(now()->addDays(4));
+                        ->delay(now()->addHours(3));
 
                 // ------- AQUI SE ENVIAN MENSAJES WHATSAPP -------
                 $wat1 = WatModal::where('id_modalservicio', $modal_servicio->id_modalservicio)
@@ -112,14 +112,14 @@ class ModalesController extends Controller
                     ->first();
 
                 dispatch(new SendWhatsAppJob($wat2, $data, $request->id_servicio))
-                    ->delay(now()->addDays(2));
+                    ->delay(now()->addMinutes(30));
 
                 $wat3 = WatModal::where('id_modalservicio', $modal_servicio->id_modalservicio)
                     ->where('number_message', 3)
                     ->first();
 
                 dispatch(new SendWhatsAppJob($wat3, $data, $request->id_servicio))
-                    ->delay(now()->addDays(4));
+                    ->delay(now()->addHours(3));
 
 
                 if (isset($first_email_modal)) {
