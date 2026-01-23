@@ -27,27 +27,27 @@ class MailService extends Mailable
         $images = [
             // Desarrollo y Diseño
             [
-                url('assets/images/desarrollo-diseño/flyer-modal-1-1.jpg'),
-                url('assets/images/desarrollo-diseño/flyer-modal-1-2.jpg'),
-                url('assets/images/desarrollo-diseño/flyer-modal-1-3.jpg')
+                url('assets/images/desarrollo-diseño/flyer-modal-1-1-v2.jpg'),
+                url('assets/images/desarrollo-diseño/flyer-modal-1-2-v2.jpg'),
+                url('assets/images/desarrollo-diseño/flyer-modal-1-3-v2.jpg')
             ],
             // Gestión de Redes Sociales
             [
-                url('assets/images/gestion-redes/flyer-modal-2-1.jpg'),
-                url('assets/images/gestion-redes/flyer-modal-2-2.jpg'),
-                url('assets/images/gestion-redes/flyer-modal-2-3.jpg')
+                url('assets/images/gestion-redes/flyer-modal-2-1-v2.jpg'),
+                url('assets/images/gestion-redes/flyer-modal-2-2-v2.jpg'),
+                url('assets/images/gestion-redes/flyer-modal-2-3-v2.jpg')
             ],
             // Marketing y Gestión Digital
             [
-                url('assets/images/marketing-gestion/flyer-modal-3-1.jpg'),
-                url('assets/images/marketing-gestion/flyer-modal-3-2.jpg'),
-                url('assets/images/marketing-gestion/flyer-modal-3-3.jpg')
+                url('assets/images/marketing-gestion/flyer-modal-3-1-v2.jpg'),
+                url('assets/images/marketing-gestion/flyer-modal-3-2-v2.jpg'),
+                url('assets/images/marketing-gestion/flyer-modal-3-3-v2.jpg')
             ],
             // Branding y Diseño
             [
-                url('assets/images/branding-diseño/flyer-modal-4-1.jpg'),
-                url('assets/images/branding-diseño/flyer-modal-4-2.jpg'),
-                url('assets/images/branding-diseño/flyer-modal-4-3.jpg')
+                url('assets/images/branding-diseño/flyer-modal-4-1-v2.jpg'),
+                url('assets/images/branding-diseño/flyer-modal-4-2-v2.jpg'),
+                url('assets/images/branding-diseño/flyer-modal-4-3-v2.jpg')
             ]
         ];
 
