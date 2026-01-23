@@ -154,11 +154,11 @@
 
             <div class="cta-container">
                 <a href="https://wa.me/51983027828?text=Hola%2C%20me%20gustar%C3%ADa%20obtener%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20servicios."
-                    class="cta-button" style="color:white;">ASESORIA GRATUITA!</a>
+                    class="cta-button" style="color:white;">¡CONTÁCTANOS!</a>
             </div>
 
             <div class="extra-message">
-                <p><strong>Saludos,</strong><br>Equipo Digimedia</p>
+                <p>Quedamos atentos a tu mensaje.<br><strong>Saludos,</strong><br>Equipo Digimedia</p>
             </div>
         </div>
 
