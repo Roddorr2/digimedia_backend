@@ -11,11 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('servicios', function (Blueprint $table) {
-            $table->id('id_servicio');
-            $table->string('nombre', 30)->nullable();
-            $table->string('descripcion', length: 1000)->nullable();
-        });
+        // Índices para modalservicios ya están en su migración
+        // Índices para modal_emails ya están en su migración
+        // Índices para modal_wats ya están en su migración
     }
 
     /**
@@ -23,6 +21,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('servicios');
+        // No hay nada que revertir
     }
 };
