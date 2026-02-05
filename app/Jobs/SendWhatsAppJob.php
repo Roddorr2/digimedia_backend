@@ -34,8 +34,10 @@ class SendWhatsAppJob implements ShouldQueue
                 return;
             }
 
+            $endpoint = rtrim(config('services.whatsapp.url'), '/') . '/api/whatsapp/send-message';
+
             Log::info('Enviando WhatsApp', [
-                'url' => config('services.whatsapp.url') . '/api/send-message',
+                'url' => $endpoint,
                 'payload' => [
                     'telefono' => '51' . $this->data['telefono'],
                     'nombre' => $this->data['nombre'],
@@ -45,7 +47,7 @@ class SendWhatsAppJob implements ShouldQueue
             ]);
 
 
-            $response = Http::post(config('services.whatsapp.url') . '/api/send-message', [
+            $response = Http::post($endpoint, [
                 'telefono' => '51' . $this->data['telefono'],
                 'nombre' => $this->data['nombre'],
                 'templateOption' => (int) $this->watModal->number_message,
