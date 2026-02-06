@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             BlogBodySeeder::class,
             TarjetaSeeder::class,
             BlogSeeder::class,
+            BlogAuditoriaSeeder::class,
             ServicioSeeder::class,
             ContactanosSeeder::class,
             ReclamacionSeeder::class,
