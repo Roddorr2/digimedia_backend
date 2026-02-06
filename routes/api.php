@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\CommendTarjetaController;
 use App\Http\Controllers\ImagePathController;
 use App\Http\Controllers\Api\BlogAuditoriaController;
 use App\Http\Controllers\Api\MetricasController;
+use App\Http\Controllers\Api\WhatsAppCampaignController;
 
 // public routes test
 Route::post('/register', [AuthController::class, 'register']);
@@ -161,6 +162,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:ver-blogs')->get('/metrics/count_total_cards_by_empleado', [MetricasController::class, "tableCardsByEmpleado"]);//3.3 Top 5 empleados con más cards creadas
     Route::middleware('permission:ver-blogs')->get('/metrics/frecuencia_publicacion_cards_todos_empleados', [MetricasController::class, "frecuenciaPublicacionCardsTodosEmpleados"]);//4.1 Frecuencia de publicación de cards por empleado
     Route::middleware('permission:ver-blogs')->get('/metrics/tiempo_creacion_edicion_publicacion_card', [MetricasController::class, "tiempoCreacionEdicionPublicacionCard"]);//4.2 Tiempo promedio de creación, edición y publicación de una card por empleado
+    
+    // Campañas de WhatsApp
+    Route::middleware('permission:enviar-mensajes')->post('/whatsapp/campaign/activate', [WhatsAppCampaignController::class, 'activateCampaign']);
+    Route::middleware('permission:ver-modales')->get('/whatsapp/campaign/{id}/status', [WhatsAppCampaignController::class, 'getCampaignStatus']);
+    Route::middleware('permission:ver-modales')->get('/whatsapp/campaigns', [WhatsAppCampaignController::class, 'listCampaigns']);
+    
     // fixes
     // Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
 });
