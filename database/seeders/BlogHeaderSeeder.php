@@ -22,6 +22,11 @@ class BlogHeaderSeeder extends Seeder
             ],
         ];
 
-        DB::table('blog_heads')->insert($blog_heads);
+        foreach ($blog_heads as $head) {
+            DB::table('blog_heads')->updateOrInsert(
+                ['titulo' => $head['titulo']],
+                $head
+            );
+        }
     }
 }

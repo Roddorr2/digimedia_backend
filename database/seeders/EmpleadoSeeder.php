@@ -85,6 +85,12 @@ class EmpleadoSeeder extends Seeder
                 'id_subtipo_admin' => 3
             ],
         ];
-        DB::table('empleados')->insert($empleados);
+        
+        foreach ($empleados as $empleado) {
+            DB::table('empleados')->updateOrInsert(
+                ['email' => $empleado['email']],
+                $empleado
+            );
+        }
     }
 }

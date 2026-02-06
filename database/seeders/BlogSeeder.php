@@ -22,6 +22,12 @@ class BlogSeeder extends Seeder
             ],
         ];
 
-        DB::table('blogs')->insert($blogs);
+        foreach ($blogs as $blog) {
+            DB::table('blogs')->updateOrInsert(
+                ['link' => $blog['link']],
+                $blog
+            );
+        }
+
     }
 }

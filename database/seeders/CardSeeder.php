@@ -22,6 +22,15 @@ class CardSeeder extends Seeder
             ],
         ];
 
-        DB::table('cards')->insert($cards);
+        DB::table('cards')->updateOrInsert(
+            ['id_blog' => 1],
+            [
+                'titulo' => 'Tu Bar, en la Mira',
+                'descripcion' => 'Haz que el nombre de tu bar destaque con letras neón LED. Crea un ambiente único que atraiga miradas y clientes. ¡Ilumina tu identidad! 🍹🔆',
+                'public_image' => '/blog/fondo_blog_extend.webp',
+                'id_plantilla' => 3,
+                'id_empleado' => 2,
+            ]
+        );
     }
 }

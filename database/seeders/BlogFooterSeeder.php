@@ -23,6 +23,12 @@ class BlogFooterSeeder extends Seeder
             ],
         ];
 
-        DB::table('blog_footers')->insert($blog_footers);
+        foreach ($blog_footers as $footer) {
+            DB::table('blog_footers')->updateOrInsert(
+                ['titulo' => $footer['titulo']],
+                $footer
+            );
+        
+        }
     }
 }
