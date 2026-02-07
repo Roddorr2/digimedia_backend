@@ -75,6 +75,12 @@ class ReclamacionSeeder extends Seeder
             ],
         ];
 
-        DB::table('reclamaciones')->insert($reclamaciones);
+        foreach ($reclamaciones as $reclamacion) {
+            DB::table('reclamaciones')->updateOrInsert(
+                ['id_servicio' => $reclamacion['id_servicio']],
+                $reclamacion
+            );
+        }
+
     }
 }

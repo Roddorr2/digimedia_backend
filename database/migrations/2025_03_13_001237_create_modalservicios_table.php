@@ -19,6 +19,11 @@ return new class extends Migration
             $table->foreignId('id_servicio')->references('id_servicio')->on('servicios')->onDelete('cascade');
             $table->boolean('estado')->nullable()->default(1);
             $table->timestamp('fecha')->useCurrent();
+            
+            // Índices para optimizar búsquedas
+            $table->index('estado');
+            $table->index('id_servicio');
+            $table->index(['estado', 'fecha']);
         });
     }
 

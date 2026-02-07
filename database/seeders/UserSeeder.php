@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
+use App\Models\User;
 
 class UserSeeder extends Seeder
 {
@@ -52,6 +52,11 @@ class UserSeeder extends Seeder
 
         ];
 
-        DB::table('users')->insert($users);
+        foreach ($users as $user) {
+            User::firstOrCreate(
+                ['email' => $user['email']],
+                $user
+            );
+        }
     }
 }
