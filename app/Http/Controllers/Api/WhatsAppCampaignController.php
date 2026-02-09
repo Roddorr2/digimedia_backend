@@ -212,15 +212,12 @@ class WhatsAppCampaignController extends Controller
     private function uploadImageToCloudinary($image)
     {
         try {
-            $uploadedFile = Cloudinary::upload($image->getRealPath(), [
-                'folder' => 'campanias_whatsapp',
-                'transformation' => [
-                    'quality' => 'auto',
-                    'fetch_format' => 'auto'
-                ]
+            $result = Cloudinary::uploadApi()->upload($image->getRealPath(), [
+                'folder' => 'campanias_whatsapp'
             ]);
-
-            return $uploadedFile->getSecurePath();
+            
+            return $result['secure_url'];
+            
         } catch (\Exception $e) {
             Log::error('Error al subir imagen a Cloudinary', [
                 'error' => $e->getMessage()
