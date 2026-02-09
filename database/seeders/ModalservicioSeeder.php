@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use App\Models\modalservicios;
 
 class ModalservicioSeeder extends Seeder
 {
@@ -41,5 +42,7 @@ class ModalservicioSeeder extends Seeder
         ];
 
         DB::table('modalservicios')->insert($modalServicios);
+        modalservicios::factory()->count(150)->create();
+
     }
 }

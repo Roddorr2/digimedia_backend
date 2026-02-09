@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             CardSeeder::class,
             MailModalSeeder::class,
             WatModalSeeder::class,
+            CampaniaWhatsAppSeeder::class,
             PermisosSeeder::class
         ]);
     }
