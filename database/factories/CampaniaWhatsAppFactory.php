@@ -21,37 +21,46 @@ class CampaniaWhatsAppFactory extends Factory
             'id_servicio' => fake()->numberBetween(1, 4),
             'parrafo' => fake()->paragraph(),
             'imagen_url' => fake()->imageUrl(),
-            'estado' => $estado = fake()->randomElement(['pendiente', 'en_proceso', 'completada', 'cancelada', 'error']),
-            'total_destinatarios' => $total = fake()->numberBetween(10, 100),
+            'estado' => fake()->randomElement(['pendiente', 'en_proceso', 'completada', 'error']),
+            'total_destinatarios' => fake()->numberBetween(10, 100),
             'fecha_inicio' => fake()->dateTimeBetween('-1 month', 'now'),
-            'fecha_fin' => fake()->optional()->dateTimeBetween('now', '+1 month'),
+            'fecha_fin' => null,
         ];
     }
 
-    /**
-     * Configure the model factory.
-     */
     public function configure(): static
     {
         return $this->afterMaking(function (CampaniaWhatsApp $campania) {
             $total = $campania->total_destinatarios;
+            $estado = $campania->estado;
 
-            if ($campania->estado === 'pendiente') {
-                $campania->envios_pendientes = $total;
-                $campania->envios_exitosos = 0;
-                $campania->envios_fallidos = 0;
-            } elseif ($campania->estado === 'completada') {
-                $exitosos = fake()->numberBetween(0, $total);
-                $campania->envios_exitosos = $exitosos;
-                $campania->envios_fallidos = $total - $exitosos;
-                $campania->envios_pendientes = 0;
-            } else {  // en_proceso o cancelada o error
-                $procesados = fake()->numberBetween(0, $total - 1); 
+            if ($estado === 'pendiente') {
+                [$exitosos, $fallidos, $pendientes, $fechaFin] = [0, 0, $total, null];
+            } elseif ($estado === 'en_proceso') {
+                $procesados = fake()->numberBetween(1, $total - 1);
                 $exitosos = fake()->numberBetween(0, $procesados);
-                $campania->envios_exitosos = $exitosos;
-                $campania->envios_fallidos = $procesados - $exitosos;
-                $campania->envios_pendientes = $total - $procesados;
+                [$fallidos, $pendientes, $fechaFin] = [$procesados - $exitosos, $total - $procesados, null];
+            } elseif ($estado === 'completada') {
+                $exitosos = fake()->numberBetween(0, $total);
+                [$fallidos, $pendientes] = [$total - $exitosos, 0];
+                $fechaFin = $this->generarFechaFin($campania->fecha_inicio, '+2 hours');
+            } else {
+                $maxProcesados = fake()->boolean(80) ? (int)($total * 0.3) : $total - 1;
+                $procesados = fake()->numberBetween(0, max(1, $maxProcesados));
+                $exitosos = fake()->numberBetween(0, $procesados);
+                [$fallidos, $pendientes] = [$procesados - $exitosos, $total - $procesados];
+                $fechaFin = $this->generarFechaFin($campania->fecha_inicio, '+1 hour');
             }
+
+            $campania->envios_exitosos = $exitosos;
+            $campania->envios_fallidos = $fallidos;
+            $campania->envios_pendientes = $pendientes;
+            $campania->fecha_fin = $fechaFin;
         });
+    }
+
+    private function generarFechaFin($fechaInicio, $offset)
+    {
+        return fake()->dateTimeBetween($fechaInicio, $fechaInicio->format('Y-m-d H:i:s') . ' ' . $offset);
     }
 }
