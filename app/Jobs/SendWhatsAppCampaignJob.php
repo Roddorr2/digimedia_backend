@@ -125,7 +125,7 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
                 ])
-                ->post(config('services.whatsapp.url') . '/api/send-campaign-batch', $payload);
+                ->post(config('services.whatsapp.url') . '/api/whatsapp/send-campaign-batch', $payload);
 
             if ($response->successful()) {
                 $result = $response->json();
