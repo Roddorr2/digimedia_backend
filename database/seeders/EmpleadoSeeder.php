@@ -20,6 +20,15 @@ class EmpleadoSeeder extends Seeder
     {
         $empleados = [
             [
+                'nombre' => 'Staging',
+                'apellido' => 'Prueba',
+                'email' => 'staging_pruebas@digimedia-marketing.com',
+                'dni' => '76859618',
+                'telefono' => '999656223',
+                'id_rol' => 'administrador',
+                'id_subtipo_admin' => 1
+            ],
+            [
                 'nombre' => 'Kevin Esteeven',
                 'apellido' => 'Parimango Gomez',
                 'email' => 'keving.kpg@gmail.com',
