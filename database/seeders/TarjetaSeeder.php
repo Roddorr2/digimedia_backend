@@ -4,7 +4,8 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\Tarjeta;
+use App\Models\BlogBody;
 
 class TarjetaSeeder extends Seeder
 {
@@ -35,6 +36,16 @@ class TarjetaSeeder extends Seeder
                 'id_blog_body' => 1,
             ],
         ];
-        DB::table('tarjetas')->insert($tarjetas);
+        $blogBody = BlogBody::where('titulo', 'Tu Bar, en la Mira')->first();
+
+        foreach ($tarjetas as $t) {
+            Tarjeta::updateOrCreate(
+                ['titulo' => $t['titulo']],
+                [
+                    'descripcion' => $t['descripcion'],
+                    'id_blog_body' => $blogBody ? $blogBody->id_blog_body : null,
+                ]
+            );
+        }
     }
 }

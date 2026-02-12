@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\servicios;
 
 class ServicioSeeder extends Seeder
 {
@@ -20,6 +20,11 @@ class ServicioSeeder extends Seeder
             ['nombre' => 'Branding y Diseño', 'descripcion' => 'Creamos marcas que hablan, emocionan y conectan. Desde una identidad visual memorable hasta mensajes que resuenan profundamente, hacemos que tu empresa sea tan única como inolvidable.'],
         ];
 
-        DB::table('servicios')->insert($servicios);
+        foreach ($servicios as $serv) {
+            servicios::updateOrCreate(
+                ['nombre' => $serv['nombre']],
+                ['descripcion' => $serv['descripcion']]
+            );
+        }
     }
 }

@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\BlogHead;
 
 class BlogHeaderSeeder extends Seeder
 {
@@ -22,6 +22,15 @@ class BlogHeaderSeeder extends Seeder
             ],
         ];
 
-        DB::table('blog_heads')->insert($blog_heads);
+        foreach ($blog_heads as $bh) {
+            BlogHead::updateOrCreate(
+                ['titulo' => $bh['titulo']],
+                [
+                    'texto_frase' => $bh['texto_frase'] ?? null,
+                    'texto_descripcion' => $bh['texto_descripcion'] ?? null,
+                    'public_image' => $bh['public_image'] ?? null,
+                ]
+            );
+        }
     }
 }

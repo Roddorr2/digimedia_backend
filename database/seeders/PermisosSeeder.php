@@ -9,6 +9,9 @@ use Illuminate\Support\Str;
 
 class PermisosSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
         $permisos = [
@@ -28,11 +31,11 @@ class PermisosSeeder extends Seeder
             'Eliminar modales' => 'Permite eliminar modales',
             'Enviar mensajes' => 'Enviar modales de Emails y WhatsApp',
 
-            // Servicios (se puede descomentar en caso se implementen los servicios em el dashboard; las rutas ya están incluidas en el api.php)
+            // Servicios
             'Ver servicios' => 'Permite ver los servicios',
-            //'Crear servicios' => 'Permite crear nuevos servicios',
-            //'Editar servicios' => 'Permite editar servicios existentes',
-            //'Eliminar servicios' => 'Permite eliminar servicios existentes',
+            'Crear servicios' => 'Permite crear nuevos servicios',
+            'Editar servicios' => 'Permite editar servicios existentes',
+            'Eliminar servicios' => 'Permite eliminar servicios existentes',
 
             // Roles
             'Ver roles' => 'Permite ver la lista de roles',
@@ -62,18 +65,29 @@ class PermisosSeeder extends Seeder
             'Crear tarjetas' => 'Permite crear tarjetas',
             'Eliminar tarjetas' => 'Permite eliminar tarjetas',
 
+            // Generales
             'Permisos generales' => 'Permite acceder a los permisos básicos',
         ];
 
+        /**
+         * Crear o actualizar permisos
+         */
         foreach ($permisos as $nombre => $descripcion) {
             Permiso::updateOrCreate(
                 ['nombre' => $nombre],
-                ['slug' => Str::slug($nombre), 'descripcion' => $descripcion]
+                [
+                    'slug' => Str::slug($nombre),
+                    'descripcion' => $descripcion
+                ]
             );
         }
 
+        /**
+         * Asignación de permisos por rol
+         */
         $rolesPermisos = [
-            'administrador' => array_keys($permisos), // todos
+            'administrador' => array_keys($permisos), // Todos los permisos
+
             'ventas' => [
                 'Ver contactos',
                 'Editar contactos',
@@ -87,6 +101,7 @@ class PermisosSeeder extends Seeder
                 'Enviar mensajes',
                 'Permisos generales',
             ],
+
             'marketing' => [
                 'Ver contactos',
                 'Editar contactos',
@@ -100,20 +115,33 @@ class PermisosSeeder extends Seeder
                 'Enviar mensajes',
 
                 'Ver blogs',
+                'Crear blogs',
                 'Editar blogs',
                 'Eliminar blogs',
-                'Crear blogs',
+
                 'Crear tarjetas',
 
                 'Permisos generales',
             ],
         ];
 
+        /**
+         * Sincronizar permisos con roles
+         */
         foreach ($rolesPermisos as $nombreRol => $permisosAsignados) {
-            $rol = Rol::firstOrCreate(['nombre' => $nombreRol]);
 
-            $permisosIds = Permiso::whereIn('nombre', $permisosAsignados)->pluck('id_permiso')->toArray();
+            // Buscar rol existente por nombre. No crear roles aquí.
+            $rol = Rol::where('nombre', $nombreRol)->first();
+            if (!$rol) {
+                // Si el rol no existe, saltar asignación
+                continue;
+            }
 
+            $permisosIds = Permiso::whereIn('nombre', $permisosAsignados)
+                ->pluck('id_permiso')
+                ->toArray();
+
+            // Sincronizar permisos (idempotente)
             $rol->permisos()->sync($permisosIds);
         }
     }

@@ -4,7 +4,10 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\Blog;
+use App\Models\BlogHead;
+use App\Models\BlogBody;
+use App\Models\BlogFooter;
 
 class BlogSeeder extends Seeder
 {
@@ -15,13 +18,23 @@ class BlogSeeder extends Seeder
     {
         $blogs = [
             [
-                'id_blog_head' => 1,
-                'id_blog_body' => 1,
-                'id_blog_footer' => 1,
                 'link' => 'tu-bar-en-la-mira'
             ],
         ];
 
-        DB::table('blogs')->insert($blogs);
+        foreach ($blogs as $b) {
+            $head = BlogHead::where('titulo', 'Tu Bar, en la Mira')->first();
+            $body = BlogBody::where('titulo', 'Tu Bar, en la Mira')->first();
+            $footer = BlogFooter::where('titulo', 'Conclusion')->first();
+
+            Blog::updateOrCreate(
+                ['link' => $b['link']],
+                [
+                    'id_blog_head' => $head ? $head->id_blog_head : null,
+                    'id_blog_body' => $body ? $body->id_blog_body : null,
+                    'id_blog_footer' => $footer ? $footer->id_blog_footer : null,
+                ]
+            );
+        }
     }
 }

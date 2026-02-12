@@ -2,15 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\SubtipoAdmin;
 
 class SubtipoAdminSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $subtipos = [
@@ -19,6 +15,11 @@ class SubtipoAdminSeeder extends Seeder
             ['description' => 'comun', 'hierarchy' => 80],
         ];
 
-        DB::table('subtipo_admins')->insert($subtipos);
+        foreach ($subtipos as $subtipo) {
+            SubtipoAdmin::updateOrCreate(
+                ['description' => $subtipo['description']],
+                $subtipo
+            );
+        }
     }
 }

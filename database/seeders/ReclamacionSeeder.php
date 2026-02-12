@@ -4,8 +4,9 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\libroreclamacion;
+use App\Models\servicios;
 
 
 class ReclamacionSeeder extends Seeder
@@ -75,6 +76,37 @@ class ReclamacionSeeder extends Seeder
             ],
         ];
 
-        DB::table('reclamaciones')->insert($reclamaciones);
+        // Map fixture service ids to service names
+        $servicioMap = [
+            1 => 'Diseño Web y Desarrollo Web',
+            2 => 'Gestión de Redes Sociales',
+            3 => 'Marketing y Gestión Digital',
+        ];
+
+        foreach ($reclamaciones as $r) {
+            $servicioName = $servicioMap[$r['id_servicio']] ?? null;
+            $servicio = $servicioName ? servicios::where('nombre', $servicioName)->first() : null;
+
+            libroreclamacion::updateOrCreate(
+                ['email' => $r['email'], 'numeroDocumento' => $r['numeroDocumento']],
+                [
+                    'nombre' => $r['nombre'],
+                    'apellido' => $r['apellido'],
+                    'documento' => $r['documento'],
+                    'celular' => $r['celular'],
+                    'direccion' => $r['direccion'],
+                    'distrito' => $r['distrito'],
+                    'ciudad' => $r['ciudad'],
+                    'tipoReclamo' => $r['tipoReclamo'],
+                    'id_servicio' => $servicio ? $servicio->id_servicio : null,
+                    'reclamoPerson' => $r['reclamoPerson'],
+                    'checkReclamoForm' => $r['checkReclamoForm'],
+                    'aceptaPoliticaPrivacidad' => $r['aceptaPoliticaPrivacidad'],
+                    'fechaIncidente' => $r['fechaIncidente'],
+                    'fechaReclamo' => $r['fechaReclamo'],
+                    'estadoReclamo' => $r['estadoReclamo'],
+                ]
+            );
+        }
     }
 }

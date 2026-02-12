@@ -4,7 +4,8 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\modalservicios;
+use App\Models\servicios;
 
 class ModalservicioSeeder extends Seeder
 {
@@ -40,6 +41,26 @@ class ModalservicioSeeder extends Seeder
             ],
         ];
 
-        DB::table('modalservicios')->insert($modalServicios);
+        // Map fixture service ids to service names (order matches ServicioSeeder)
+        $servicioMap = [
+            1 => 'Diseño Web y Desarrollo Web',
+            2 => 'Gestión de Redes Sociales',
+            3 => 'Marketing y Gestión Digital',
+            4 => 'Branding y Diseño',
+        ];
+
+        foreach ($modalServicios as $modal) {
+            $servicioName = $servicioMap[$modal['id_servicio']] ?? null;
+            $servicio = $servicioName ? servicios::where('nombre', $servicioName)->first() : null;
+
+            modalservicios::updateOrCreate(
+                ['correo' => $modal['correo']],
+                [
+                    'nombre' => $modal['nombre'],
+                    'telefono' => $modal['telefono'],
+                    'id_servicio' => $servicio ? $servicio->id_servicio : null,
+                ]
+            );
+        }
     }
 }

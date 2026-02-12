@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\BlogFooter;
 
 class BlogFooterSeeder extends Seeder
 {
@@ -23,6 +23,16 @@ class BlogFooterSeeder extends Seeder
             ],
         ];
 
-        DB::table('blog_footers')->insert($blog_footers);
+        foreach ($blog_footers as $bf) {
+            BlogFooter::updateOrCreate(
+                ['titulo' => $bf['titulo']],
+                [
+                    'descripcion' => $bf['descripcion'] ?? null,
+                    'public_image1' => $bf['public_image1'] ?? null,
+                    'public_image2' => $bf['public_image2'] ?? null,
+                    'public_image3' => $bf['public_image3'] ?? null,
+                ]
+            );
+        }
     }
 }

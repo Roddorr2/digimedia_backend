@@ -4,7 +4,8 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\BlogBody;
+use App\Models\CommendTarjeta;
 
 class BlogBodySeeder extends Seeder
 {
@@ -24,6 +25,18 @@ class BlogBodySeeder extends Seeder
             ],
         ];
 
-        DB::table('blog_bodies')->insert($blog_bodies);
+        foreach ($blog_bodies as $bb) {
+            $commend = CommendTarjeta::where('titulo', 'Consejos para Elegir el Letrero Perfecto')->first();
+            BlogBody::updateOrCreate(
+                ['titulo' => $bb['titulo']],
+                [
+                    'descripcion' => $bb['descripcion'],
+                    'id_commend_tarjeta' => $commend ? $commend->id_commend_tarjeta : null,
+                    'public_image1' => $bb['public_image1'] ?? null,
+                    'public_image2' => $bb['public_image2'] ?? null,
+                    'public_image3' => $bb['public_image3'] ?? null,
+                ]
+            );
+        }
     }
 }
