@@ -114,18 +114,18 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                 'campania_id' => $this->campania->id_campania,
                 'chunk_number' => $chunkNumber,
                 'recipients' => $recipients,
-                'message' => $this->campania->parrafo,
+                'parrafo' => $this->campania->parrafo,
                 'image_url' => $this->campania->imagen_url,
                 'id_servicio' => $this->campania->id_servicio,
             ];
 
             // Enviar chunk a whatsapp-service
-            $response = Http::timeout(120) // 2 minutos timeout
+            $response = Http::timeout(60)
                 ->withHeaders([
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
                 ])
-                ->post(config('services.whatsapp.url') . '/api/whatsapp/send-campaign-batch', $payload);
+                ->post(env('WHATSAPP_API_URL') . '/api/send-campaign-batch', $payload);
 
             if ($response->successful()) {
                 $result = $response->json();
@@ -159,7 +159,17 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                 ]);
 
             } else {
-                // Si falla el request completo, marcar todos como fallidos
+                // Si falla el request (no es 2xx), loguear y marcar campaña como error
+                Log::error("Chunk {$chunkNumber} falló completamente", [
+                    'campania_id' => $this->campania->id_campania,
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+
+                // Marcar campaña como error
+                $this->campania->update(['estado' => 'error']);
+
+                // Marcar todos como fallidos
                 $this->campania->increment('envios_fallidos', count($chunk));
                 $this->campania->decrement('envios_pendientes', count($chunk));
 
@@ -173,11 +183,8 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                     ]);
                 }
 
-                Log::error("Chunk {$chunkNumber} falló completamente", [
-                    'campania_id' => $this->campania->id_campania,
-                    'status' => $response->status(),
-                    'body' => $response->body()
-                ]);
+                // Lanzar excepción para detener el procesamiento
+                throw new \Exception("Error en chunk {$chunkNumber}: Status {$response->status()}");
             }
 
         } catch (\Exception $e) {

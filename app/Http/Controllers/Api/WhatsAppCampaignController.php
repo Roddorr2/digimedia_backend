@@ -207,6 +207,59 @@ class WhatsAppCampaignController extends Controller
     }
 
     /**
+     * TEST: Endpoint para probar subida de imágenes a Cloudinary
+     * URL: POST /api/test-cloudinary
+     */
+    public function testCloudinaryUpload(Request $request)
+    {
+        try {
+            // Validar que se envió una imagen
+            $request->validate([
+                'image' => 'required|image|mimes:jpg,jpeg,png,webp,gif|max:5120'
+            ]);
+
+            $image = $request->file('image');
+            
+            // Subir a Cloudinary
+            $result = Cloudinary::uploadApi()->upload($image->getRealPath(), [
+                'folder' => 'test_uploads'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Imagen subida exitosamente a Cloudinary',
+                'data' => [
+                    'url' => $result['secure_url'],
+                    'public_id' => $result['public_id'],
+                    'format' => $result['format'],
+                    'width' => $result['width'],
+                    'height' => $result['height'],
+                    'size_bytes' => $result['bytes'],
+                    'created_at' => $result['created_at']
+                ]
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Archivo inválido',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error en test de Cloudinary', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al subir imagen',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Sube una imagen a Cloudinary
      */
     private function uploadImageToCloudinary($image)
