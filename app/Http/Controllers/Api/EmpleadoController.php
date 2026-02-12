@@ -83,6 +83,11 @@ class EmpleadoController extends Controller
             $sortBy = $request->get('sortBy', 'id_empleado');
             $sortOrder = $request->get('sortOrder', 'asc');
 
+            // Obtener el empleado autenticado y verificar si es admin
+            $currentUser = Auth::user();
+            $currentEmpleado = Empleado::with('rol')->where('id_user', $currentUser->id)->first();
+            $isAdmin = $currentEmpleado && strtolower($currentEmpleado->rol->nombre) === 'administrador';
+
             $data = Empleado::with('rol', 'subtipoAdmin');
 
             if(!empty($search) && trim($search) !== '')
@@ -103,13 +108,23 @@ class EmpleadoController extends Controller
             $data->orderBy($sortBy, $sortOrder);
 
             $empleados = $data->paginate($pagination);
-            $empleados->getCollection()->transform(function ($empleado) {
+            $empleados->getCollection()->transform(function ($empleado) use ($isAdmin) {
+                // Transformar DNI según el rol del usuario autenticado
+                $dni = $empleado->dni;
+                if (!$isAdmin && $dni) {
+                    // Ocultar DNI parcialmente: mostrar solo los últimos 4 dígitos
+                    $length = strlen($dni);
+                    if ($length > 4) {
+                        $dni = str_repeat('*', $length - 4) . substr($dni, -4);
+                    }
+                }
+
                 return [
                     'id_empleado' => $empleado->id_empleado,
                     'nombre' => $empleado->nombre,
                     'apellido' => $empleado->apellido,
                     'email' => $empleado->email,
-                    'dni' => $empleado->dni,
+                    'dni' => $dni,
                     'telefono' => $empleado->telefono,
                     'rol' => $empleado->rol->nombre,
                     'id_rol' => $empleado->rol->id_rol,

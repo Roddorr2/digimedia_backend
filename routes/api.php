@@ -164,3 +164,5 @@ Route::middleware('auth:sanctum')->group(function () {
     // fixes
     // Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
 });
+
+
