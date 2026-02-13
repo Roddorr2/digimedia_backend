@@ -64,6 +64,19 @@ class EmpleadoController extends Controller
             return response()->json(["status" => 404, "message" => "Empleado no encontrado"]);
         }
 
+        // Obtener el usuario autenticado y verificar si es admin
+        $currentUser = Auth::user();
+        $currentEmpleado = Empleado::with('rol')->where('id_user', $currentUser->id)->first();
+        $isAdmin = $currentEmpleado && strtolower($currentEmpleado->rol->nombre) === 'administrador';
+
+        // Transformar DNI si el usuario NO es admin
+        if (!$isAdmin && $empleado->dni) {
+            $length = strlen($empleado->dni);
+            if ($length > 4) {
+                $empleado->dni = str_repeat('*', $length - 4) . substr($empleado->dni, -4);
+            }
+        }
+
         return response()->json([
             "status" => 200,
             "data" => $empleado
