@@ -114,7 +114,7 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                 'campania_id' => $this->campania->id_campania,
                 'chunk_number' => $chunkNumber,
                 'recipients' => $recipients,
-                'parrafo' => $this->campania->parrafo,
+                'message' => $this->campania->parrafo,
                 'image_url' => $this->campania->imagen_url,
                 'id_servicio' => $this->campania->id_servicio,
             ];
@@ -125,7 +125,7 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
                 ])
-                ->post(env('WHATSAPP_API_URL') . '/api/send-campaign-batch', $payload);
+                ->post(env('WHATSAPP_API_URL') . '/api/whatsapp/send-campaign-batch', $payload);
 
             if ($response->successful()) {
                 $result = $response->json();
