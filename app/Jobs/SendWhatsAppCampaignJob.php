@@ -46,14 +46,13 @@ class SendWhatsAppCampaignJob implements ShouldQueue
             // Actualizar estado de la campaña
             $this->campania->update(['estado' => 'en_proceso']);
 
-            // Dividir destinatarios en chunks de 50
-            $chunks = array_chunk($this->destinatarios, 50);
+            // Dividir destinatarios en chunks de 20
+            $chunks = array_chunk($this->destinatarios, 20);
             $totalChunks = count($chunks);
 
             Log::info('Campaña dividida en chunks', [
                 'campania_id' => $this->campania->id_campania,
-                'total_chunks' => $totalChunks,
-                'chunk_size' => 50
+                'total_chunks' => $totalChunks
             ]);
 
             // Procesar cada chunk
@@ -69,7 +68,7 @@ class SendWhatsAppCampaignJob implements ShouldQueue
 
                 // Pequeña pausa entre chunks para no saturar
                 if ($chunkNumber < $totalChunks) {
-                    sleep(2);
+                    sleep(120); // 2 minutos
                 }
             }
 
