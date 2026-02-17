@@ -14,6 +14,7 @@ class CampaniaWhatsApp extends Model
 
     protected $fillable = [
         'id_servicio',
+        'user_id',
         'parrafo',
         'imagen_url',
         'estado',
@@ -40,6 +41,14 @@ class CampaniaWhatsApp extends Model
     public function servicio()
     {
         return $this->belongsTo(servicios::class, 'id_servicio', 'id_servicio');
+    }
+
+    /**
+     * Relación con usuario (quién creó la campaña)
+     */
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
     /**

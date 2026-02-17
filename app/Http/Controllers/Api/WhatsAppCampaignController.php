@@ -73,9 +73,10 @@ class WhatsAppCampaignController extends Controller
                 ], 500);
             }
 
-            // Crear registro de campaña
+            // Crear registro de campaña con auditoría de usuario
             $campania = CampaniaWhatsApp::create([
                 'id_servicio' => $id_servicio,
+                'user_id' => $request->user()->id, // Auditoría: quién creó la campaña
                 'parrafo' => $validated['paragraph'],
                 'imagen_url' => $imagenUrl,
                 'estado' => 'pendiente',
@@ -90,7 +91,9 @@ class WhatsAppCampaignController extends Controller
             Log::info('Campaña WhatsApp creada', [
                 'campania_id' => $campania->id_campania,
                 'servicio' => $validated['service'],
-                'total_destinatarios' => $destinatarios->count()
+                'total_destinatarios' => $destinatarios->count(),
+                'creado_por_user_id' => $request->user()->id,
+                'creado_por_nombre' => $request->user()->name
             ]);
 
             return response()->json([

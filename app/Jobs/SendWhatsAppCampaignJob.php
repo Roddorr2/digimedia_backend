@@ -118,11 +118,12 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                 'id_servicio' => $this->campania->id_servicio,
             ];
 
-            // Enviar chunk a whatsapp-service
+            // Enviar chunk a whatsapp-service con autenticación
             $response = Http::timeout(60)
                 ->withHeaders([
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
+                    'X-API-Key' => env('WHATSAPP_SERVICE_API_KEY'), // Autenticación con API Key
                 ])
                 ->post(env('WHATSAPP_API_URL') . '/api/whatsapp/send-campaign-batch', $payload);
 
