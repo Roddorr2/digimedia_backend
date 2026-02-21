@@ -112,14 +112,7 @@ class PlantillasEmailController extends Controller
     public function actualizar(Request $request, $id)
     {
         try {
-            $plantilla = PlantillaEmail::find($id);
-
-            if (!$plantilla) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Plantilla no encontrada'
-                ], 404);
-            }
+            $plantilla = PlantillaEmail::findOrFail($id);
 
             // Validar datos
             $validator = Validator::make($request->all(), [
@@ -176,7 +169,7 @@ class PlantillasEmailController extends Controller
             }
 
             // Registrar quién actualizó
-            $plantilla->updated_by = auth()->id();
+            $plantilla->updated_by = $request->user()->id;
             $plantilla->save();
 
             return response()->json([
@@ -196,11 +189,16 @@ class PlantillasEmailController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            $statusCode = $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException ? 404 : 500;
+            $message = $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException
+                ? 'Plantilla no encontrada'
+                : 'Error al actualizar plantilla';
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar plantilla',
+                'message' => $message,
                 'error' => $e->getMessage()
-            ], 500);
+            ], $statusCode);
         }
     }
 
