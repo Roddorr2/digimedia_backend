@@ -10,6 +10,8 @@ class PlantillasEmailSeeder extends Seeder
     private const URL_CONTACTANOS = '/contactanos';
     private const FB = 'https://www.facebook.com/DigiMedia.Marketing1';
     private const IG = 'https://www.instagram.com/digimedia.pe/';
+    private const TT = 'https://www.tiktok.com/@digimediamkt';
+    private const LI = 'https://www.linkedin.com/company/digimedia-mkt/';
     private const CTA_TRABAJAR = 'Escríbenos y comencemos a trabajar';
     private const CTA_VER = 'Escríbenos y lo vemos contigo';
 
@@ -102,9 +104,9 @@ class PlantillasEmailSeeder extends Seeder
             'url_boton' => url(self::URL_CONTACTANOS),
             'footer' => null,
             'red_facebook' => self::FB,
-            'red_tiktok' => null,
+            'red_tiktok' => self::TT,
             'red_instagram' => self::IG,
-            'red_linkedin' => null,
+            'red_linkedin' => self::LI,
         ];
     }
 }
