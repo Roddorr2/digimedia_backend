@@ -153,8 +153,8 @@
             @endif
 
             <div class="cta-container">
-                <a href="https://wa.me/51983027828?text=Hola%2C%20me%20gustar%C3%ADa%20obtener%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20servicios."
-                    class="cta-button" style="color:white;">¡CONTÁCTANOS!</a>
+                <a href="{{ $url_boton ?? 'https://wa.me/51983027828?text=Hola%2C%20me%20gustar%C3%ADa%20obtener%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20servicios.' }}"
+                    class="cta-button" style="color:white;">{{ $mensaje_boton ?? '¡CONTÁCTANOS!' }}</a>
             </div>
 
             <div class="extra-message">
@@ -164,20 +164,28 @@
 
         <div class="footer">
             <div class="social-links">
-                <a href="https://www.facebook.com/DigiMedia.Marketing1" class="social-link">
+                @if(isset($redes['facebook']))
+                <a href="{{ $redes['facebook'] }}" class="social-link">
                     <img src="https://cdn-icons-png.flaticon.com/512/733/733547.png" alt="Facebook">
                 </a>
-                <a href="https://www.tiktok.com/@digimediamkt" class="social-link">
+                @endif
+                @if(isset($redes['tiktok']))
+                <a href="{{ $redes['tiktok'] }}" class="social-link">
                     <img src="https://cdn-icons-png.flaticon.com/512/3046/3046121.png" alt="TikTok">
                 </a>
-                <a href="https://www.instagram.com/digimediamkt/" class="social-link">
+                @endif
+                @if(isset($redes['instagram']))
+                <a href="{{ $redes['instagram'] }}" class="social-link">
                     <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram">
                 </a>
-                <a href="https://www.linkedin.com/company/digimedia-mkt/" class="social-link">
+                @endif
+                @if(isset($redes['linkedin']))
+                <a href="{{ $redes['linkedin'] }}" class="social-link">
                     <img src="https://cdn-icons-png.flaticon.com/512/3536/3536505.png" alt="LinkedIn">
                 </a>
+                @endif
             </div>
-            <p>&copy; {{ date('Y') }} DigiMedia Marketing. Todos los derechos reservados.</p>
+            <p>{{ $footer ?? '&copy; ' . date('Y') . ' DigiMedia Marketing. Todos los derechos reservados.' }}</p>
         </div>
     </div>
 </body>

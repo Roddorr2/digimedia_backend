@@ -23,6 +23,8 @@ use App\Http\Controllers\ImagePathController;
 use App\Http\Controllers\Api\BlogAuditoriaController;
 use App\Http\Controllers\Api\MetricasController;
 use App\Http\Controllers\Api\WhatsAppCampaignController;
+use App\Http\Controllers\Api\PlantillasWhatsappController;
+use App\Http\Controllers\Api\PlantillasEmailController;
 
 // public routes test
 Route::post('/register', [AuthController::class, 'register']);
@@ -49,6 +51,14 @@ Route::get('/blog_body/{id}', [BlogBodyController::class, "show"]);
 Route::get('/modales/send_wat/{id}', [ModalWatController::class, "sendWat"]);
 
 Route::middleware('ver-servicios')->get('/servicios', [ServiciosController::class, "get"]);
+
+// Plantillas - ACCESO CON API KEY (para whatsapp-service)
+Route::middleware('api.key')->group(function () {
+    Route::get('/plantillas/whatsapp/{id_servicio}/{numero_plantilla}',
+        [PlantillasWhatsappController::class, 'showByServicioNumero']);
+    Route::get('/plantillas/email/{id_servicio}/{numero_plantilla}',
+        [PlantillasEmailController::class, 'showByServicioNumero']);
+});
 
 // rutas autenticadas
 Route::middleware('auth:sanctum')->group(function () {
@@ -168,6 +178,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/whatsapp/campaign/activate', [WhatsAppCampaignController::class, 'activateCampaign']);
         Route::get('/whatsapp/campaign/{id}/status', [WhatsAppCampaignController::class, 'getCampaignStatus']);
         Route::get('/whatsapp/campaigns', [WhatsAppCampaignController::class, 'listCampaigns']);
+    });
+    
+    // Plantillas - PROTEGIDO (marketing o administrador)
+    Route::middleware('role:marketing,administrador')->group(function () {
+        // WhatsApp
+        Route::get('/plantillas/whatsapp', [PlantillasWhatsappController::class, 'index']);
+        Route::get('/plantillas/whatsapp/{id}', [PlantillasWhatsappController::class, 'show']);
+        Route::post('/plantillas/whatsapp/{id}/actualizar', [PlantillasWhatsappController::class, 'actualizar']);
+        
+        // Email
+        Route::get('/plantillas/email', [PlantillasEmailController::class, 'index']);
+        Route::get('/plantillas/email/{id}', [PlantillasEmailController::class, 'show']);
+        Route::post('/plantillas/email/{id}/actualizar', [PlantillasEmailController::class, 'actualizar']);
     });
     
     // fixes
