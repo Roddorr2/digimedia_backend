@@ -21,6 +21,11 @@ class PlantillasWhatsappController extends Controller
         try {
             $plantillas = PlantillaWhatsapp::with('servicio')->orderBy('id_servicio')->orderBy('numero_plantilla')->get();
 
+            // Normalizar URLs de imágenes
+            $plantillas->each(function ($plantilla) {
+                $plantilla->imagen_url = $this->normalizeImageUrl($plantilla->imagen_url);
+            });
+
             return response()->json([
                 'success' => true,
                 'data' => $plantillas
@@ -51,6 +56,9 @@ class PlantillasWhatsappController extends Controller
                     'message' => 'Plantilla no encontrada'
                 ], 404);
             }
+
+            // Normalizar URL de imagen
+            $plantilla->imagen_url = $this->normalizeImageUrl($plantilla->imagen_url);
 
             return response()->json([
                 'success' => true,
@@ -95,7 +103,7 @@ class PlantillasWhatsappController extends Controller
                     'id_servicio' => $plantilla->id_servicio,
                     'numero_plantilla' => $plantilla->numero_plantilla,
                     'mensaje' => $plantilla->mensaje,
-                    'imagen_url' => $plantilla->imagen_url,
+                    'imagen_url' => $this->normalizeImageUrl($plantilla->imagen_url),
                     'servicio' => [
                         'id_servicio' => $plantilla->servicio->id_servicio,
                         'nombre_servicio' => $plantilla->servicio->nombre_servicio
@@ -187,6 +195,27 @@ class PlantillasWhatsappController extends Controller
                 'error' => $e->getMessage()
             ], $statusCode);
         }
+    }
+
+    /**
+     * Normalizar URL de imagen (convertir rutas relativas a URLs completas)
+     *
+     * @param string|null $imageUrl
+     * @return string|null
+     */
+    private function normalizeImageUrl($imageUrl)
+    {
+        if (empty($imageUrl)) {
+            return null;
+        }
+
+        // Si ya es una URL completa (http/https), devolverla tal cual
+        if (preg_match('/^https?:\/\//i', $imageUrl)) {
+            return $imageUrl;
+        }
+
+        // Convertir ruta relativa a URL completa
+        return url($imageUrl);
     }
 
     /**

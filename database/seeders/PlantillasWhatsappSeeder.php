@@ -48,7 +48,7 @@ class PlantillasWhatsappSeeder extends Seeder
             'numero_plantilla' => $n,
             'nombre' => $nombres[$s] . " - Plantilla {$n}",
             'mensaje' => $textos["{$s}-{$n}"],
-            'imagen_url' => 'imagenes/' . $imgs[$s - 1][$n],
+            'imagen_url' => url('imagenes/' . $imgs[$s - 1][$n]),
         ];
     }
 
