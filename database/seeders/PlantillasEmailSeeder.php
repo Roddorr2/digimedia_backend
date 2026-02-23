@@ -102,7 +102,7 @@ class PlantillasEmailSeeder extends Seeder
             'mensaje' => $mensaje,
             'mensaje_boton' => $cta,
             'url_boton' => url(self::URL_CONTACTANOS),
-            'footer' => null,
+            'footer' => 'Quedamos atentos a tu mensaje.<br>Saludos,<br>Equipo Digimedia',
             'red_facebook' => self::FB,
             'red_tiktok' => self::TT,
             'red_instagram' => self::IG,

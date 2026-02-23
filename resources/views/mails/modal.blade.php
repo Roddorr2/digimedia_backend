@@ -156,13 +156,14 @@
                 <a href="{{ $url_boton ?? 'https://wa.me/51983027828?text=Hola%2C%20me%20gustar%C3%ADa%20obtener%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20servicios.' }}"
                     class="cta-button" style="color:white;">{{ $mensaje_boton ?? '¡CONTÁCTANOS!' }}</a>
             </div>
-
-            <div class="extra-message">
-                <p>Quedamos atentos a tu mensaje.<br><strong>Saludos,</strong><br>Equipo Digimedia</p>
-            </div>
         </div>
 
         <div class="footer">
+            @if(isset($footer))
+            <p style="margin-bottom: 20px; color: #555;">
+                {!! $footer !!}
+            </p>
+            @endif
             <div class="social-links">
                 @if(isset($redes['facebook']))
                 <a href="{{ $redes['facebook'] }}" class="social-link">
@@ -185,7 +186,9 @@
                 </a>
                 @endif
             </div>
-            <p>{{ $footer ?? '&copy; ' . date('Y') . ' DigiMedia Marketing. Todos los derechos reservados.' }}</p>
+            <p style="margin: 0; font-size: 13px; color: #999;">
+                &copy; {{ date('Y') }} DigiMedia Marketing. Todos los derechos reservados.
+            </p>
         </div>
     </div>
 </body>
