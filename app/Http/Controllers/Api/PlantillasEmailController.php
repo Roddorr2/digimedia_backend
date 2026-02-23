@@ -157,7 +157,7 @@ class PlantillasEmailController extends Controller
                 }
 
                 // Subir nueva imagen
-                $uploadedFile = Cloudinary::upload(
+                $uploadedFile = Cloudinary::uploadApi()->upload(
                     $request->file('imagen')->getRealPath(),
                     [
                         'folder' => 'plantillas_email',
@@ -165,7 +165,7 @@ class PlantillasEmailController extends Controller
                     ]
                 );
 
-                $plantilla->imagen_url = $uploadedFile->getSecurePath();
+                $plantilla->imagen_url = $uploadedFile['secure_url'];
             }
 
             // Registrar quién actualizó
