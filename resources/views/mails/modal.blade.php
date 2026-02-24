@@ -147,7 +147,6 @@
 
             @if(isset($send_message))
             <div class="message-content">
-                <p>¡Hola {{ $data["nombre"] }}! 👋🏼</p>
                 {!! $send_message !!}
             </div>
             @endif
