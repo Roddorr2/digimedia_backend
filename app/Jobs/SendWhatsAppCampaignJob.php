@@ -19,7 +19,7 @@ class SendWhatsAppCampaignJob implements ShouldQueue
     public $campania;
     public $destinatarios;
     public $tries = 3;
-    public $timeout = 300; // 5 minutos por Job
+    public $timeout = 900; // 15 minutos por Job (para chunks grandes con reintentos)
 
     /**
      * Constructor
@@ -46,8 +46,8 @@ class SendWhatsAppCampaignJob implements ShouldQueue
             // Actualizar estado de la campaña
             $this->campania->update(['estado' => 'en_proceso']);
 
-            // Dividir destinatarios en chunks de 20
-            $chunks = array_chunk($this->destinatarios, 20);
+            // Dividir destinatarios en chunks de 50
+            $chunks = array_chunk($this->destinatarios, 50);
             $totalChunks = count($chunks);
 
             Log::info('Campaña dividida en chunks', [
@@ -68,7 +68,7 @@ class SendWhatsAppCampaignJob implements ShouldQueue
 
                 // Pequeña pausa entre chunks para no saturar
                 if ($chunkNumber < $totalChunks) {
-                    sleep(120); // 2 minutos
+                    sleep(2);
                 }
             }
 
@@ -118,12 +118,14 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                 'id_servicio' => $this->campania->id_servicio,
             ];
 
-            // Enviar chunk a whatsapp-service con autenticación
-            $response = Http::timeout(60)
+            // Enviar chunk a whatsapp-service
+            // Timeout de 600s (10 min) para permitir envío de chunks grandes
+            // 50 mensajes × ~6s promedio + delays = ~300s, damos margen extra
+            $response = Http::timeout(600)
                 ->withHeaders([
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
-                    'X-API-Key' => env('WHATSAPP_SERVICE_API_KEY'), // Autenticación con API Key
+                    'X-API-Key' => env('WHATSAPP_SERVICE_API_KEY'),
                 ])
                 ->post(env('WHATSAPP_API_URL') . '/api/whatsapp/send-campaign-batch', $payload);
 
@@ -159,7 +161,7 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                 ]);
 
             } else {
-                // Si falla el request (no es 2xx), loguear y marcar campaña como error
+                // Si falla el request (no es 2xx), loguear y marcar todos como fallidos
                 Log::error("Chunk {$chunkNumber} falló completamente", [
                     'campania_id' => $this->campania->id_campania,
                     'status' => $response->status(),
@@ -182,20 +184,53 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                         'fecha' => now(),
                     ]);
                 }
-
-                // Lanzar excepción para detener el procesamiento
-                throw new \Exception("Error en chunk {$chunkNumber}: Status {$response->status()}");
             }
 
         } catch (\Exception $e) {
             // Manejo de errores del chunk
-            $this->campania->increment('envios_fallidos', count($chunk));
-            $this->campania->decrement('envios_pendientes', count($chunk));
-
-            Log::error("Error procesando chunk {$chunkNumber}", [
-                'campania_id' => $this->campania->id_campania,
-                'error' => $e->getMessage()
-            ]);
+            $errorMessage = $e->getMessage();
+            
+            // Si es timeout, los mensajes pueden haberse enviado
+            // Registramos el error pero no marcamos definitivamente como fallidos
+            if (str_contains($errorMessage, 'timeout') || str_contains($errorMessage, 'timed out')) {
+                Log::warning("Timeout en chunk {$chunkNumber} - mensajes pueden haberse enviado", [
+                    'campania_id' => $this->campania->id_campania,
+                    'chunk_size' => count($chunk),
+                    'error' => $errorMessage,
+                    'nota' => 'Verificar manualmente si los mensajes se enviaron'
+                ]);
+                
+                // Marcar como pendientes en vez de fallidos para revisión manual
+                foreach ($chunk as $destinatario) {
+                    WatModal::create([
+                        'id_modalservicio' => $destinatario['id_modalservicio'],
+                        'number_message' => 1,
+                        'estado' => 0,
+                        'error' => 'Timeout en envío - requiere verificación manual',
+                        'fecha' => now(),
+                    ]);
+                }
+            } else {
+                // Error real (no timeout)
+                $this->campania->increment('envios_fallidos', count($chunk));
+                $this->campania->decrement('envios_pendientes', count($chunk));
+                
+                Log::error("Error procesando chunk {$chunkNumber}", [
+                    'campania_id' => $this->campania->id_campania,
+                    'error' => $errorMessage
+                ]);
+                
+                // Registrar todos como fallidos
+                foreach ($chunk as $destinatario) {
+                    WatModal::create([
+                        'id_modalservicio' => $destinatario['id_modalservicio'],
+                        'number_message' => 1,
+                        'estado' => 0,
+                        'error' => $errorMessage,
+                        'fecha' => now(),
+                    ]);
+                }
+            }
         }
     }
 
