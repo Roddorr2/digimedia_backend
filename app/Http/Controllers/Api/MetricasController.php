@@ -318,26 +318,32 @@ class MetricasController extends Controller
         ]);
     }
 
-    //4.2 Frecuencia de publicacion de cards todos los empleados
-    //Devuelve la frecuencia de publicación de cards por empleado al mes.
-    public function frecuenciaPublicacionCardsTodosEmpleados() {
+    // 4.2 Frecuencia de publicación de cards todos los empleados
+    // Devuelve la frecuencia de publicación de cards por empleado al mes.
+    public function frecuenciaPublicacionCardsTodosEmpleados()
+    {
         try {
-            $empleados = Empleado::where('id_rol', 1)->get();
-            $frecuenciaCards = [];
-            foreach ($empleados as $empleado) {
-                $cardsCount = Card::where('id_empleado', $empleado->id_empleado)->count();
-                $mesesTrabajados = Carbon::now()->diffInMonths(Carbon::parse($empleado->created_at)) + 1;
-                $frecuenciaMensual = $mesesTrabajados > 0 ? $cardsCount / $mesesTrabajados : 0;
-                $frecuenciaCards[] = [
-                    'id_empleado' => $empleado->id_empleado,
-                    'nombre_empleado' => $empleado->nombre,
-                    'frecuencia_publicacion_mensual' => round($frecuenciaMensual, 2)
-                ];
-            }
+            $now = Carbon::now();
+
+            $data = Empleado::where('id_rol', 1)
+                ->withCount('cards')
+                ->get()
+                ->map(function ($empleado) use ($now) {
+                    $mesesTrabajados = $empleado->created_at
+                        ? $now->diffInMonths(Carbon::parse($empleado->created_at)) + 1
+                        : 1;
+
+                    return [
+                        'id_empleado'                    => $empleado->id_empleado,
+                        'nombre_empleado'                => $empleado->nombre,
+                        'frecuencia_publicacion_mensual' => round($empleado->cards_count / $mesesTrabajados, 2),
+                    ];
+                });
+
             return response()->json([
                 "status" => 200,
-                'data' => $frecuenciaCards
-            ], 200);
+                "data"   => $data,
+            ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }

@@ -11,7 +11,8 @@ class Empleado extends Model
 
     protected $table = 'empleados';
     protected $primaryKey = 'id_empleado';
-    public $timestamps = false;
+    public $timestamps = true;
+    const UPDATED_AT = null;
 
     protected $fillable = [
         'nombre',
@@ -40,6 +41,11 @@ class Empleado extends Model
     public function subtipoAdmin()
     {
         return $this->belongsTo(SubtipoAdmin::class, 'id_subtipo_admin', 'id');
+    }
+
+    public function cards()
+    {
+        return $this->hasMany(Card::class, 'id_empleado', 'id_empleado');
     }
 
     public function getImagenPerfilUrlAttribute()
