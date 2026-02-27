@@ -175,7 +175,10 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Campañas de WhatsApp - PROTEGIDO (marketing o administrador)
     Route::middleware('role:marketing,administrador')->group(function () {
-        Route::post('/whatsapp/campaign/activate', [WhatsAppCampaignController::class, 'activateCampaign']);
+        // Separación de crear (borrador) vs iniciar (con FIFO)
+        Route::post('/whatsapp/campaign/create', [WhatsAppCampaignController::class, 'createCampaign']);
+        Route::post('/whatsapp/campaign/{id}/start', [WhatsAppCampaignController::class, 'startCampaign']);
+        
         Route::get('/whatsapp/campaign/{id}/status', [WhatsAppCampaignController::class, 'getCampaignStatus']);
         Route::get('/whatsapp/campaigns', [WhatsAppCampaignController::class, 'listCampaigns']);
     });

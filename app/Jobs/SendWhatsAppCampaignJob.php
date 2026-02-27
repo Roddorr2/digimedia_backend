@@ -43,34 +43,70 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                 'total_destinatarios' => count($this->destinatarios)
             ]);
 
+            // Resetear contador diario si es un nuevo día
+            $this->campania->resetDailyCounterIfNeeded();
+
             // Actualizar estado de la campaña
             $this->campania->update(['estado' => 'en_proceso']);
 
-            // Dividir destinatarios en chunks de 50
-            $chunks = array_chunk($this->destinatarios, 50);
+            // Dividir destinatarios en chunks de 20 (límite diario considerado)
+            $chunks = array_chunk($this->destinatarios, 20);
             $totalChunks = count($chunks);
 
             Log::info('Campaña dividida en chunks', [
                 'campania_id' => $this->campania->id_campania,
-                'total_chunks' => $totalChunks
+                'total_chunks' => $totalChunks,
+                'chunk_size' => 20
             ]);
 
             // Procesar cada chunk
             foreach ($chunks as $index => $chunk) {
                 $chunkNumber = $index + 1;
                 
+                // VERIFICAR LÍMITE DIARIO ANTES DE PROCESAR CHUNK
+                $this->campania->refresh(); // Actualizar datos desde DB
+                $remainingQuota = $this->campania->getRemainingDailyQuota();
+                
+                if ($remainingQuota <= 0) {
+                    Log::info('Límite diario alcanzado - pausando campaña', [
+                        'campania_id' => $this->campania->id_campania,
+                        'envios_hoy' => $this->campania->envios_hoy,
+                        'chunks_restantes' => $totalChunks - $index
+                    ]);
+                    
+                    // Pausar campaña hasta mañana
+                    $this->campania->update(['estado' => 'pausada_hasta_mañana']);
+                    break; // Salir del loop
+                }
+                
+                // Ajustar chunk si excede el límite diario
+                $chunkedRecipients = $chunk;
+                if (count($chunk) > $remainingQuota) {
+                    $chunkedRecipients = array_slice($chunk, 0, $remainingQuota);
+                    Log::info('Chunk ajustado por límite diario', [
+                        'campania_id' => $this->campania->id_campania,
+                        'original_size' => count($chunk),
+                        'adjusted_size' => count($chunkedRecipients),
+                        'remaining_quota' => $remainingQuota
+                    ]);
+                }
+                
                 Log::info("Procesando chunk {$chunkNumber}/{$totalChunks}", [
                     'campania_id' => $this->campania->id_campania,
-                    'destinatarios_en_chunk' => count($chunk)
+                    'destinatarios_en_chunk' => count($chunkedRecipients),
+                    'envios_hoy_actual' => $this->campania->envios_hoy
                 ]);
 
-                $this->processChunk($chunk, $chunkNumber);
+                $this->processChunk($chunkedRecipients, $chunkNumber);
 
-                // Pequeña pausa entre chunks para no saturar
+                // PAUSA DE 2 MINUTOS ENTRE CHUNKS
                 if ($chunkNumber < $totalChunks) {
-                    sleep(2);
+                    sleep(120); // 2 minutos
                 }
             }
+
+            // 🔁 FASE 3: Procesar reintentos para mensajes fallidos
+            $this->processRetries();
 
             // Finalizar campaña
             $this->campania->updateStatus();
@@ -119,8 +155,8 @@ class SendWhatsAppCampaignJob implements ShouldQueue
             ];
 
             // Enviar chunk a whatsapp-service
-            // Timeout de 600s (10 min) para permitir envío de chunks grandes
-            // 50 mensajes × ~6s promedio + delays = ~300s, damos margen extra
+            // Timeout de 600s (10 min) para permitir envío de chunks con delays largos
+            // 20 mensajes × ~45s promedio + delays = ~900s, pero el servicio procesa async
             $response = Http::timeout(600)
                 ->withHeaders([
                     'Content-Type' => 'application/json',
@@ -139,6 +175,10 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                 $this->campania->increment('envios_exitosos', $exitosos);
                 $this->campania->increment('envios_fallidos', $fallidos);
                 $this->campania->decrement('envios_pendientes', $exitosos + $fallidos);
+                
+                // ACTUALIZAR CONTADOR DIARIO
+                $this->campania->increment('envios_hoy', $exitosos + $fallidos);
+                $this->campania->update(['fecha_ultimo_envio' => now()->toDateString()]);
 
                 // Registrar en modal_wats
                 foreach ($chunk as $destinatario) {
@@ -151,13 +191,17 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                         'estado' => $estado,
                         'error' => $estado ? null : ($result['results'][$destinatario['id_modalservicio']]['error'] ?? 'Error desconocido'),
                         'fecha' => now(),
+                        'campania_id' => $this->campania->id_campania, // 🔁 FASE 3
+                        'intentos' => 1, // 🔁 FASE 3: Primer intento
+                        'puede_reintentar' => !$estado, // 🔁 FASE 3: Si falló, puede reintentar
                     ]);
                 }
 
                 Log::info("Chunk {$chunkNumber} procesado", [
                     'campania_id' => $this->campania->id_campania,
                     'exitosos' => $exitosos,
-                    'fallidos' => $fallidos
+                    'fallidos' => $fallidos,
+                    'envios_hoy_total' => $this->campania->envios_hoy
                 ]);
 
             } else {
@@ -182,6 +226,9 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                         'estado' => 0,
                         'error' => 'Error en request a whatsapp-service: ' . $response->status(),
                         'fecha' => now(),
+                        'campania_id' => $this->campania->id_campania, // 🔁 FASE 3
+                        'intentos' => 1, // 🔁 FASE 3
+                        'puede_reintentar' => true, // 🔁 FASE 3
                     ]);
                 }
             }
@@ -208,6 +255,9 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                         'estado' => 0,
                         'error' => 'Timeout en envío - requiere verificación manual',
                         'fecha' => now(),
+                        'campania_id' => $this->campania->id_campania, // 🔁 FASE 3
+                        'intentos' => 1, // 🔁 FASE 3
+                        'puede_reintentar' => true, // 🔁 FASE 3
                     ]);
                 }
             } else {
@@ -228,10 +278,183 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                         'estado' => 0,
                         'error' => $errorMessage,
                         'fecha' => now(),
+                        'campania_id' => $this->campania->id_campania, // 🔁 FASE 3
+                        'intentos' => 1, // 🔁 FASE 3
+                        'puede_reintentar' => true, // 🔁 FASE 3
                     ]);
                 }
             }
         }
+    }
+
+    /**
+     * 🔁 FASE 3: Procesa reintentos para mensajes fallidos (máximo 3 intentos)
+     */
+    private function processRetries()
+    {
+        $maxRetries = 3;
+        
+        for ($intento = 2; $intento <= $maxRetries; $intento++) {
+            // Obtener mensajes fallidos del intento anterior
+            $fallidosPendientes = WatModal::where('campania_id', $this->campania->id_campania)
+                ->where('estado', 0)
+                ->where('intentos', $intento - 1)
+                ->where('puede_reintentar', true)
+                ->with('modalServicio')
+                ->get();
+
+            if ($fallidosPendientes->isEmpty()) {
+                Log::info("No hay mensajes para reintento #{$intento}", [
+                    'campania_id' => $this->campania->id_campania
+                ]);
+                continue; // No hay nada que reintentar
+            }
+
+            Log::info("Iniciando reintento #{$intento}", [
+                'campania_id' => $this->campania->id_campania,
+                'total_a_reintentar' => $fallidosPendientes->count()
+            ]);
+
+            // Dividir en chunks de 20 para reintentos
+            $retryChunks = $fallidosPendientes->chunk(20);
+            
+            foreach ($retryChunks as $chunkIndex => $retryChunk) {
+                // Verificar límite diario
+                $this->campania->refresh();
+                $remainingQuota = $this->campania->getRemainingDailyQuota();
+                
+                if ($remainingQuota <= 0) {
+                    Log::warning("Límite diario alcanzado durante reintento #{$intento}", [
+                        'campania_id' => $this->campania->id_campania,
+                        'envios_hoy' => $this->campania->envios_hoy
+                    ]);
+                    $this->campania->update(['estado' => 'pausada_hasta_mañana']);
+                    return; // Detener reintentos por hoy
+                }
+
+                // Preparar destinatarios para reintento
+                $recipients = $retryChunk->map(function ($watModal) {
+                    $modalServicio = $watModal->modalServicio;
+                    return [
+                        'id_modalservicio' => $modalServicio->id_modalservicio,
+                        'nombre' => $modalServicio->nombre,
+                        'telefono' => formatearTelefonoWhatsApp($modalServicio->telefono),
+                        'wat_modal_id' => $watModal->id_modal_wat, // Para actualizar después
+                    ];
+                })->toArray();
+
+                $payload = [
+                    'campania_id' => $this->campania->id_campania,
+                    'chunk_number' => $chunkIndex + 1,
+                    'recipients' => $recipients,
+                    'message' => $this->campania->parrafo,
+                    'image_url' => $this->campania->imagen_url,
+                    'id_servicio' => $this->campania->id_servicio,
+                    'is_retry' => true, // 🔁 Marcar como reintento
+                    'retry_attempt' => $intento,
+                ];
+
+                try {
+                    $response = Http::timeout(600)
+                        ->withHeaders([
+                            'Content-Type' => 'application/json',
+                            'Accept' => 'application/json',
+                            'X-API-Key' => env('WHATSAPP_SERVICE_API_KEY'),
+                        ])
+                        ->post(env('WHATSAPP_API_URL') . '/api/whatsapp/send-campaign-batch', $payload);
+
+                    if ($response->successful()) {
+                        $result = $response->json();
+                        $exitosos = $result['successful'] ?? 0;
+                        $fallidos = $result['failed'] ?? 0;
+
+                        // Actualizar contadores de campaña
+                        $this->campania->increment('envios_exitosos', $exitosos);
+                        $this->campania->increment('envios_hoy', $exitosos + $fallidos);
+                        $this->campania->update(['fecha_ultimo_envio' => now()->toDateString()]);
+
+                        // Actualizar registros de WatModal
+                        foreach ($retryChunk as $watModal) {
+                            $idModalServicio = $watModal->id_modalservicio;
+                            $success = $result['results'][$idModalServicio]['success'] ?? false;
+
+                            if ($success) {
+                                // Exitoso en reintento
+                                $watModal->update([
+                                    'estado' => 1,
+                                    'error' => null,
+                                    'intentos' => $intento,
+                                    'puede_reintentar' => false,
+                                ]);
+                            } else {
+                                // Falló nuevamente
+                                $watModal->update([
+                                    'estado' => 0,
+                                    'error' => $result['results'][$idModalServicio]['error'] ?? "Falló en intento #{$intento}",
+                                    'intentos' => $intento,
+                                    'puede_reintentar' => $intento < $maxRetries,
+                                ]);
+                            }
+                        }
+
+                        Log::info("Reintento #{$intento} - Chunk procesado", [
+                            'campania_id' => $this->campania->id_campania,
+                            'exitosos' => $exitosos,
+                            'fallidos' => $fallidos
+                        ]);
+
+                    } else {
+                        // Error en el request de reintento
+                        Log::error("Reintento #{$intento} - Request falló", [
+                            'campania_id' => $this->campania->id_campania,
+                            'status' => $response->status()
+                        ]);
+
+                        // Incrementar intentos sin cambiar estado
+                        foreach ($retryChunk as $watModal) {
+                            $watModal->update([
+                                'intentos' => $intento,
+                                'error' => "Request falló en intento #{$intento}: HTTP " . $response->status(),
+                                'puede_reintentar' => $intento < $maxRetries,
+                            ]);
+                        }
+                    }
+
+                } catch (\Exception $e) {
+                    Log::error("Excepción en reintento #{$intento}", [
+                        'campania_id' => $this->campania->id_campania,
+                        'error' => $e->getMessage()
+                    ]);
+
+                    // Marcar como no reintentables si es el último intento
+                    foreach ($retryChunk as $watModal) {
+                        $watModal->update([
+                            'intentos' => $intento,
+                            'error' => "Excepción en intento #{$intento}: " . $e->getMessage(),
+                            'puede_reintentar' => $intento < $maxRetries,
+                        ]);
+                    }
+                }
+
+                // Pausa entre chunks de reintento
+                if ($chunkIndex < $retryChunks->count() - 1) {
+                    sleep(120); // 2 minutos
+                }
+            }
+
+            // Pausa entre intentos
+            if ($intento < $maxRetries) {
+                Log::info("Pausa de 5 minutos antes del siguiente reintento", [
+                    'campania_id' => $this->campania->id_campania
+                ]);
+                sleep(300); // 5 minutos entre intentos completos
+            }
+        }
+
+        Log::info('Reintentos completados', [
+            'campania_id' => $this->campania->id_campania,
+            'retry_stats' => $this->campania->getRetryStats()
+        ]);
     }
 
     /**

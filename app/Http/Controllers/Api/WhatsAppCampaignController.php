@@ -24,9 +24,9 @@ class WhatsAppCampaignController extends Controller
     ];
 
     /**
-     * Activa una campaña de WhatsApp masiva
+     * Crea una campaña de WhatsApp en estado BORRADOR
      */
-    public function activateCampaign(Request $request)
+    public function createCampaign(Request $request)
     {
         try {
             // Validar datos de entrada
@@ -49,20 +49,6 @@ class WhatsAppCampaignController extends Controller
                 ], 400);
             }
 
-            // Prevenir campañas duplicadas recientes
-            $campaniaReciente = CampaniaWhatsApp::where('id_servicio', $id_servicio)
-                ->where('created_at', '>', now()->subMinutes(5))
-                ->whereIn('estado', ['pendiente', 'en_proceso'])
-                ->first();
-
-            if ($campaniaReciente) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ya existe una campaña en proceso para este servicio. Espera 5 minutos.',
-                    'campania_id' => $campaniaReciente->id_campania
-                ], 409);
-            }
-
             // Subir imagen a Cloudinary
             $imagenUrl = $this->uploadImageToCloudinary($request->file('image'));
 
@@ -73,22 +59,18 @@ class WhatsAppCampaignController extends Controller
                 ], 500);
             }
 
-            // Crear registro de campaña con auditoría de usuario
+            // Crear registro de campaña en BORRADOR con auditoría de usuario
             $campania = CampaniaWhatsApp::create([
                 'id_servicio' => $id_servicio,
-                'user_id' => $request->user()->id, // Auditoría: quién creó la campaña
+                'user_id' => $request->user()->id,
                 'parrafo' => $validated['paragraph'],
                 'imagen_url' => $imagenUrl,
-                'estado' => 'pendiente',
+                'estado' => 'borrador',
                 'total_destinatarios' => $destinatarios->count(),
                 'envios_pendientes' => $destinatarios->count(),
-                'fecha_inicio' => now(),
             ]);
 
-            // Despachar Job para envío en chunks
-            SendWhatsAppCampaignJob::dispatch($campania, $destinatarios->toArray());
-
-            Log::info('Campaña WhatsApp creada', [
+            Log::info('Campaña WhatsApp creada en borrador', [
                 'campania_id' => $campania->id_campania,
                 'servicio' => $validated['service'],
                 'total_destinatarios' => $destinatarios->count(),
@@ -98,7 +80,7 @@ class WhatsAppCampaignController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Campaña iniciada exitosamente',
+                'message' => 'Campaña creada exitosamente en borrador',
                 'data' => [
                     'campania_id' => $campania->id_campania,
                     'total_destinatarios' => $campania->total_destinatarios,
@@ -114,7 +96,7 @@ class WhatsAppCampaignController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error al activar campaña WhatsApp', [
+            Log::error('Error al crear campaña WhatsApp', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -122,6 +104,86 @@ class WhatsAppCampaignController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error interno del servidor',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Inicia una campaña desde BORRADOR o PAUSADA (con validación FIFO)
+     */
+    public function startCampaign(Request $request, $id)
+    {
+        try {
+            $campania = CampaniaWhatsApp::findOrFail($id);
+
+            // 🔒 VALIDACIÓN FIFO: Verificar que no hay otra campaña activa
+            if (!$campania->canBeStarted()) {
+                $activeCampaign = CampaniaWhatsApp::getActiveCampaign();
+                
+                if ($activeCampaign && $activeCampaign->id_campania !== $campania->id_campania) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Ya hay una campaña en proceso. Espera a que finalice.',
+                        'active_campaign' => [
+                            'id' => $activeCampaign->id_campania,
+                            'servicio' => $activeCampaign->servicio->nombre ?? 'Desconocido',
+                            'estado' => $activeCampaign->estado,
+                            'progreso' => $activeCampaign->getProgressPercentage() . '%'
+                        ]
+                    ], 409);
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La campaña no puede ser iniciada. Estado actual: ' . $campania->estado
+                ], 400);
+            }
+
+            // Obtener destinatarios pendientes
+            $destinatarios = $this->getDestinatarios($campania->id_servicio);
+
+            if ($destinatarios->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No hay destinatarios disponibles para esta campaña'
+                ], 400);
+            }
+
+            // Actualizar estado y fecha de inicio
+            $campania->update([
+                'estado' => 'pendiente',
+                'fecha_inicio' => now()
+            ]);
+
+            // 🚀 Despachar Job para envío
+            SendWhatsAppCampaignJob::dispatch($campania, $destinatarios->toArray());
+
+            Log::info('Campaña WhatsApp iniciada', [
+                'campania_id' => $campania->id_campania,
+                'iniciada_por_user_id' => $request->user()->id,
+                'iniciada_por_nombre' => $request->user()->name
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Campaña iniciada exitosamente',
+                'data' => [
+                    'campania_id' => $campania->id_campania,
+                    'estado' => $campania->estado,
+                    'total_destinatarios' => $campania->total_destinatarios
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error al iniciar campaña WhatsApp', [
+                'campania_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al iniciar campaña',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -164,7 +226,7 @@ class WhatsAppCampaignController extends Controller
     }
 
     /**
-     * Lista las campañas recientes
+     * Lista las campañas recientes con info de campaña activa
      */
     public function listCampaigns(Request $request)
     {
@@ -175,8 +237,18 @@ class WhatsAppCampaignController extends Controller
             ->limit($limit)
             ->get();
 
+        // Obtener campaña activa para UI
+        $activeCampaign = CampaniaWhatsApp::getActiveCampaign();
+
         return response()->json([
             'success' => true,
+            'active_campaign' => $activeCampaign ? [
+                'id_campania' => $activeCampaign->id_campania,
+                'servicio' => $activeCampaign->servicio->nombre ?? 'Desconocido',
+                'estado' => $activeCampaign->estado,
+                'progreso' => $activeCampaign->getProgressPercentage(),
+                'envios_hoy' => $activeCampaign->envios_hoy,
+            ] : null,
             'data' => $campanias->map(function ($campania) {
                 return [
                     'id_campania' => $campania->id_campania,
@@ -185,9 +257,14 @@ class WhatsAppCampaignController extends Controller
                     'total_destinatarios' => $campania->total_destinatarios,
                     'envios_exitosos' => $campania->envios_exitosos,
                     'envios_fallidos' => $campania->envios_fallidos,
+                    'envios_pendientes' => $campania->envios_pendientes,
+                    'envios_hoy' => $campania->envios_hoy,
                     'porcentaje' => $campania->getProgressPercentage(),
                     'fecha_inicio' => $campania->fecha_inicio,
                     'fecha_fin' => $campania->fecha_fin,
+                    'fecha_ultimo_envio' => $campania->fecha_ultimo_envio,
+                    'can_be_started' => $campania->canBeStarted(),
+                    'created_at' => $campania->created_at,
                 ];
             })
         ]);
