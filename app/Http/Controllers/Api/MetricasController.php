@@ -178,19 +178,16 @@ class MetricasController extends Controller
         $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
-        $data = [];
-        for ($i = 1; $i <= 3; $i++) {
-            $count = Card::join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
-                ->where('cards.id_plantilla', $i)
-                ->where('ba.accion', 'CREAR')
-                ->whereBetween('ba.fecha_hora', [$startDate, $endDate])
-                ->count();
-
-            $data[] = [
-                "id_plantilla" => $i,
-                "count_cards" => $count
-            ];
-        }
+        $data = Card::query()
+            ->selectRaw('cards.id_plantilla, COUNT(cards.id_card) as count_cards')
+            ->join('blog_auditoria as ba', function ($join) use ($startDate, $endDate) {
+                $join->on('ba.id_blog', '=', 'cards.id_blog')
+                     ->where('ba.accion', '=', 'CREAR')
+                     ->whereBetween('ba.fecha_hora', [$startDate, $endDate]);
+            })
+            ->groupBy('cards.id_plantilla')
+            ->orderBy('cards.id_plantilla')
+            ->get();
 
         return response()->json([
             "status" => 200,
