@@ -9,7 +9,6 @@ use App\Models\Card;
 use App\Models\Empleado;
 use App\Models\BlogAuditoria;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class MetricasController extends Controller
@@ -267,22 +266,17 @@ class MetricasController extends Controller
         $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
-        $empleados = Empleado::where('id_rol', 1)->get();
-
-        $data = [];
-        foreach ($empleados as $empleado) {
-            $count = Card::join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
-                ->where('cards.id_empleado', $empleado->id_empleado)
-                ->where('ba.accion', 'CREAR')
-                ->whereBetween('ba.fecha_hora', [$startDate, $endDate])
-                ->count();
-
-            $data[] = [
-                "id_empleado" => $empleado->id_empleado,
-                "nombre_empleado" => $empleado->nombre,
-                "count_cards" => $count
-            ];
-        }
+        $data = Empleado::query()
+            ->selectRaw('empleados.id_empleado, empleados.nombre as nombre_empleado, COUNT(DISTINCT CASE WHEN ba.id_blog IS NOT NULL THEN cards.id_card END) as count_cards')
+            ->leftJoin('cards', 'cards.id_empleado', '=', 'empleados.id_empleado')
+            ->leftJoin('blog_auditoria as ba', function ($join) use ($startDate, $endDate) {
+                $join->on('ba.id_blog', '=', 'cards.id_blog')
+                     ->where('ba.accion', '=', 'CREAR')
+                     ->whereBetween('ba.fecha_hora', [$startDate, $endDate]);
+            })
+            ->where('empleados.id_rol', 1)
+            ->groupBy('empleados.id_empleado', 'empleados.nombre')
+            ->get();
 
         return response()->json([
             "status" => 200,
