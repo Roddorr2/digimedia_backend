@@ -115,6 +115,16 @@ class SendWhatsAppCampaignJob implements ShouldQueue
 
                 $this->processChunk($chunkedRecipients, $chunkNumber);
 
+                // Verificar si la campaña fue pausada por desconexión durante el processChunk
+                $this->campania->refresh();
+                if ($this->campania->estado === 'pausada_sin_conexion') {
+                    Log::info('Campaña pausada por desconexión - deteniendo procesamiento de chunks restantes', [
+                        'campania_id' => $this->campania->id_campania,
+                        'chunks_restantes' => $totalChunks - $chunkNumber
+                    ]);
+                    break; // Salir del loop de chunks
+                }
+
                 // PAUSA DE 2 MINUTOS ENTRE CHUNKS
                 if ($chunkNumber < $totalChunks) {
                     sleep(120); // 2 minutos
@@ -245,14 +255,40 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                 ]);
 
             } else {
-                // Si falla el request (no es 2xx), loguear y marcar todos como fallidos
+                // Si falla el request (no es 2xx), verificar el tipo de error
+                $responseBody = $response->body();
+                $responseStatus = $response->status();
+
                 Log::error("Chunk {$chunkNumber} falló completamente", [
                     'campania_id' => $this->campania->id_campania,
-                    'status' => $response->status(),
-                    'body' => $response->body()
+                    'status' => $responseStatus,
+                    'body' => $responseBody
                 ]);
 
-                // Marcar campaña como error
+                // 🔌 DETECCIÓN DE DESCONEXIÓN DE WHATSAPP
+                // Si el error es 500 y contiene "no está conectado", pausar en lugar de marcar como error
+                if ($responseStatus === 500 && 
+                    (str_contains(strtolower($responseBody), 'no está conectado') || 
+                     str_contains(strtolower($responseBody), 'not connected'))) {
+                    
+                    Log::warning("WhatsApp desconectado - pausando campaña automáticamente", [
+                        'campania_id' => $this->campania->id_campania,
+                        'chunk_number' => $chunkNumber,
+                        'mensaje' => 'Campaña se reanudará automáticamente cuando WhatsApp se reconecte'
+                    ]);
+
+                    // Pausar campaña con nuevo estado
+                    $this->campania->update(['estado' => 'pausada_sin_conexion']);
+
+                    // NO marcar mensajes como fallidos, quedarán pendientes para reintento
+                    // El Cron Job los reanudará automáticamente cuando detecte conexión
+
+                    // Retornar para detener procesamiento de este chunk
+                    // El loop principal detectará el cambio de estado y detendrá chunks restantes
+                    return;
+                }
+
+                // Si es otro tipo de error (no es desconexión), marcar como error
                 $this->campania->update(['estado' => 'error']);
 
                 // Marcar todos como fallidos
@@ -264,7 +300,7 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                         'id_modalservicio' => $destinatario['id_modalservicio'],
                         'number_message' => 1,
                         'estado' => 0,
-                        'error' => 'Error en request a whatsapp-service: ' . $response->status(),
+                        'error' => 'Error en request a whatsapp-service: ' . $responseStatus,
                         'fecha' => now(),
                         'campania_id' => $this->campania->id_campania, // 🔁 FASE 3
                         'intentos' => 1, // 🔁 FASE 3

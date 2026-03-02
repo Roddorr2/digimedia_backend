@@ -58,6 +58,33 @@ class AutoResumeCampaigns extends Command
         
         $this->info("📊 Encontradas {$campaigns->count()} campaña(s) para reanudar");
         
+        // Verificar si hay campañas pausadas por falta de conexión
+        $connectionCheckNeeded = $campaigns->contains(function ($campania) {
+            return $campania->estado === 'pausada_sin_conexion';
+        });
+        
+        // Si hay campañas pausadas por conexión, verificar que WhatsApp esté conectado
+        $whatsappConnected = true;
+        if ($connectionCheckNeeded) {
+            $whatsappConnected = $this->checkWhatsAppConnection();
+            
+            if (!$whatsappConnected) {
+                $this->warn('⚠️ WhatsApp no está conectado - campañas pausadas_sin_conexion no se reanudarán');
+                
+                // Filtrar campañas para excluir las pausadas_sin_conexion
+                $campaigns = $campaigns->filter(function ($campania) {
+                    return $campania->estado !== 'pausada_sin_conexion';
+                });
+                
+                if ($campaigns->isEmpty()) {
+                    $this->info('ℹ️ No hay otras campañas para reanudar');
+                    return Command::SUCCESS;
+                }
+            } else {
+                $this->info('✅ WhatsApp conectado - se reanudarán todas las campañas');
+            }
+        }
+        
         foreach ($campaigns as $campania) {
             $this->info("🚀 Reanudando campaña #{$campania->id_campania}...");
             
@@ -112,5 +139,36 @@ class AutoResumeCampaigns extends Command
         
         $this->info('✅ Proceso completado');
         return Command::SUCCESS;
+    }
+
+    /**
+     * Verifica si WhatsApp está conectado
+     */
+    private function checkWhatsAppConnection(): bool
+    {
+        try {
+            $whatsappServiceUrl = env('WHATSAPP_SERVICE_URL', 'http://localhost:3000');
+            $apiKey = env('WHATSAPP_API_KEY');
+
+            $response = \Illuminate\Support\Facades\Http::timeout(5)
+                ->withHeaders(['X-API-Key' => $apiKey])
+                ->get($whatsappServiceUrl . '/health');
+
+            if ($response->successful()) {
+                Log::info('Auto-resume: Verificación de conexión WhatsApp exitosa');
+                return true;
+            }
+
+            Log::warning('Auto-resume: WhatsApp no responde correctamente', [
+                'status' => $response->status()
+            ]);
+            return false;
+
+        } catch (\Exception $e) {
+            Log::warning('Auto-resume: No se pudo verificar conexión WhatsApp', [
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
     }
 }
