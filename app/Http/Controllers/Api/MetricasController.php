@@ -323,20 +323,23 @@ class MetricasController extends Controller
     public function frecuenciaPublicacionCardsTodosEmpleados()
     {
         try {
-            $now = Carbon::now();
+            $now = now();
 
             $data = Empleado::where('id_rol', 1)
                 ->withCount('cards')
                 ->get()
                 ->map(function ($empleado) use ($now) {
+
+                    // Protección si created_at es null
                     $mesesTrabajados = $empleado->created_at
-                        ? $now->diffInMonths(Carbon::parse($empleado->created_at)) + 1
+                        ? $empleado->created_at->diffInMonths($now) + 1
                         : 1;
 
                     return [
-                        'id_empleado'                    => $empleado->id_empleado,
-                        'nombre_empleado'                => $empleado->nombre,
-                        'frecuencia_publicacion_mensual' => round($empleado->cards_count / $mesesTrabajados, 2),
+                        'id_empleado' => $empleado->id_empleado,
+                        'nombre_empleado' => $empleado->nombre,
+                        'frecuencia_publicacion_mensual' =>
+                            round($empleado->cards_count / $mesesTrabajados, 2),
                     ];
                 });
 
@@ -344,8 +347,11 @@ class MetricasController extends Controller
                 "status" => 200,
                 "data"   => $data,
             ]);
+
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }
