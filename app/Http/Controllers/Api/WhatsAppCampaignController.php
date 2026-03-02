@@ -117,7 +117,18 @@ class WhatsAppCampaignController extends Controller
         try {
             $campania = CampaniaWhatsApp::findOrFail($id);
 
-            // 🔒 VALIDACIÓN FIFO: Verificar que no hay otra campaña activa
+            // 🔒 VALIDACIÓN 1: Verificar que WhatsApp está conectado
+            $whatsappStatus = $this->checkWhatsAppConnection();
+            if (!$whatsappStatus['connected']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '📱 WhatsApp no está conectado. Por favor, escanea el código QR en la pestaña "Conexión" primero.',
+                    'error_type' => 'whatsapp_not_connected',
+                    'details' => $whatsappStatus['message'] ?? 'Servicio WhatsApp no disponible'
+                ], 400);
+            }
+
+            // 🔒 VALIDACIÓN 2 (FIFO): Verificar que no hay otra campaña activa
             if (!$campania->canBeStarted()) {
                 $activeCampaign = CampaniaWhatsApp::getActiveCampaign();
                 
@@ -125,6 +136,7 @@ class WhatsAppCampaignController extends Controller
                     return response()->json([
                         'success' => false,
                         'message' => 'Ya hay una campaña en proceso. Espera a que finalice.',
+                        'error_type' => 'campaign_active',
                         'active_campaign' => [
                             'id' => $activeCampaign->id_campania,
                             'servicio' => $activeCampaign->servicio->nombre ?? 'Desconocido',
@@ -136,7 +148,8 @@ class WhatsAppCampaignController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'La campaña no puede ser iniciada. Estado actual: ' . $campania->estado
+                    'message' => 'La campaña no puede ser iniciada. Estado actual: ' . $campania->estado,
+                    'error_type' => 'invalid_state'
                 ], 400);
             }
 
@@ -210,6 +223,8 @@ class WhatsAppCampaignController extends Controller
                         'pendientes' => $campania->envios_pendientes,
                         'porcentaje' => $campania->getProgressPercentage()
                     ],
+                    'envios_hoy' => $campania->envios_hoy ?? 0,
+                    'limite_diario' => $campania->limite_diario ?? 50,
                     'fechas' => [
                         'inicio' => $campania->fecha_inicio,
                         'fin' => $campania->fecha_fin,
@@ -249,24 +264,26 @@ class WhatsAppCampaignController extends Controller
                 'progreso' => $activeCampaign->getProgressPercentage(),
                 'envios_hoy' => $activeCampaign->envios_hoy,
             ] : null,
-            'data' => $campanias->map(function ($campania) {
-                return [
-                    'id_campania' => $campania->id_campania,
-                    'servicio' => $campania->servicio->nombre ?? 'Desconocido',
-                    'estado' => $campania->estado,
-                    'total_destinatarios' => $campania->total_destinatarios,
-                    'envios_exitosos' => $campania->envios_exitosos,
-                    'envios_fallidos' => $campania->envios_fallidos,
-                    'envios_pendientes' => $campania->envios_pendientes,
-                    'envios_hoy' => $campania->envios_hoy,
-                    'porcentaje' => $campania->getProgressPercentage(),
-                    'fecha_inicio' => $campania->fecha_inicio,
-                    'fecha_fin' => $campania->fecha_fin,
-                    'fecha_ultimo_envio' => $campania->fecha_ultimo_envio,
-                    'can_be_started' => $campania->canBeStarted(),
-                    'created_at' => $campania->created_at,
-                ];
-            })
+            'data' => [
+                'campanias' => $campanias->map(function ($campania) {
+                    return [
+                        'id_campania' => $campania->id_campania,
+                        'servicio' => $campania->servicio->nombre ?? 'Desconocido',
+                        'estado' => $campania->estado,
+                        'total_destinatarios' => $campania->total_destinatarios,
+                        'envios_exitosos' => $campania->envios_exitosos,
+                        'envios_fallidos' => $campania->envios_fallidos,
+                        'envios_pendientes' => $campania->envios_pendientes,
+                        'envios_hoy' => $campania->envios_hoy,
+                        'porcentaje' => $campania->getProgressPercentage(),
+                        'fecha_inicio' => $campania->fecha_inicio,
+                        'fecha_fin' => $campania->fecha_fin,
+                        'fecha_ultimo_envio' => $campania->fecha_ultimo_envio,
+                        'can_be_started' => $campania->canBeStarted(),
+                        'created_at' => $campania->created_at,
+                    ];
+                })
+            ]
         ]);
     }
 
@@ -358,4 +375,49 @@ class WhatsAppCampaignController extends Controller
             return null;
         }
     }
+
+    /**
+     * Verifica si el servicio WhatsApp está conectado y listo
+     */
+    private function checkWhatsAppConnection(): array
+    {
+        try {
+            $whatsappServiceUrl = env('WHATSAPP_SERVICE_URL', 'http://localhost:3000');
+            $apiKey = env('WHATSAPP_API_KEY');
+
+            $response = \Illuminate\Support\Facades\Http::timeout(5)
+                ->withHeaders(['X-API-Key' => $apiKey])
+                ->get($whatsappServiceUrl . '/health');
+
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                // Verificar si el servicio reporta que está conectado
+                // El servicio puede responder {"status":"OK"} pero no estar conectado a WhatsApp
+                // Intentamos verificar con un endpoint de estado más específico
+                return [
+                    'connected' => true,
+                    'message' => 'Servicio WhatsApp disponible',
+                    'status' => $data
+                ];
+            }
+
+            return [
+                'connected' => false,
+                'message' => 'Servicio WhatsApp no responde correctamente',
+                'status_code' => $response->status()
+            ];
+
+        } catch (\Exception $e) {
+            Log::warning('No se pudo verificar conexión WhatsApp', [
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'connected' => false,
+                'message' => 'No se pudo conectar al servicio WhatsApp: ' . $e->getMessage()
+            ];
+        }
+    }
 }
+

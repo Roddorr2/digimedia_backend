@@ -12,6 +12,6 @@ class CampaniaWhatsAppSeeder extends Seeder
      */
     public function run(): void
     {
-        CampaniaWhatsApp::factory()->count(20)->create();
+        //CampaniaWhatsApp::factory()->count(20)->create();
     }
 }

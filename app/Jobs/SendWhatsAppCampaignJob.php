@@ -63,6 +63,22 @@ class SendWhatsAppCampaignJob implements ShouldQueue
             foreach ($chunks as $index => $chunk) {
                 $chunkNumber = $index + 1;
                 
+                // VERIFICAR VENTANA HORARIA (8am-11pm Peru GMT-5)
+                if (!CampaniaWhatsApp::isWithinAllowedHours()) {
+                    $nextStart = CampaniaWhatsApp::getNextStartTime();
+                    
+                    Log::info('Fuera de horario permitido - pausando campaña', [
+                        'campania_id' => $this->campania->id_campania,
+                        'hora_actual' => now()->timezone('America/Lima')->format('H:i'),
+                        'proxima_reanudacion' => $nextStart->format('Y-m-d H:i'),
+                        'chunks_restantes' => $totalChunks - $index
+                    ]);
+                    
+                    // Pausar campaña fuera de horario
+                    $this->campania->update(['estado' => 'pausada_fuera_horario']);
+                    break; // Salir del loop
+                }
+                
                 // VERIFICAR LÍMITE DIARIO ANTES DE PROCESAR CHUNK
                 $this->campania->refresh(); // Actualizar datos desde DB
                 $remainingQuota = $this->campania->getRemainingDailyQuota();
@@ -155,9 +171,9 @@ class SendWhatsAppCampaignJob implements ShouldQueue
             ];
 
             // Enviar chunk a whatsapp-service
-            // Timeout de 600s (10 min) para permitir envío de chunks con delays largos
-            // 20 mensajes × ~45s promedio + delays = ~900s, pero el servicio procesa async
-            $response = Http::timeout(600)
+            // Timeout de 1800s (30 min) para permitir envío de chunks con delays largos
+            // 20 mensajes × ~45s promedio = ~900s (15 min) + margen de seguridad
+            $response = Http::timeout(1800)
                 ->withHeaders([
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
@@ -168,9 +184,23 @@ class SendWhatsAppCampaignJob implements ShouldQueue
             if ($response->successful()) {
                 $result = $response->json();
                 
+                Log::info("📊 Respuesta del whatsapp-service", [
+                    'campania_id' => $this->campania->id_campania,
+                    'chunk' => $chunkNumber,
+                    'response' => $result
+                ]);
+                
                 // Actualizar contadores según respuesta
                 $exitosos = $result['successful'] ?? 0;
                 $fallidos = $result['failed'] ?? 0;
+
+                Log::info("🔄 Actualizando contadores", [
+                    'campania_id' => $this->campania->id_campania,
+                    'exitosos' => $exitosos,
+                    'fallidos' => $fallidos,
+                    'antes_exitosos' => $this->campania->envios_exitosos,
+                    'antes_fallidos' => $this->campania->envios_fallidos,
+                ]);
 
                 $this->campania->increment('envios_exitosos', $exitosos);
                 $this->campania->increment('envios_fallidos', $fallidos);
@@ -179,6 +209,16 @@ class SendWhatsAppCampaignJob implements ShouldQueue
                 // ACTUALIZAR CONTADOR DIARIO
                 $this->campania->increment('envios_hoy', $exitosos + $fallidos);
                 $this->campania->update(['fecha_ultimo_envio' => now()->toDateString()]);
+                
+                // Refrescar para obtener valores actuales
+                $this->campania->refresh();
+                
+                Log::info("✅ Contadores actualizados", [
+                    'campania_id' => $this->campania->id_campania,
+                    'despues_exitosos' => $this->campania->envios_exitosos,
+                    'despues_fallidos' => $this->campania->envios_fallidos,
+                    'envios_hoy' => $this->campania->envios_hoy,
+                ]);
 
                 // Registrar en modal_wats
                 foreach ($chunk as $destinatario) {

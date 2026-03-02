@@ -235,4 +235,91 @@ class CampaniaWhatsApp extends Model
             ->where('intentos', '<', 3)
             ->exists();
     }
+
+    // Ventana Horaria y Auto-Resume
+
+    /**
+     * Verifica si estamos dentro del horario permitido (8am-11pm Peru GMT-5)
+     */
+    public static function isWithinAllowedHours(): bool
+    {
+        $now = now()->timezone('America/Lima'); // Peru GMT-5
+        $hour = $now->hour;
+        
+        // Horario permitido: 8:00 AM a 10:59 PM
+        return $hour >= 8 && $hour < 23;
+    }
+
+    /**
+     * Obtiene la próxima hora de inicio (8am del día actual o siguiente)
+     */
+    public static function getNextStartTime(): \Carbon\Carbon
+    {
+        $now = now()->timezone('America/Lima');
+        $nextStart = $now->copy()->setTime(8, 0, 0);
+        
+        // Si ya pasaron las 11pm, la próxima vez es mañana a las 8am
+        if ($now->hour >= 23) {
+            $nextStart->addDay();
+        }
+        // Si es antes de las 8am, hoy a las 8am
+        elseif ($now->hour < 8) {
+            // nextStart ya está en 8am de hoy
+        }
+        
+        return $nextStart;
+    }
+
+    /**
+     * Verifica si la campaña está pausada por horario
+     */
+    public function isPausedOutsideHours(): bool
+    {
+        return $this->estado === 'pausada_fuera_horario';
+    }
+
+    /**
+     * Verifica si esta campaña puede reanudarse automáticamente
+     */
+    public function canAutoResume(): bool
+    {
+        // Debe estar en uno de estos estados
+        if (!in_array($this->estado, ['pausada_hasta_mañana', 'pausada_fuera_horario'])) {
+            return false;
+        }
+
+        // Debe tener mensajes pendientes
+        if ($this->envios_pendientes <= 0) {
+            return false;
+        }
+
+        // Debe estar dentro del horario permitido
+        if (!self::isWithinAllowedHours()) {
+            return false;
+        }
+
+        // Si está pausada hasta mañana, verificar que el día cambió
+        if ($this->estado === 'pausada_hasta_mañana') {
+            $this->resetDailyCounterIfNeeded();
+            $this->refresh();
+            
+            // Después del reset, debe tener cuota disponible
+            return $this->envios_hoy < 50;
+        }
+
+        return true;
+    }
+
+    /**
+     * Obtiene todas las campañas que pueden reanudarse automáticamente
+     */
+    public static function getCampaignsReadyToResume()
+    {
+        return self::whereIn('estado', ['pausada_hasta_mañana', 'pausada_fuera_horario'])
+            ->where('envios_pendientes', '>', 0)
+            ->get()
+            ->filter(function ($campania) {
+                return $campania->canAutoResume();
+            });
+    }
 }
