@@ -203,6 +203,30 @@ class WhatsAppCampaignController extends Controller
     }
 
     /**
+     * Devuelve el total de destinatarios para un servicio (sin crear campaña)
+     */
+    public function previewCampaign(Request $request, $service)
+    {
+        if (!array_key_exists($service, self::SERVICE_MAP)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Servicio inválido. Usa p1, p2, p3 o p4.'
+            ], 422);
+        }
+
+        $id_servicio = self::SERVICE_MAP[$service];
+        $destinatarios = $this->getDestinatarios($id_servicio);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'service' => $service,
+                'total_destinatarios' => $destinatarios->count(),
+            ]
+        ]);
+    }
+
+    /**
      * Obtiene el estado de una campaña
      */
     public function getCampaignStatus($id)
