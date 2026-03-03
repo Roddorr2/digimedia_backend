@@ -382,12 +382,12 @@ class WhatsAppCampaignController extends Controller
     private function checkWhatsAppConnection(): array
     {
         try {
-            $whatsappServiceUrl = env('WHATSAPP_SERVICE_URL', 'http://localhost:3000');
-            $apiKey = env('WHATSAPP_API_KEY');
+            $whatsappServiceUrl = env('WHATSAPP_API_URL', 'http://localhost:5111');
+            $apiKey = env('WHATSAPP_SERVICE_API_KEY');
 
             $response = \Illuminate\Support\Facades\Http::timeout(5)
                 ->withHeaders(['X-API-Key' => $apiKey])
-                ->get($whatsappServiceUrl . '/health');
+                ->get($whatsappServiceUrl . '/api/whatsapp/status');
 
             if ($response->successful()) {
                 $data = $response->json();

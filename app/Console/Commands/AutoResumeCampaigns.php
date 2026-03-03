@@ -147,16 +147,24 @@ class AutoResumeCampaigns extends Command
     private function checkWhatsAppConnection(): bool
     {
         try {
-            $whatsappServiceUrl = env('WHATSAPP_SERVICE_URL', 'http://localhost:3000');
-            $apiKey = env('WHATSAPP_API_KEY');
+            $whatsappServiceUrl = env('WHATSAPP_API_URL', 'http://localhost:5111');
+            $apiKey = env('WHATSAPP_SERVICE_API_KEY');
 
             $response = \Illuminate\Support\Facades\Http::timeout(5)
                 ->withHeaders(['X-API-Key' => $apiKey])
-                ->get($whatsappServiceUrl . '/health');
+                ->get($whatsappServiceUrl . '/api/whatsapp/status');
 
             if ($response->successful()) {
-                Log::info('Auto-resume: Verificación de conexión WhatsApp exitosa');
-                return true;
+                $data = $response->json();
+                $isConnected = $data['connected'] ?? false;
+                
+                if ($isConnected) {
+                    Log::info('Auto-resume: Verificación de conexión WhatsApp exitosa');
+                    return true;
+                }
+                
+                Log::warning('Auto-resume: WhatsApp reporta desconectado');
+                return false;
             }
 
             Log::warning('Auto-resume: WhatsApp no responde correctamente', [

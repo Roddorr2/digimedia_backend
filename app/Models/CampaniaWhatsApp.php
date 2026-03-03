@@ -92,6 +92,11 @@ class CampaniaWhatsApp extends Model
         // Refresh para obtener datos actualizados
         $this->refresh();
         
+        // Si ya está en un estado pausado, no cambiar (el Cron Job se encargará)
+        if (in_array($this->estado, ['pausada_sin_conexion', 'pausada_hasta_mañana', 'pausada_fuera_horario'])) {
+            return;
+        }
+        
         $procesados = $this->envios_exitosos + $this->envios_fallidos;
 
         // Caso 1: Ya se procesaron todos los destinatarios → COMPLETADA
