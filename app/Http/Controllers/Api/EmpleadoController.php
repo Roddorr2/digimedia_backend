@@ -268,6 +268,12 @@ class EmpleadoController extends Controller
             ]);
         }
 
+        if((int)auth() -> id() !== (int)$empleado ->id_user){
+            return response()->json([
+                "message" => "No es posible editar perfiles que no sean tuyos."
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'nombre'    => 'sometimes|string|max:255',
             'apellido'  => 'sometimes|string|max:255',
