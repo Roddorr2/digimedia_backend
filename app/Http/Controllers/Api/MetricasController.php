@@ -80,7 +80,7 @@ class MetricasController extends Controller
 
             $data[] = [
                 "month" => $date->format('F Y'),
-                "total_blogs" => $raw[$key]->total ?? 0
+                "total_blogs" => isset($raw[$key]) ? $raw[$key]['total'] : 0
             ];
         }
 
@@ -106,7 +106,8 @@ class MetricasController extends Controller
             ->map(fn($i) => [
                 "month" => Carbon::create($i['y'], $i['m'])->format('F Y'),
                 "total_blogs" => $i['total']
-            ]);
+            ])
+            ->values();
 
         return response()->json([
             "status" => 200,
