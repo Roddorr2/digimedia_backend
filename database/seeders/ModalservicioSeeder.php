@@ -42,7 +42,7 @@ class ModalservicioSeeder extends Seeder
         ];
 
         DB::table('modalservicios')->insert($modalServicios);
-        modalservicios::factory()->count(150)->create();
+        //modalservicios::factory()->count(150)->create();
 
     }
 }
