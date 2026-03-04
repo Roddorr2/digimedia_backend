@@ -4,14 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\servicios;
+use App\Http\Resources\ServicioResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class ServiciosController extends Controller
 {
     public function get(){
-        return Servicios::orderBy('id_servicio', 'desc')
-                        ->paginate(20);
+        return ServicioResource::collection(
+            Servicios::orderBy('id_servicio', 'desc')->paginate(20)
+        );
     }
 
     public function create(Request $request){
