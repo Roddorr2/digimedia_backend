@@ -122,7 +122,7 @@ class CardSeeder extends Seeder
                 'created_at' => '2025-11-05 10:05:00',
                 'updated_at' => '2025-11-05 10:05:00',
             ],
-            // Enero 2026
+            
             [
                 'titulo' => 'Boutiques de Lujo - Tiendas Exclusivas',
                 'descripcion' => 'Ambiente de exclusividad con iluminación que realza cada pieza. Los clientes VIP merecen una experiencia visual de nivel premium. 💎✨',

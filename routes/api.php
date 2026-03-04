@@ -23,6 +23,8 @@ use App\Http\Controllers\ImagePathController;
 use App\Http\Controllers\Api\BlogAuditoriaController;
 use App\Http\Controllers\Api\MetricasController;
 use App\Http\Controllers\Api\WhatsAppCampaignController;
+use App\Http\Controllers\Api\PlantillasWhatsappController;
+use App\Http\Controllers\Api\PlantillasEmailController;
 
 // public routes test
 Route::post('/register', [AuthController::class, 'register']);
@@ -49,6 +51,14 @@ Route::get('/blog_body/{id}', [BlogBodyController::class, "show"]);
 Route::get('/modales/send_wat/{id}', [ModalWatController::class, "sendWat"]);
 
 Route::middleware('ver-servicios')->get('/servicios', [ServiciosController::class, "get"]);
+
+// Plantillas - ACCESO CON API KEY (para whatsapp-service)
+Route::middleware('api.key')->group(function () {
+    Route::get('/plantillas/whatsapp/{id_servicio}/{numero_plantilla}',
+        [PlantillasWhatsappController::class, 'showByServicioNumero']);
+    Route::get('/plantillas/email/{id_servicio}/{numero_plantilla}',
+        [PlantillasEmailController::class, 'showByServicioNumero']);
+});
 
 // rutas autenticadas
 Route::middleware('auth:sanctum')->group(function () {
@@ -163,11 +173,30 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:ver-blogs')->get('/metrics/frecuencia_publicacion_cards_todos_empleados', [MetricasController::class, "frecuenciaPublicacionCardsTodosEmpleados"]);//4.1 Frecuencia de publicación de cards por empleado
     Route::middleware('permission:ver-blogs')->get('/metrics/tiempo_creacion_edicion_publicacion_card', [MetricasController::class, "tiempoCreacionEdicionPublicacionCard"]);//4.2 Tiempo promedio de creación, edición y publicación de una card por empleado
     
+    // Campañas de WhatsApp - PROTEGIDO (marketing o administrador)
+    Route::middleware('role:marketing,administrador')->group(function () {
+        // Separación de crear (borrador) vs iniciar (con FIFO)
+        Route::get('/whatsapp/campaign/preview/{service}', [WhatsAppCampaignController::class, 'previewCampaign']);
+        Route::post('/whatsapp/campaign/create', [WhatsAppCampaignController::class, 'createCampaign']);
+        Route::post('/whatsapp/campaign/{id}/start', [WhatsAppCampaignController::class, 'startCampaign']);
+        
+        Route::get('/whatsapp/campaign/{id}/status', [WhatsAppCampaignController::class, 'getCampaignStatus']);
+        Route::get('/whatsapp/campaigns', [WhatsAppCampaignController::class, 'listCampaigns']);
+    });
+    
+    // Plantillas - PROTEGIDO (marketing o administrador)
+    Route::middleware('role:marketing,administrador')->group(function () {
+        // WhatsApp
+        Route::get('/plantillas/whatsapp', [PlantillasWhatsappController::class, 'index']);
+        Route::get('/plantillas/whatsapp/{id}', [PlantillasWhatsappController::class, 'show']);
+        Route::post('/plantillas/whatsapp/{id}/actualizar', [PlantillasWhatsappController::class, 'actualizar']);
+        
+        // Email
+        Route::get('/plantillas/email', [PlantillasEmailController::class, 'index']);
+        Route::get('/plantillas/email/{id}', [PlantillasEmailController::class, 'show']);
+        Route::post('/plantillas/email/{id}/actualizar', [PlantillasEmailController::class, 'actualizar']);
+    });
+    
     // fixes
     // Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
 });
-
-// Campañas de WhatsApp (SIN autenticación - solo para desarrollo)
-Route::post('/whatsapp/campaign/activate', [WhatsAppCampaignController::class, 'activateCampaign']);
-Route::get('/whatsapp/campaign/{id}/status', [WhatsAppCampaignController::class, 'getCampaignStatus']);
-Route::get('/whatsapp/campaigns', [WhatsAppCampaignController::class, 'listCampaigns']);

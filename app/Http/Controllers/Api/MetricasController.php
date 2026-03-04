@@ -348,7 +348,6 @@ class MetricasController extends Controller
                 "status" => 200,
                 "data"   => $data,
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'error' => $e->getMessage()

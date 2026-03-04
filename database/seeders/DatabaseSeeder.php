@@ -30,7 +30,10 @@ class DatabaseSeeder extends Seeder
             MailModalSeeder::class,
             WatModalSeeder::class,
             CampaniaWhatsAppSeeder::class,
-            PermisosSeeder::class
+            PermisosSeeder::class,
+            PlantillasEmailSeeder::class,
+            PlantillasWhatsappSeeder::class
+
         ]);
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
