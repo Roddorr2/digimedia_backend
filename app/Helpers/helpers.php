@@ -27,26 +27,6 @@ if (!function_exists('formatearTelefonoWhatsApp')) {
     }
 }
 
-if (!function_exists('validarTelefonoPeruano')) {
-    /**
-     * Valida si un número de teléfono peruano es válido
-     * Los números móviles en Perú tienen 9 dígitos y empiezan con 9
-     * @param string $telefono (sin código de país)
-     * @return bool
-     */
-    function validarTelefonoPeruano($telefono)
-    {
-        // Eliminar el código de país si existe
-        $telefono = preg_replace('/^51/', '', $telefono);
-        
-        // Eliminar caracteres no numéricos
-        $telefono = preg_replace('/[^0-9]/', '', $telefono);
-
-        // Validar: debe tener 9 dígitos y empezar con 9
-        return strlen($telefono) === 9 && substr($telefono, 0, 1) === '9';
-    }
-}
-
 if (!function_exists('chunksArray')) {
     /**
      * Divide un array en chunks (lotes) del tamaño especificado

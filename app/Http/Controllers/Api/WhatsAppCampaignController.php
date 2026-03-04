@@ -320,11 +320,7 @@ class WhatsAppCampaignController extends Controller
             ->where('estado', 1) // Solo activos
             ->whereNotNull('telefono')
             ->where('telefono', '!=', '')
-            ->get()
-            ->filter(function ($modal) {
-                // Validar que el teléfono sea válido
-                return validarTelefonoPeruano($modal->telefono);
-            });
+            ->get();
     }
 
     /**
