@@ -91,12 +91,12 @@ class CampaniaWhatsApp extends Model
     {
         // Refresh para obtener datos actualizados
         $this->refresh();
-        
+
         // Si ya está en un estado pausado, no cambiar (el Cron Job se encargará)
         if (in_array($this->estado, ['pausada_sin_conexion', 'pausada_hasta_mañana', 'pausada_fuera_horario'])) {
             return;
         }
-        
+
         $procesados = $this->envios_exitosos + $this->envios_fallidos;
 
         // Caso 1: Ya se procesaron todos los destinatarios → COMPLETADA
@@ -139,8 +139,8 @@ class CampaniaWhatsApp extends Model
      */
     public function resetDailyCounterIfNeeded(): void
     {
-        $today = now()->format('Y-m-d');
-        $lastSendDate = $this->fecha_ultimo_envio ? $this->fecha_ultimo_envio->format('Y-m-d') : null;
+        $today = now()->timezone('America/Lima')->format('Y-m-d');
+        $lastSendDate = $this->fecha_ultimo_envio ? \Carbon\Carbon::parse($this->fecha_ultimo_envio)->format('Y-m-d') : null;
 
         if ($lastSendDate !== $today) {
             $this->envios_hoy = 0;
@@ -272,7 +272,7 @@ class CampaniaWhatsApp extends Model
     {
         $now = now()->timezone('America/Lima'); // Peru GMT-5
         $hour = $now->hour;
-        
+
         // Horario permitido: 8:00 AM a 10:59 PM
         return $hour >= 8 && $hour < 23;
     }
@@ -284,7 +284,7 @@ class CampaniaWhatsApp extends Model
     {
         $now = now()->timezone('America/Lima');
         $nextStart = $now->copy()->setTime(8, 0, 0);
-        
+
         // Si ya pasaron las 11pm, la próxima vez es mañana a las 8am
         if ($now->hour >= 23) {
             $nextStart->addDay();
@@ -293,7 +293,7 @@ class CampaniaWhatsApp extends Model
         elseif ($now->hour < 8) {
             // nextStart ya está en 8am de hoy
         }
-        
+
         return $nextStart;
     }
 
@@ -329,7 +329,7 @@ class CampaniaWhatsApp extends Model
         if ($this->estado === 'pausada_hasta_mañana') {
             $this->resetDailyCounterIfNeeded();
             $this->refresh();
-            
+
             // Después del reset, debe tener cuota disponible
             return $this->envios_hoy < 50;
         }
@@ -340,7 +340,7 @@ class CampaniaWhatsApp extends Model
             // Resetear contador diario si es necesario
             $this->resetDailyCounterIfNeeded();
             $this->refresh();
-            
+
             // Verificar que haya cuota disponible
             return $this->envios_hoy < 50;
         }
