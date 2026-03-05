@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\libroreclamacion;
+use App\Http\Resources\ReclamacionResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -12,7 +13,7 @@ class ReclamacionesController extends Controller
     public function get(Request $request)
     {
         $reclamaciones = libroReclamacion::orderBy('id_reclamacion', 'asc')->paginate(4);
-        return response()->json($reclamaciones, 200);
+        return ReclamacionResource::collection($reclamaciones);
     }
 
     public function getById($id){

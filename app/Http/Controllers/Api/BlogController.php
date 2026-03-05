@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Blog;
 use App\Models\BlogBody;
 use App\Models\BlogHead;
+use App\Http\Resources\BlogResource;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -18,7 +19,7 @@ class BlogController extends Controller
     public function index()
     {
         $blogs = Blog::with('card')->get();
-        return response()->json($blogs, 200);
+        return BlogResource::collection($blogs);
     }
     
     //nuevos features
