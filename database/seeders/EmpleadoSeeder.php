@@ -34,7 +34,7 @@ class EmpleadoSeeder extends Seeder
                 'email' => 'keving.kpg@gmail.com',
                 'dni' => '72899618',
                 'telefono' => '929686486',
-                'id_rol' => 'administrador',
+                'id_rol' => 'ventas',
                 'id_subtipo_admin' => 2
             ],
             [
@@ -43,7 +43,7 @@ class EmpleadoSeeder extends Seeder
                 'email' => 'joseluisjlgd123@gmail.com',
                 'dni' => '75308553',
                 'telefono' => '927249150',
-                'id_rol' => 'administrador',
+                'id_rol' => 'marketing',
                 'id_subtipo_admin' => 2
             ],
             [
@@ -52,7 +52,7 @@ class EmpleadoSeeder extends Seeder
                 'email' => 'tmlighting@hotmail.com',
                 'dni' => '10299639',
                 'telefono' => '936910425',
-                'id_rol' => 'administrador',
+                'id_rol' => 'ventas',
                 'id_subtipo_admin' => 1
             ],
             [
@@ -61,7 +61,7 @@ class EmpleadoSeeder extends Seeder
                 'email' => 'krizzia_saavedra201@hotmail.com',
                 'dni' => '72851260',
                 'telefono' => '938405611',
-                'id_rol' => 'administrador',
+                'id_rol' => 'marketing',
                 'id_subtipo_admin' => 3
             ],
             [
@@ -70,7 +70,7 @@ class EmpleadoSeeder extends Seeder
                 'email' => 'gogozgallardo22@gmail.com',
                 'dni' => '73068386',
                 'telefono' => '924783666',
-                'id_rol' => 'administrador',
+                'id_rol' => 'ventas',
                 'id_subtipo_admin' => 3
             ],
             [
@@ -79,7 +79,7 @@ class EmpleadoSeeder extends Seeder
                 'email' => 'diego_torres_11@hotmail.com',
                 'dni' => '48314547',
                 'telefono' => '986377441',
-                'id_rol' => 'administrador',
+                'id_rol' => 'marketing',
                 'id_subtipo_admin' => 3
             ],
             [
