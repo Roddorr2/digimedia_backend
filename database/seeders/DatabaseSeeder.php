@@ -17,8 +17,8 @@ class DatabaseSeeder extends Seeder
             PermisosSeeder::class,
 
             // Users and employees
-            UserSeeder::class,
             EmpleadoSeeder::class,
+            UserSeeder::class,
 
             // Modules and other seeders
             BlogHeaderSeeder::class,

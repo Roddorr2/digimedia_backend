@@ -5,32 +5,28 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
-use App\Models\Rol;
-use App\Models\Empleado;
 
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Crear o actualizar usuario staging
-        $user = User::updateOrCreate(
-            ['email' => 'staging_pruebas@digimedia-marketing.com'],
-            [
-                'name' => 'Staging',
-                'password' => Hash::make('F@Q#n64QuJm%'),
-            ]
-        );
+        $PASSWORD = 'F@Q#n64QuJm%';
+        $credentials = [
+            ['name' => 'Staging',                            'email' => 'staging_pruebas@digimedia-marketing.com'],
+            ['name' => 'Kevin Esteeven Parimango Gomez',     'email' => 'keving.kpg@gmail.com'],
+            ['name' => 'Jose Luis Gutierrez',                'email' => 'joseluisjlgd123@gmail.com'],
+            ['name' => 'Juan Carlos Molina Orrego',          'email' => 'tmlighting@hotmail.com'],
+            ['name' => 'Krizzia Martina Saavedra Navarro',   'email' => 'krizzia_saavedra201@hotmail.com'],
+            ['name' => 'Gonzalo Fernando Gallardo Huertas',  'email' => 'gogozgallardo22@gmail.com'],
+            ['name' => 'Diego Arturo Torres Pacherres',      'email' => 'diego_torres_11@hotmail.com'],
+            ['name' => 'Marco Andres Herrera Albites',       'email' => 'marcoandresha@gmail.com'],
+        ];
 
-        // Intentar asignar rol administrador al empleado asociado (si existe)
-        $rolAdmin = Rol::where('nombre', 'administrador')->first();
-
-        if ($rolAdmin) {
-            $empleado = Empleado::where('id_user', $user->id)->first();
-            if ($empleado) {
-                $empleado->update(['id_rol' => $rolAdmin->id_rol]);
-            }
-        } else {
-            $this->command->warn('Rol administrador no existe.');
+        foreach ($credentials as $data) {
+            User::updateOrCreate(
+                ['email' => $data['email']],
+                ['name' => $data['name'], 'password' => Hash::make($PASSWORD)]
+            );
         }
     }
 }
