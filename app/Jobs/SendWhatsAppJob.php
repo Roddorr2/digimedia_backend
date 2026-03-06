@@ -47,7 +47,9 @@ class SendWhatsAppJob implements ShouldQueue
             ]);
 
 
-            $response = Http::post($endpoint, [
+            $response = Http::withHeaders([
+                'X-API-Key' => env('WHATSAPP_SERVICE_API_KEY'),
+            ])->post($endpoint, [
                 'telefono' => '51' . $this->data['telefono'],
                 'nombre' => $this->data['nombre'],
                 'templateOption' => (int) $this->watModal->number_message,

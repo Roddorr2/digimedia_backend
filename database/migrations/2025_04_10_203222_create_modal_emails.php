@@ -18,6 +18,11 @@ return new class extends Migration
             $table->foreignId('id_modalservicio')->constrained('modalservicios', 'id_modalservicio')->onDelete('cascade');
             $table->enum('number_message', [1, 2, 3]);
             $table->date('fecha')->default(now());
+            
+            // Índices para optimizar búsquedas
+            $table->index('estado');
+            $table->index('id_modalservicio');
+            $table->index(['estado', 'fecha']);
         });
     }
 

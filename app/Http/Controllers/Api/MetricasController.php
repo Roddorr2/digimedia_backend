@@ -9,7 +9,6 @@ use App\Models\Card;
 use App\Models\Empleado;
 use App\Models\BlogAuditoria;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class MetricasController extends Controller
@@ -40,9 +39,11 @@ class MetricasController extends Controller
     {
         [$month, $year] = $this->resolveMonthYear($request);
 
+        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
         $count = BlogAuditoria::where('accion', 'CREAR')
-            ->whereYear('fecha_hora', $year)
-            ->whereMonth('fecha_hora', $month)
+            ->whereBetween('fecha_hora', [$startDate, $endDate])
             ->count();
 
         return response()->json([
@@ -61,14 +62,16 @@ class MetricasController extends Controller
         $endDate   = Carbon::now()->endOfMonth();
         $startDate = Carbon::now()->subMonths(11)->startOfMonth();
 
-        $raw = BlogAuditoria::selectRaw(
-                "YEAR(fecha_hora) as y, MONTH(fecha_hora) as m, COUNT(*) as total"
-            )
-            ->where('accion', 'CREAR')
+        $raw = BlogAuditoria::where('accion', 'CREAR')
             ->whereBetween('fecha_hora', [$startDate, $endDate])
-            ->groupBy('y', 'm')
             ->get()
-            ->keyBy(fn($i) => $i->y . '-' . str_pad($i->m, 2, '0', STR_PAD_LEFT));
+            ->groupBy(fn($i) => Carbon::parse($i->fecha_hora)->format('Y-m'))
+            ->map(fn($group) => [
+                'y' => (int) $group->first()->fecha_hora->format('Y'),
+                'm' => (int) $group->first()->fecha_hora->format('m'),
+                'total' => $group->count()
+            ])
+            ->keyBy(fn($i) => $i['y'] . '-' . str_pad($i['m'], 2, '0', STR_PAD_LEFT));
 
         $data = [];
         for ($i = 0; $i < 12; $i++) {
@@ -77,7 +80,7 @@ class MetricasController extends Controller
 
             $data[] = [
                 "month" => $date->format('F Y'),
-                "total_blogs" => $raw[$key]->total ?? 0
+                "total_blogs" => isset($raw[$key]) ? $raw[$key]['total'] : 0
             ];
         }
 
@@ -90,18 +93,21 @@ class MetricasController extends Controller
     // 1.3 Top 5 meses con más blogs
     public function top5MothsWithMoreBlogs()
     {
-        $data = BlogAuditoria::selectRaw(
-                "YEAR(fecha_hora) as y, MONTH(fecha_hora) as m, COUNT(*) as total"
-            )
-            ->where('accion', 'CREAR')
-            ->groupBy('y', 'm')
-            ->orderByDesc('total')
-            ->limit(5)
+        $data = BlogAuditoria::where('accion', 'CREAR')
             ->get()
+            ->groupBy(fn($i) => Carbon::parse($i->fecha_hora)->format('Y-m'))
+            ->map(fn($group) => [
+                'y' => (int) $group->first()->fecha_hora->format('Y'),
+                'm' => (int) $group->first()->fecha_hora->format('m'),
+                'total' => $group->count()
+            ])
+            ->sortByDesc('total')
+            ->take(5)
             ->map(fn($i) => [
-                "month" => Carbon::create($i->y, $i->m)->format('F Y'),
-                "total_blogs" => $i->total
-            ]);
+                "month" => Carbon::create($i['y'], $i['m'])->format('F Y'),
+                "total_blogs" => $i['total']
+            ])
+            ->values();
 
         return response()->json([
             "status" => 200,
@@ -124,12 +130,13 @@ class MetricasController extends Controller
         ]);
 
         $plantilla = $validated['id_plantilla'];
+        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
         $cards = Card::join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
             ->where('cards.id_plantilla', $plantilla)
             ->where('ba.accion', 'CREAR')
-            ->whereYear('ba.fecha_hora', $year)
-            ->whereMonth('ba.fecha_hora', $month)
+            ->whereBetween('ba.fecha_hora', [$startDate, $endDate])
             ->select('cards.*')
             ->get();
 
@@ -150,12 +157,13 @@ class MetricasController extends Controller
         ]);
 
         $plantilla = $validated['id_plantilla'];
+        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
         $count = Card::join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
             ->where('cards.id_plantilla', $plantilla)
             ->where('ba.accion', 'CREAR')
-            ->whereYear('ba.fecha_hora', $year)
-            ->whereMonth('ba.fecha_hora', $month)
+            ->whereBetween('ba.fecha_hora', [$startDate, $endDate])
             ->count();
 
         return response()->json([
@@ -168,21 +176,19 @@ class MetricasController extends Controller
     public function tableCardsByIdPlantilla(Request $request)
     {
         [$month, $year] = $this->resolveMonthYear($request);
+        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
-        $data = [];
-        for ($i = 1; $i <= 3; $i++) {
-            $count = Card::join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
-                ->where('cards.id_plantilla', $i)
-                ->where('ba.accion', 'CREAR')
-                ->whereYear('ba.fecha_hora', $year)
-                ->whereMonth('ba.fecha_hora', $month)
-                ->count();
-
-            $data[] = [
-                "id_plantilla" => $i,
-                "count_cards" => $count
-            ];
-        }
+        $data = Card::query()
+            ->selectRaw('cards.id_plantilla, COUNT(cards.id_card) as count_cards')
+            ->join('blog_auditoria as ba', function ($join) use ($startDate, $endDate) {
+                $join->on('ba.id_blog', '=', 'cards.id_blog')
+                     ->where('ba.accion', '=', 'CREAR')
+                     ->whereBetween('ba.fecha_hora', [$startDate, $endDate]);
+            })
+            ->groupBy('cards.id_plantilla')
+            ->orderBy('cards.id_plantilla')
+            ->get();
 
         return response()->json([
             "status" => 200,
@@ -207,12 +213,13 @@ class MetricasController extends Controller
         ]);
 
         $id = $validated['id_empleado'];
+        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
         $cards = Card::join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
             ->where('cards.id_empleado', $id)
             ->where('ba.accion', 'CREAR')
-            ->whereYear('ba.fecha_hora', $year)
-            ->whereMonth('ba.fecha_hora', $month)
+            ->whereBetween('ba.fecha_hora', [$startDate, $endDate])
             ->select('cards.*')
             ->get();
 
@@ -235,12 +242,13 @@ class MetricasController extends Controller
         ]);
 
         $id = $validated['id_empleado'];
+        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
         $count = Card::join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
             ->where('cards.id_empleado', $id)
             ->where('ba.accion', 'CREAR')
-            ->whereYear('ba.fecha_hora', $year)
-            ->whereMonth('ba.fecha_hora', $month)
+            ->whereBetween('ba.fecha_hora', [$startDate, $endDate])
             ->count();
 
         return response()->json([
@@ -253,24 +261,20 @@ class MetricasController extends Controller
     public function tableCardsByEmpleado(Request $request)
     {
         [$month, $year] = $this->resolveMonthYear($request);
+        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
-        $empleados = Empleado::where('id_rol', 1)->get();
-
-        $data = [];
-        foreach ($empleados as $empleado) {
-            $count = Card::join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
-                ->where('cards.id_empleado', $empleado->id_empleado)
-                ->where('ba.accion', 'CREAR')
-                ->whereYear('ba.fecha_hora', $year)
-                ->whereMonth('ba.fecha_hora', $month)
-                ->count();
-
-            $data[] = [
-                "id_empleado" => $empleado->id_empleado,
-                "nombre_empleado" => $empleado->nombre,
-                "count_cards" => $count
-            ];
-        }
+        $data = Empleado::query()
+            ->selectRaw('empleados.id_empleado, empleados.nombre as nombre_empleado, COUNT(DISTINCT CASE WHEN ba.id_blog IS NOT NULL THEN cards.id_card END) as count_cards')
+            ->leftJoin('cards', 'cards.id_empleado', '=', 'empleados.id_empleado')
+            ->leftJoin('blog_auditoria as ba', function ($join) use ($startDate, $endDate) {
+                $join->on('ba.id_blog', '=', 'cards.id_blog')
+                     ->where('ba.accion', '=', 'CREAR')
+                     ->whereBetween('ba.fecha_hora', [$startDate, $endDate]);
+            })
+            ->where('empleados.id_rol', 1)
+            ->groupBy('empleados.id_empleado', 'empleados.nombre')
+            ->get();
 
         return response()->json([
             "status" => 200,
@@ -285,10 +289,11 @@ class MetricasController extends Controller
     public function tiempoCreacionEdicionPublicacionCard(Request $request)
     {
         [$month, $year] = $this->resolveMonthYear($request);
+        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
         $data = BlogAuditoria::whereIn('accion', ['CREAR', 'ACTUALIZAR'])
-            ->whereYear('fecha_hora', $year)
-            ->whereMonth('fecha_hora', $month)
+            ->whereBetween('fecha_hora', [$startDate, $endDate])
             ->orderBy('id_blog')
             ->get()
             ->groupBy('id_blog')
@@ -314,28 +319,39 @@ class MetricasController extends Controller
         ]);
     }
 
-    //4.2 Frecuencia de publicacion de cards todos los empleados
-    //Devuelve la frecuencia de publicación de cards por empleado al mes.
-    public function frecuenciaPublicacionCardsTodosEmpleados() {
+    // 4.2 Frecuencia de publicación de cards todos los empleados
+    // Devuelve la frecuencia de publicación de cards por empleado al mes.
+    public function frecuenciaPublicacionCardsTodosEmpleados()
+    {
         try {
-            $empleados = Empleado::where('id_rol', 1)->get();
-            $frecuenciaCards = [];
-            foreach ($empleados as $empleado) {
-                $cardsCount = Card::where('id_empleado', $empleado->id_empleado)->count();
-                $mesesTrabajados = Carbon::now()->diffInMonths(Carbon::parse($empleado->created_at)) + 1;
-                $frecuenciaMensual = $mesesTrabajados > 0 ? $cardsCount / $mesesTrabajados : 0;
-                $frecuenciaCards[] = [
-                    'id_empleado' => $empleado->id_empleado,
-                    'nombre_empleado' => $empleado->nombre,
-                    'frecuencia_publicacion_mensual' => round($frecuenciaMensual, 2)
-                ];
-            }
+            $now = now();
+
+            $data = Empleado::where('id_rol', 1)
+                ->withCount('cards')
+                ->get()
+                ->map(function ($empleado) use ($now) {
+
+                    // Protección si created_at es null
+                    $mesesTrabajados = $empleado->created_at
+                        ? $empleado->created_at->diffInMonths($now) + 1
+                        : 1;
+
+                    return [
+                        'id_empleado' => $empleado->id_empleado,
+                        'nombre_empleado' => $empleado->nombre,
+                        'frecuencia_publicacion_mensual' =>
+                            round($empleado->cards_count / $mesesTrabajados, 2),
+                    ];
+                });
+
             return response()->json([
                 "status" => 200,
-                'data' => $frecuenciaCards
-            ], 200);
+                "data"   => $data,
+            ]);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

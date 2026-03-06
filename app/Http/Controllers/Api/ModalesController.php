@@ -96,9 +96,9 @@ class ModalesController extends Controller
                 dispatch(new SendCustomEmailJob($request->correo, $data, $request->id_servicio,2))
                         ->delay(now()->addMinutes(30));
 
-                //AQUI SE ENVÍA EL TERCER CORREO (+3 horas después)
+                //AQUI SE ENVÍA EL TERCER CORREO
                 dispatch(new SendCustomEmailJob($request->correo, $data, $request->id_servicio,3))
-                        ->delay(now()->addHours(3));
+                        ->delay(now()->addHours(1)); // Cambiado a 1 hora, antes era 3 horas
 
                 // ------- AQUI SE ENVIAN MENSAJES WHATSAPP -------
                 $wat1 = WatModal::where('id_modalservicio', $modal_servicio->id_modalservicio)
@@ -119,7 +119,7 @@ class ModalesController extends Controller
                     ->first();
 
                 dispatch(new SendWhatsAppJob($wat3, $data, $request->id_servicio))
-                    ->delay(now()->addHours(3));
+                    ->delay(now()->addHours(1)); // Cambiado a 1 hora, antes era 3 horas
 
 
                 if (isset($first_email_modal)) {

@@ -9,6 +9,7 @@ use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\RegisterUser;
+use App\Http\Middleware\ValidateApiKey;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -23,7 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'ability' => CheckForAnyAbility::class,
             'role' => CheckRole::class,
             'permission' => CheckPermission::class,
-            'actions' => RegisterUser::class
+            'actions' => RegisterUser::class,
+            'api.key' => ValidateApiKey::class
         ]);
         $middleware->statefulApi();
         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
