@@ -100,6 +100,54 @@ class Empleado extends Model
         };
     }
 
+    // ============================================================
+    // SCOPES para queries reutilizables
+    // ============================================================
+
+    /**
+     * Filtrar empleados activos
+     * Uso: Empleado::activos()->get()
+     */
+    public function scopeActivos($query)
+    {
+        // Suponiendo que existe columna 'activo' o similar
+        // Si no existe, modificar según tu lógica
+        return $query; // Por ahora sin filtro, ajustar si necesario
+    }
+
+    /**
+     * Filtrar empleados de un rol específico
+     * Uso: Empleado::delRol(1)->get()
+     */
+    public function scopeDelRol($query, $rolId)
+    {
+        return $query->where('id_rol', $rolId);
+    }
+
+    /**
+     * Cargar relaciones comúnmente usadas
+     * Uso: Empleado::conRelaciones()->get()
+     */
+    public function scopeConRelaciones($query)
+    {
+        return $query->with(['user', 'rol', 'subtipoAdmin']);
+    }
+
+    /**
+     * Buscar empleado por email o nombre
+     * Uso: Empleado::buscar('juan')->get()
+     */
+    public function scopeBuscar($query, $termino)
+    {
+        if (!$termino) {
+            return $query;
+        }
+
+        return $query->where('email', 'like', "%{$termino}%")
+                     ->orWhere('nombre', 'like', "%{$termino}%")
+                     ->orWhere('apellido', 'like', "%{$termino}%");
+    }
+
     /**
      * Retorna si la instancia de empleado puede ser modificada por otra de mayor jerarquía
      * @return boolean
