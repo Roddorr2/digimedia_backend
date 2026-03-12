@@ -21,8 +21,8 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('login', function (Request $request) {
             return [
 
-                // Límite por IP: máx 5 intentos/min (protege contra brute force distribuido)
-                Limit::perMinute(5)
+                // Límite por IP: máx 10 intentos/min (protege contra brute force distribuido)
+                Limit::perMinute(10)
                     ->by('login_ip:' . $request->ip())
                     ->response(function () {
                         Log::warning('Rate limit alcanzado por IP', [
@@ -36,8 +36,8 @@ class AppServiceProvider extends ServiceProvider
                         ], 429);
                     }),
 
-                // Límite por email: máx 3 intentos/min (protege cuentas individuales)
-                Limit::perMinute(3)
+                // Límite por email: máx 5 intentos/min (protege cuentas individuales)
+                Limit::perMinute(5)
                     ->by('login_email:' . strtolower($request->input('email', 'unknown')))
                     ->response(function () {
                         Log::warning('Rate limit alcanzado por email', [

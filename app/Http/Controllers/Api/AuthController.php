@@ -14,6 +14,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ForgotPassword;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
@@ -87,9 +88,34 @@ class AuthController extends Controller
                 'password' => 'required',
             ]);
 
+            // verificar si la cuenta está bloqueada por backoff progresivo
+            $backoffKey  = 'login_backoff:' . strtolower($request->email);
+            $attemptsKey = 'login_attempts:' . strtolower($request->email);
+            $backoffExpiry = Cache::get($backoffKey);
+
+            if ($backoffExpiry && now()->lessThan($backoffExpiry)) {
+                $waitSeconds = (int) now()->diffInSeconds($backoffExpiry);
+                $waitMinutes = ceil($waitSeconds / 60);
+
+                Log::warning('Login bloqueado por backoff progresivo', [
+                    'email'        => $request->email,
+                    'ip'           => $request->ip(),
+                    'wait_minutes' => $waitMinutes,
+                ]);
+
+                return response()->json([
+                    'status'      => 'error',
+                    'message'     => "Cuenta temporalmente bloqueada. Intenta de nuevo en {$waitMinutes} minuto(s).",
+                    'retry_after' => $waitSeconds,
+                ], 429);
+            }
+
             $user = User::where('email', $request->email)->first();
 
             if (!$user) {
+                // registrar intento fallido en backoff (cuenta no encontrada)
+                $this->registrarIntentoFallido($attemptsKey, $backoffKey, $request, null);
+
                 return response()->json([
                     'status'  => 'error',
                     'message' => 'Esta cuenta no está registrada en Digimedia.'
@@ -97,12 +123,18 @@ class AuthController extends Controller
             }
 
             if (!Hash::check($request->password, $user->password)) {
+                // registrar intento fallido en backoff (contraseña incorrecta)
+                $this->registrarIntentoFallido($attemptsKey, $backoffKey, $request, $user);
+
                 return response()->json([
                     'status'  => 'error',
                     'message' => 'El email o la contraseña son incorrectos.'
                 ], 401);
             }
 
+            // login exitoso → resetear contadores de backoff
+            Cache::forget($backoffKey);
+            Cache::forget($attemptsKey);
 
             $empleado = $user->empleado;
             if (!$empleado || !$empleado->rol) {
@@ -120,7 +152,6 @@ class AuthController extends Controller
 
             $rol = $empleado->rol;
             $abilities = [$rol->nombre];
-
             $permisos = $rol->permisos->pluck('slug')->toArray();
 
             // quitar tokens anteriores
@@ -137,14 +168,11 @@ class AuthController extends Controller
                 'token'    => $token,
             ]);
         } catch (\Exception $e) {
-            return response()->json(
-                [
-                    'status' => 'error',
-                    'message' => 'Ocurrió un error en el servidor',
-                    'error' => config('app.debug') ? $e->getMessage() : null
-                ],
-                500
-            );
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Ocurrió un error en el servidor',
+                'error'   => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
         }
     }
 
@@ -157,6 +185,46 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Sesión cerrada exitosamente'
+        ]);
+    }
+
+    /**
+     * Incrementa el contador de intentos fallidos y aplica bloqueo progresivo si corresponde.
+     * Escala: 4+ intentos → 2min, 7+ → 5min, 10+ → 15min, 15+ → 60min.
+     * Los contadores expiran automáticamente a las 2 horas de inactividad.
+     */
+    private function registrarIntentoFallido(string $attemptsKey, string $backoffKey, Request $request, ?User $user): void
+    {
+        if (Cache::has($attemptsKey)) {
+            $attempts = Cache::increment($attemptsKey);
+        } else {
+            $attempts = 1;
+            Cache::put($attemptsKey, 1, now()->addHours(2));
+        }
+
+        $lockoutMinutes = match (true) {
+            $attempts >= 15 => 60,
+            $attempts >= 10 => 15,
+            $attempts >= 7  => 5,
+            $attempts >= 4  => 2,
+            default         => 0,
+        };
+
+        if ($lockoutMinutes > 0) {
+            Cache::put($backoffKey, now()->addMinutes($lockoutMinutes), now()->addMinutes($lockoutMinutes));
+            Log::warning('Backoff progresivo activado', [
+                'email'           => $request->email,
+                'ip'              => $request->ip(),
+                'attempts'        => $attempts,
+                'lockout_minutes' => $lockoutMinutes,
+            ]);
+        }
+
+        Log::info('Login fallido', [
+            'email'                => $request->email,
+            'ip'                   => $request->ip(),
+            'reason'               => !$user ? 'user_not_found' : 'wrong_password',
+            'accumulated_attempts' => $attempts,
         ]);
     }
 
