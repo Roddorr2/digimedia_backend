@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\ForgotPassword;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
@@ -84,8 +85,9 @@ class AuthController extends Controller
     {
         try {
             $request->validate([
-                'email'    => 'required|email',
-                'password' => 'required',
+                'email'         => 'required|email',
+                'password'      => 'required',
+                'captcha_token' => 'required|string',
             ]);
 
             // verificar si la cuenta está bloqueada por backoff progresivo
@@ -108,6 +110,19 @@ class AuthController extends Controller
                     'message'     => "Cuenta temporalmente bloqueada. Intenta de nuevo en {$waitMinutes} minuto(s).",
                     'retry_after' => $waitSeconds,
                 ], 429);
+            }
+
+            // verificar Turnstile CAPTCHA antes de consultar la BD
+            if (!$this->verifyTurnstile($request->captcha_token, $request->ip())) {
+                Log::warning('Turnstile verification failed', [
+                    'email' => $request->email,
+                    'ip'    => $request->ip(),
+                ]);
+
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Verificación de seguridad fallida. Recarga la página e intenta de nuevo.',
+                ], 422);
             }
 
             $user = User::where('email', $request->email)->first();
@@ -176,7 +191,6 @@ class AuthController extends Controller
         }
     }
 
-
     //logout
     public function logout(Request $request)
     {
@@ -226,6 +240,40 @@ class AuthController extends Controller
             'reason'               => !$user ? 'user_not_found' : 'wrong_password',
             'accumulated_attempts' => $attempts,
         ]);
+    }
+
+    /**
+     * Verifica el token de Cloudflare Turnstile contra la API de siteverify.
+     * Si TURNSTILE_SECRET_KEY está vacío o no definido,
+     * retorna true (permite desarrollo local sin widget CAPTCHA).
+     */
+    private function verifyTurnstile(string $token, string $ip): bool
+    {
+        $secret = config('services.turnstile.secret_key');
+
+        // bypass: sin secret key → skip validation (dev/testing/rollback)
+        if (empty($secret)) {
+            return true;
+        }
+
+        try {
+            $response = Http::asForm()
+                ->timeout(5)
+                ->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+                    'secret'   => $secret,
+                    'response' => $token,
+                    'remoteip' => $ip,
+                ]);
+
+            return $response->successful() && ($response->json('success') === true);
+        } catch (\Exception $e) {
+            Log::error('Turnstile API error', [
+                'error' => $e->getMessage(),
+                'ip'    => $ip,
+            ]);
+
+            return false;
+        }
     }
 
     public function forgotPassword(Request $request)
