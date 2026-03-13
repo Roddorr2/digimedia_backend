@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Services\CacheService;
 
 class Rol extends Model
 {
@@ -25,5 +26,20 @@ class Rol extends Model
     public function permisos()
     {
         return $this->belongsToMany(Permiso::class, 'role_permission', 'id_rol', 'id_permiso');
+    }
+
+    protected static function booted()
+    {
+        static::updated(function ($rol) {
+            CacheService::invalidateRoles();
+        });
+
+        static::created(function ($rol) {
+            CacheService::invalidateRoles();
+        });
+
+        static::deleted(function ($rol) {
+            CacheService::invalidateRoles();
+        });
     }
 }

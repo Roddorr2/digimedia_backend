@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Cloudinary\Cloudinary;
+use App\Services\CacheService;
 class Empleado extends Model
 {
     use HasFactory;
@@ -100,43 +101,21 @@ class Empleado extends Model
         };
     }
 
-    // ============================================================
-    // SCOPES para queries reutilizables
-    // ============================================================
-
-    /**
-     * Filtrar empleados activos
-     * Uso: Empleado::activos()->get()
-     */
     public function scopeActivos($query)
     {
-        // Suponiendo que existe columna 'activo' o similar
-        // Si no existe, modificar según tu lógica
-        return $query; // Por ahora sin filtro, ajustar si necesario
+        return $query;
     }
 
-    /**
-     * Filtrar empleados de un rol específico
-     * Uso: Empleado::delRol(1)->get()
-     */
     public function scopeDelRol($query, $rolId)
     {
         return $query->where('id_rol', $rolId);
     }
 
-    /**
-     * Cargar relaciones comúnmente usadas
-     * Uso: Empleado::conRelaciones()->get()
-     */
     public function scopeConRelaciones($query)
     {
         return $query->with(['user', 'rol', 'subtipoAdmin']);
     }
 
-    /**
-     * Buscar empleado por email o nombre
-     * Uso: Empleado::buscar('juan')->get()
-     */
     public function scopeBuscar($query, $termino)
     {
         if (!$termino) {
@@ -148,10 +127,6 @@ class Empleado extends Model
                      ->orWhere('apellido', 'like', "%{$termino}%");
     }
 
-    /**
-     * Retorna si la instancia de empleado puede ser modificada por otra de mayor jerarquía
-     * @return boolean
-     */
     public function canBeModifiedBy(Empleado $currentEmpleado)
     {
         if(!$currentEmpleado)
@@ -159,7 +134,6 @@ class Empleado extends Model
             return false;
         }
         
-        // Automodificación
         if($this->id_empleado === $currentEmpleado->id_empleado)
         {
             return true;
@@ -168,24 +142,32 @@ class Empleado extends Model
         $currentLevel = $currentEmpleado->getPrivilegeLevel();
         $targetLevel = $this->getPrivilegeLevel();
 
-        // Modificado/Eliminado por Superadmin
         if($currentLevel === 100)
         {
             return true;
         }
 
-        // Modificado por desarrollador o administrador común
         if($currentLevel >= 80)
         {
             return $targetLevel < $currentLevel;
         }
 
-        // Ventas/Marketing no pueden modificar
         return false;
     } 
 
     public function blogAuditoria()
     {
         return $this->hasMany(BlogAuditoria::class, 'id_empleado', 'id_empleado');
+    }
+
+    protected static function booted()
+    {
+        static::updated(function ($empleado) {
+            CacheService::invalidateEmpleado($empleado->id_empleado);
+        });
+
+        static::deleted(function ($empleado) {
+            CacheService::invalidateEmpleado($empleado->id_empleado);
+        });
     }
 }
