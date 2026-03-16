@@ -15,15 +15,15 @@ class FlushCacheCommand extends Command
     {
         if ($this->option('all')) {
             cache()->flush();
-            $this->info('✅ Caché completamente limpiado');
+            $this->info('[OK] Caché completamente limpiado');
             return;
         }
 
-        $this->info('🧹 Limpiando caché de datos sensibles...');
+        $this->info('[INFO] Limpiando caché de datos sensibles...');
         
         CacheService::clearSensitiveData();
         
-        $this->info('✅ Caché de roles y empleados limpiado');
-        $this->info('ℹ️  Uso: php artisan cache:smart-flush --all (para limpiar todo)');
+        $this->info('[OK] Caché de roles y empleados limpiado');
+        $this->info('[INFO] Uso: php artisan cache:smart-flush --all (para limpiar todo)');
     }
 }
