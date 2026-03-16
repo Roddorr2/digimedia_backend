@@ -100,10 +100,32 @@ class Empleado extends Model
         };
     }
 
-    /**
-     * Retorna si la instancia de empleado puede ser modificada por otra de mayor jerarquía
-     * @return boolean
-     */
+    public function scopeActivos($query)
+    {
+        return $query;
+    }
+
+    public function scopeDelRol($query, $rolId)
+    {
+        return $query->where('id_rol', $rolId);
+    }
+
+    public function scopeConRelaciones($query)
+    {
+        return $query->with(['user', 'rol', 'subtipoAdmin']);
+    }
+
+    public function scopeBuscar($query, $termino)
+    {
+        if (!$termino) {
+            return $query;
+        }
+
+        return $query->where('email', 'like', "%{$termino}%")
+                     ->orWhere('nombre', 'like', "%{$termino}%")
+                     ->orWhere('apellido', 'like', "%{$termino}%");
+    }
+
     public function canBeModifiedBy(Empleado $currentEmpleado)
     {
         if(!$currentEmpleado)
@@ -111,7 +133,6 @@ class Empleado extends Model
             return false;
         }
         
-        // Automodificación
         if($this->id_empleado === $currentEmpleado->id_empleado)
         {
             return true;
@@ -120,19 +141,16 @@ class Empleado extends Model
         $currentLevel = $currentEmpleado->getPrivilegeLevel();
         $targetLevel = $this->getPrivilegeLevel();
 
-        // Modificado/Eliminado por Superadmin
         if($currentLevel === 100)
         {
             return true;
         }
 
-        // Modificado por desarrollador o administrador común
         if($currentLevel >= 80)
         {
             return $targetLevel < $currentLevel;
         }
 
-        // Ventas/Marketing no pueden modificar
         return false;
     } 
 
