@@ -244,17 +244,11 @@ class AuthController extends Controller
 
     /**
      * Verifica el token de Cloudflare Turnstile contra la API de siteverify.
-     * Si TURNSTILE_SECRET_KEY está vacío o no definido,
-     * retorna true (permite desarrollo local sin widget CAPTCHA).
+     * Si TURNSTILE_SECRET_KEY está vacío o no definido
      */
     private function verifyTurnstile(string $token, string $ip): bool
     {
         $secret = config('services.turnstile.secret_key');
-
-        // bypass: sin secret key → skip validation (dev/testing/rollback)
-        if (empty($secret)) {
-            return true;
-        }
 
         try {
             $response = Http::asForm()
