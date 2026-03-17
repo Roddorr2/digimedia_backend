@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use Carbon\Carbon;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Empleado;
 use App\Models\Rol;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ForgotPassword;
 use Illuminate\Support\Str;
@@ -90,27 +91,9 @@ class AuthController extends Controller
                 'captcha_token' => 'required|string',
             ]);
 
-            // verificar si la cuenta está bloqueada por backoff progresivo
-            $backoffKey  = 'login_backoff:' . strtolower($request->email);
-            $attemptsKey = 'login_attempts:' . strtolower($request->email);
-            $backoffExpiry = Cache::get($backoffKey);
-
-            if ($backoffExpiry && now()->lessThan($backoffExpiry)) {
-                $waitSeconds = (int) now()->diffInSeconds($backoffExpiry);
-                $waitMinutes = ceil($waitSeconds / 60);
-
-                Log::warning('Login bloqueado por backoff progresivo', [
-                    'email'        => $request->email,
-                    'ip'           => $request->ip(),
-                    'wait_minutes' => $waitMinutes,
-                ]);
-
-                return response()->json([
-                    'status'      => 'error',
-                    'message'     => "Cuenta temporalmente bloqueada. Intenta de nuevo en {$waitMinutes} minuto(s).",
-                    'retry_after' => $waitSeconds,
-                ], 429);
-            }
+            $normalizedEmail = strtolower($request->email);
+            $backoffKey = 'login_backoff:' . $normalizedEmail;
+            $attemptsKey = 'login_attempts:' . $normalizedEmail;
 
             // verificar Turnstile CAPTCHA antes de consultar la BD
             if (!$this->verifyTurnstile($request->captcha_token, $request->ip())) {
@@ -125,25 +108,56 @@ class AuthController extends Controller
                 ], 422);
             }
 
+            $activeBackoffSeconds = $this->obtenerEsperaBackoffSegundos($backoffKey);
+            if ($activeBackoffSeconds > 0) {
+                $attemptResult = $this->registrarIntentoFallido(
+                    $attemptsKey,
+                    $backoffKey,
+                    $request,
+                    'blocked_by_backoff'
+                );
+
+                return $this->responderBloqueoBackoff(
+                    $request,
+                    max($activeBackoffSeconds, $attemptResult['wait_seconds'])
+                );
+            }
+
             $user = User::where('email', $request->email)->first();
 
             if (!$user) {
-                // registrar intento fallido en backoff (cuenta no encontrada)
-                $this->registrarIntentoFallido($attemptsKey, $backoffKey, $request, null);
+                $attemptResult = $this->registrarIntentoFallido(
+                    $attemptsKey,
+                    $backoffKey,
+                    $request,
+                    'user_not_found'
+                );
+
+                if ($attemptResult['wait_seconds'] > 0) {
+                    return $this->responderBloqueoBackoff($request, $attemptResult['wait_seconds']);
+                }
 
                 return response()->json([
                     'status'  => 'error',
-                    'message' => 'Esta cuenta no está registrada en Digimedia.'
+                    'message' => 'Esta cuenta no está registrada en Digimedia.',
                 ], 404);
             }
 
             if (!Hash::check($request->password, $user->password)) {
-                // registrar intento fallido en backoff (contraseña incorrecta)
-                $this->registrarIntentoFallido($attemptsKey, $backoffKey, $request, $user);
+                $attemptResult = $this->registrarIntentoFallido(
+                    $attemptsKey,
+                    $backoffKey,
+                    $request,
+                    'wrong_password'
+                );
+
+                if ($attemptResult['wait_seconds'] > 0) {
+                    return $this->responderBloqueoBackoff($request, $attemptResult['wait_seconds']);
+                }
 
                 return response()->json([
                     'status'  => 'error',
-                    'message' => 'El email o la contraseña son incorrectos.'
+                    'message' => 'El email o la contraseña son incorrectos.',
                 ], 401);
             }
 
@@ -205,27 +219,32 @@ class AuthController extends Controller
     /**
      * Incrementa el contador de intentos fallidos y aplica bloqueo progresivo si corresponde.
      * Escala: 4+ intentos → 2min, 7+ → 5min, 10+ → 15min, 15+ → 60min.
-     * Los contadores expiran automáticamente a las 2 horas de inactividad.
+     * Los contadores expiran automáticamente tras 120 minutos de inactividad,
+     * asegurando TTL mayor al mayor bloqueo configurado.
      */
-    private function registrarIntentoFallido(string $attemptsKey, string $backoffKey, Request $request, ?User $user): void
+    private function registrarIntentoFallido(
+        string $attemptsKey,
+        string $backoffKey,
+        Request $request,
+        string $reason
+    ): array
     {
         if (Cache::has($attemptsKey)) {
             $attempts = Cache::increment($attemptsKey);
         } else {
             $attempts = 1;
-            Cache::put($attemptsKey, 1, now()->addHours(2));
         }
 
-        $lockoutMinutes = match (true) {
-            $attempts >= 15 => 60,
-            $attempts >= 10 => 15,
-            $attempts >= 7  => 5,
-            $attempts >= 4  => 2,
-            default         => 0,
-        };
+        Cache::put($attemptsKey, $attempts, now()->addMinutes(120));
+
+        $lockoutMinutes = $this->obtenerMinutosBloqueo($attempts);
+        $waitSeconds = 0;
 
         if ($lockoutMinutes > 0) {
-            Cache::put($backoffKey, now()->addMinutes($lockoutMinutes), now()->addMinutes($lockoutMinutes));
+            $backoffExpiry = now()->addMinutes($lockoutMinutes);
+            Cache::put($backoffKey, $backoffExpiry->timestamp, $backoffExpiry);
+            $waitSeconds = $this->obtenerEsperaBackoffSegundos($backoffKey);
+
             Log::warning('Backoff progresivo activado', [
                 'email'           => $request->email,
                 'ip'              => $request->ip(),
@@ -237,9 +256,72 @@ class AuthController extends Controller
         Log::info('Login fallido', [
             'email'                => $request->email,
             'ip'                   => $request->ip(),
-            'reason'               => !$user ? 'user_not_found' : 'wrong_password',
+            'reason'               => $reason,
             'accumulated_attempts' => $attempts,
         ]);
+
+        return [
+            'attempts'     => $attempts,
+            'wait_seconds' => $waitSeconds,
+        ];
+    }
+
+    private function obtenerMinutosBloqueo(int $attempts): int
+    {
+        return match (true) {
+            $attempts >= 15 => 60,
+            $attempts >= 10 => 15,
+            $attempts >= 7  => 5,
+            $attempts >= 4  => 2,
+            default         => 0,
+        };
+    }
+
+    private function obtenerEsperaBackoffSegundos(string $backoffKey): int
+    {
+        $rawExpiry = Cache::get($backoffKey);
+        if (!$rawExpiry) {
+            return 0;
+        }
+
+        if ($rawExpiry instanceof \DateTimeInterface) {
+            $expiryTimestamp = $rawExpiry->getTimestamp();
+        } elseif (is_numeric($rawExpiry)) {
+            $expiryTimestamp = (int) $rawExpiry;
+        } else {
+            try {
+                $expiryTimestamp = Carbon::parse((string) $rawExpiry)->timestamp;
+            } catch (\Throwable $e) {
+                Cache::forget($backoffKey);
+                return 0;
+            }
+        }
+
+        $waitSeconds = $expiryTimestamp - now()->timestamp;
+        if ($waitSeconds <= 0) {
+            Cache::forget($backoffKey);
+            return 0;
+        }
+
+        return $waitSeconds;
+    }
+
+    private function responderBloqueoBackoff(Request $request, int $waitSeconds): JsonResponse
+    {
+        $waitMinutes = (int) ceil($waitSeconds / 60);
+
+        Log::warning('Login bloqueado por backoff progresivo', [
+            'email'                => $request->email,
+            'ip'                   => $request->ip(),
+            'wait_minutes'         => $waitMinutes,
+            'retry_after_seconds'  => $waitSeconds,
+        ]);
+
+        return response()->json([
+            'status'      => 'error',
+            'message'     => "Cuenta temporalmente bloqueada. Intenta de nuevo en {$waitMinutes} minuto(s).",
+            'retry_after' => $waitSeconds,
+        ], 429);
     }
 
     /**
