@@ -28,7 +28,7 @@ use App\Http\Controllers\Api\PlantillasEmailController;
 
 // public routes test
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/reset_password', [AuthController::class, "forgotPassword"]);
 Route::post('/update_password', [AuthController::class, "updatePassword"]);
 
