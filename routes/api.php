@@ -27,7 +27,6 @@ use App\Http\Controllers\Api\PlantillasWhatsappController;
 use App\Http\Controllers\Api\PlantillasEmailController;
 
 // public routes test
-Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/reset_password', [AuthController::class, "forgotPassword"]);
 Route::post('/update_password', [AuthController::class, "updatePassword"]);
@@ -65,14 +64,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // autenticación
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::middleware('permission:crear-empleados')->post('/register', [AuthController::class, 'register']);
     Route::post('/empleados/verify-password', [EmpleadoController::class, 'verifyPassword']);
 
-    // imágenes de perfil (throttle para prevenir abuso de créditos de Cloudinary)
-    Route::middleware('throttle:20,1')->group(function () {
-        Route::post('/empleados/{id}/upload-signature', [EmpleadoController::class, 'generateUploadSignature']);
-        Route::post('/empleados/{id}/image', [EmpleadoController::class, 'updateProfileImage']);
-        Route::delete('/empleados/{id}/image', [EmpleadoController::class, 'deleteProfileImage']);
-    });
+    // imágenes
+    Route::post('/empleados/{id}/image', [EmpleadoController::class, 'updateProfileImage']);
+    Route::delete('/empleados/{id}/image', [EmpleadoController::class, 'deleteProfileImage']);
     
     Route::middleware('permission:ver-blogs')->get('/cards', [CardController::class, "index"]);
     Route::middleware('permission:ver-contactos')->get('/contactanos', [ContactanosController::class, "get"]);
