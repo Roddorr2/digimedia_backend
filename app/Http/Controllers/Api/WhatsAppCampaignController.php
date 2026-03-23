@@ -320,7 +320,10 @@ class WhatsAppCampaignController extends Controller
             ->where('estado', 1) // Solo activos
             ->whereNotNull('telefono')
             ->where('telefono', '!=', '')
-            ->get();
+            ->orderBy('id_modalservicio') // Priorizar el registro más antiguo en caso de duplicados
+            ->get()
+            ->unique('telefono') // Enviar solo un mensaje por número de teléfono
+            ->values();
     }
 
     /**

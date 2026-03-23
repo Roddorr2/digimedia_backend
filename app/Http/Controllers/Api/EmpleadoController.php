@@ -321,71 +321,143 @@ class EmpleadoController extends Controller
     }
 
 
+    public function generateUploadSignature(Request $request, $id)
+    {
+        $authUser     = Auth::user();
+        $authEmpleado = $authUser->empleado;
+
+        if (!$authEmpleado) {
+            return response()->json(['status' => 403, 'message' => 'No se encontró el empleado asociado'], 403);
+        }
+
+        $targetEmpleado = Empleado::where('id_empleado', $id)->first();
+        if (!$targetEmpleado) {
+            return response()->json(['status' => 404, 'message' => 'Empleado no encontrado'], 404);
+        }
+
+        if (!$targetEmpleado->canBeModifiedBy($authEmpleado)) {
+            Log::warning('Intento no autorizado de generar firma de subida de imagen', [
+                'target_id' => $id,
+                'user_id'   => $authUser->id,
+            ]);
+            return response()->json(['status' => 403, 'message' => 'No tienes permiso para subir imágenes en este perfil'], 403);
+        }
+
+        $paramsToSign = $request->all();
+
+        // Validar que el timestamp esté presente y dentro de la ventana de 2 minutos
+        if (empty($paramsToSign['timestamp']) || !is_numeric($paramsToSign['timestamp'])) {
+            return response()->json(['status' => 422, 'message' => 'Timestamp requerido'], 422);
+        }
+
+        if (abs(time() - (int) $paramsToSign['timestamp']) > 120) {
+            return response()->json(['status' => 422, 'message' => 'Firma expirada, por favor reintente'], 422);
+        }
+
+        // El backend impone los parámetros críticos; el frontend no puede redefinirlos
+        $paramsToSign['folder']    = "empleados/perfiles/{$id}";
+        $paramsToSign['public_id'] = 'profile';
+        $paramsToSign['overwrite'] = 'true';
+
+        // Parámetros excluidos del cálculo de firma según la documentación de Cloudinary
+        $excludedKeys   = ['file', 'cloud_name', 'resource_type', 'api_key'];
+        $filteredParams = array_filter($paramsToSign, fn($key) => !in_array($key, $excludedKeys), ARRAY_FILTER_USE_KEY);
+
+        // Normalizar booleanos PHP a cadenas para que coincidan con el valor que el widget envía a Cloudinary
+        foreach ($filteredParams as $key => $value) {
+            if (is_bool($value)) {
+                $filteredParams[$key] = $value ? 'true' : 'false';
+            }
+        }
+
+        ksort($filteredParams);
+
+        $signatureString = implode('&', array_map(
+            fn($k, $v) => "{$k}={$v}",
+            array_keys($filteredParams),
+            $filteredParams
+        ));
+        $signatureString .= env('CLOUDINARY_SECRET');
+
+        return response()->json([
+            'signature' => hash('sha256', $signatureString),
+        ]);
+    }
+
     public function updateProfileImage(Request $request, $id)
     {
         $validate = Validator::make($request->all(), [
-            'public_id' => 'required|string',
-            'secure_url' => 'required|url'
+            'public_id'  => 'required|string',
+            'secure_url' => ['required', 'url', function ($attribute, $value, $fail) {
+                if (parse_url($value, PHP_URL_HOST) !== 'res.cloudinary.com') {
+                    $fail('La URL de imagen no pertenece a un dominio autorizado.');
+                }
+            }],
         ]);
 
         if ($validate->fails()) {
             return response()->json([
-                "status" => 422,
+                "status"  => 422,
                 "message" => "Error de validación",
-                "errors" => $validate->errors()
+                "errors"  => $validate->errors()
             ], 422);
         }
 
-        try {
-            $empleado = Empleado::where('id_empleado', $id)->first();
-            if (!$empleado) {
-                return response()->json([
-                    "status" => 404,
-                    "message" => "Empleado no encontrado"
-                ], 404);
-            }
+        $authUser     = Auth::user();
+        $authEmpleado = $authUser->empleado;
 
+        if (!$authEmpleado) {
+            return response()->json(['status' => 403, 'message' => 'No se encontró el empleado asociado'], 403);
+        }
+
+        $empleado = Empleado::where('id_empleado', $id)->first();
+        if (!$empleado) {
+            return response()->json(["status" => 404, "message" => "Empleado no encontrado"], 404);
+        }
+
+        if (!$empleado->canBeModifiedBy($authEmpleado)) {
+            Log::warning('Intento no autorizado de actualizar imagen de perfil', [
+                'target_id' => $id,
+                'user_id'   => $authUser->id,
+            ]);
+            return response()->json(['status' => 403, 'message' => 'No tienes permiso para modificar este perfil'], 403);
+        }
+
+        // Validar que el public_id pertenezca exactamente a la carpeta del empleado
+        $expectedPublicId = "empleados/perfiles/{$id}/profile";
+        if ($request->public_id !== $expectedPublicId) {
+            Log::warning('public_id no coincide con la carpeta esperada del empleado', [
+                'expected' => $expectedPublicId,
+                'received' => $request->public_id,
+                'user_id'  => $authUser->id,
+            ]);
+            return response()->json(['status' => 403, 'message' => 'Imagen no autorizada para este perfil'], 403);
+        }
+
+        try {
             DB::beginTransaction();
 
-            if ($empleado->imagen_perfil) {
-                try {
-
-                    $cloudinary = new Cloudinary();
-
-                    $result = $cloudinary->uploadApi()->destroy($empleado->imagen_perfil);
-                } catch (\Exception $e) {
-                    Log::warning("Error al eliminar imagen anterior, continuando con actualización: " . $e->getMessage());
-                }
-            }
-
-            $empleado->imagen_perfil_url = null;
-            $empleado->imagen_perfil = $request->public_id;
+            $empleado->imagen_perfil     = $request->public_id;
             $empleado->imagen_perfil_url = $request->secure_url;
             $empleado->save();
 
             DB::commit();
 
             return response()->json([
-                "status" => 200,
+                "status"  => 200,
                 "message" => "Imagen actualizada correctamente",
-                "data" => [
+                "data"    => [
                     'public_id' => $empleado->imagen_perfil,
-                    'url' => $empleado->imagen_perfil_url,
-                    'version' => time()
+                    'url'       => $empleado->imagen_perfil_url,
                 ]
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
-            Log::error("Error actualizando imagen: " . $e->getMessage(), [
-                'exception' => $e,
-                'trace' => $e->getTraceAsString()
-            ]);
-
+            Log::error("Error actualizando imagen: " . $e->getMessage());
             return response()->json([
-                "status" => 500,
+                "status"  => 500,
                 "message" => "Error al actualizar la imagen",
-                "error" => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+                "error"   => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
             ], 500);
         }
     }
@@ -521,48 +593,52 @@ class EmpleadoController extends Controller
 
     public function deleteProfileImage($id)
     {
+        $authUser     = Auth::user();
+        $authEmpleado = $authUser->empleado;
+
+        if (!$authEmpleado) {
+            return response()->json(['status' => 403, 'message' => 'No se encontró el empleado asociado'], 403);
+        }
+
+        $empleado = Empleado::where('id_empleado', $id)->first();
+        if (!$empleado) {
+            return response()->json(['status' => 404, 'message' => 'Empleado no encontrado'], 404);
+        }
+
+        if (!$empleado->canBeModifiedBy($authEmpleado)) {
+            Log::warning('Intento no autorizado de eliminar imagen de perfil', [
+                'target_id' => $id,
+                'user_id'   => $authUser->id,
+            ]);
+            return response()->json(['status' => 403, 'message' => 'No tienes permiso para modificar este perfil'], 403);
+        }
+
         try {
-            $empleado = Empleado::where('id_empleado', $id)->first();
-
-            if (!$empleado) {
-                return response()->json([
-                    'status' => 404,
-                    'message' => 'Empleado no encontrado'
-                ], 404);
-            }
-
             if ($empleado->imagen_perfil) {
-                Log::info('Intentando eliminar imagen de perfil:', ['public_id' => $empleado->imagen_perfil]);
-
+                Log::info('Eliminando imagen de perfil:', ['public_id' => $empleado->imagen_perfil]);
                 try {
                     $cloudinary = new Cloudinary();
-
                     $result = $cloudinary->uploadApi()->destroy($empleado->imagen_perfil);
-                    Log::info('Resultado de eliminación:', ['result' => $result]);
+                    Log::info('Resultado de eliminación en Cloudinary:', ['result' => $result]);
                 } catch (\Exception $e) {
-                    Log::warning("Error al eliminar imagen de Cloudinary: " . $e->getMessage());
-                    // Continuamos con la actualización en la base de datos
+                    Log::warning("Error al eliminar imagen en Cloudinary: " . $e->getMessage());
                 }
 
-                $empleado->imagen_perfil = null;
+                $empleado->imagen_perfil     = null;
                 $empleado->imagen_perfil_url = null;
                 $empleado->save();
             }
 
             return response()->json([
-                'status' => 200,
-                'message' => 'Imagen eliminada correctamente'
+                'status'  => 200,
+                'message' => 'Imagen eliminada correctamente',
             ]);
         } catch (\Exception $e) {
-            Log::error("Error eliminando imagen de perfil: " . $e->getMessage(), [
-                'exception' => $e,
-                'trace' => $e->getTraceAsString()
-            ]);
-
+            Log::error("Error eliminando imagen de perfil: " . $e->getMessage());
             return response()->json([
-                'status' => 500,
+                'status'  => 500,
                 'message' => 'Error al eliminar la imagen',
-                'error' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+                'error'   => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
             ], 500);
         }
     }
