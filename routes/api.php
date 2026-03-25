@@ -27,10 +27,9 @@ use App\Http\Controllers\Api\PlantillasWhatsappController;
 use App\Http\Controllers\Api\PlantillasEmailController;
 
 // public routes test
-Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
-Route::post('/reset_password', [AuthController::class, "forgotPassword"]);
-Route::post('/update_password', [AuthController::class, "updatePassword"]);
+Route::post('/reset_password', [AuthController::class, "forgotPassword"])->middleware('throttle:reset_password');
+Route::post('/update_password', [AuthController::class, "updatePassword"])->middleware('throttle:update_password');
 
 Route::post('/contactanos', [ContactanosController::class, "create"]);
 Route::post('/reclamaciones', [ReclamacionesController::class, "create"]);
@@ -63,6 +62,7 @@ Route::middleware('api.key')->group(function () {
 // rutas autenticadas
 Route::middleware('auth:sanctum')->group(function () {
     // autenticación
+    Route::middleware('permission:crear-empleados')->post('/register', [AuthController::class, 'register']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/empleados/verify-password', [EmpleadoController::class, 'verifyPassword']);
