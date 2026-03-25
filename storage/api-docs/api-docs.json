@@ -1,0 +1,2282 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Digimedia Backend API",
+    "version": "1.0.0",
+    "description": "API REST para el sistema de gestión de blogs, campañas WhatsApp y administración de empleados",
+    "contact": {
+      "name": "Digimedia Support",
+      "email": "soporte@digimedia.com"
+    },
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000/api",
+      "description": "Development Server"
+    },
+    {
+      "url": "https://api.digimedia.com",
+      "description": "Production Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "sanctum": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Authentication token via Sanctum"
+      },
+      "api_key": {
+        "type": "apiKey",
+        "name": "X-API-Key",
+        "in": "header",
+        "description": "API Key for template endpoints"
+      }
+    },
+    "schemas": {
+      "UserResponse": {
+        "type": "object",
+        "title": "User Response",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "Juan Pérez"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "juan@example.com"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-19T10:00:00Z"
+          }
+        }
+      },
+      "EmpleadoResponse": {
+        "type": "object",
+        "title": "Empleado Response",
+        "properties": {
+          "id_empleado": {
+            "type": "integer",
+            "example": 1
+          },
+          "nombre": {
+            "type": "string",
+            "example": "Juan"
+          },
+          "apellido": {
+            "type": "string",
+            "example": "Pérez"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "juan@example.com"
+          },
+          "dni": {
+            "type": "string",
+            "example": "12345678"
+          },
+          "telefono": {
+            "type": "string",
+            "nullable": true,
+            "example": "987654321"
+          },
+          "id_user": {
+            "type": "integer",
+            "example": 1
+          },
+          "id_rol": {
+            "type": "integer",
+            "example": 2
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "title": "Register Request",
+        "required": ["nombre", "apellido", "email", "dni", "id_rol"],
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Juan",
+            "description": "Nombre del usuario"
+          },
+          "apellido": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Pérez",
+            "description": "Apellido del usuario"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 255,
+            "example": "juan@example.com",
+            "description": "Email único del usuario"
+          },
+          "dni": {
+            "type": "string",
+            "maxLength": 20,
+            "example": "12345678",
+            "description": "DNI único del usuario"
+          },
+          "telefono": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20,
+            "example": "987654321",
+            "description": "Teléfono del usuario (opcional)"
+          },
+          "id_rol": {
+            "type": "integer",
+            "example": 2,
+            "description": "ID del rol a asignar (debe existir en la tabla roles)"
+          }
+        }
+      },
+      "RegisterSuccessResponse": {
+        "type": "object",
+        "title": "Register Success Response",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "success"
+          },
+          "message": {
+            "type": "string",
+            "example": "Usuario registrado exitosamente"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponse"
+          },
+          "empleado": {
+            "$ref": "#/components/schemas/EmpleadoResponse"
+          },
+          "rol": {
+            "type": "string",
+            "example": "administrador",
+            "description": "Nombre del rol asignado"
+          },
+          "token": {
+            "type": "string",
+            "example": "1|XYZabc123...",
+            "description": "Token de autenticación Sanctum para usar en requests autenticados"
+          }
+        }
+      },
+      "ValidationErrorResponse": {
+        "type": "object",
+        "title": "Validation Error Response",
+        "properties": {
+          "errors": {
+            "type": "object",
+            "description": "Errores de validación por campo",
+            "properties": {
+              "nombre": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "example": "El campo nombre es requerido"
+                }
+              },
+              "email": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "example": "El email ya ha sido registrado"
+                }
+              },
+              "dni": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "example": "El DNI ya existe"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ServerErrorResponse": {
+        "type": "object",
+        "title": "Server Error Response",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "error"
+          },
+          "message": {
+            "type": "string",
+            "example": "Error al registrar usuario"
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "example": "Descripción del error (solo si debug=true)"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "title": "Login Request",
+        "required": ["email", "password"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "juan@example.com",
+            "description": "Email del usuario registrado"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "mi_contraseña",
+            "description": "Contraseña del usuario"
+          }
+        }
+      },
+      "RolResponse": {
+        "type": "object",
+        "title": "Rol Response",
+        "properties": {
+          "id_rol": {
+            "type": "integer",
+            "example": 1
+          },
+          "nombre": {
+            "type": "string",
+            "example": "administrador"
+          },
+          "descripcion": {
+            "type": "string",
+            "example": "Acceso total al sistema"
+          }
+        }
+      },
+      "LoginSuccessResponse": {
+        "type": "object",
+        "title": "Login Success Response",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "success"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponse"
+          },
+          "empleado": {
+            "$ref": "#/components/schemas/EmpleadoResponse"
+          },
+          "rol": {
+            "type": "string",
+            "example": "administrador",
+            "description": "Nombre del rol del usuario"
+          },
+          "permisos": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "ver-blogs"
+            },
+            "description": "Lista de slugs de permisos asignados al rol"
+          },
+          "token": {
+            "type": "string",
+            "example": "1|XYZabc123...",
+            "description": "Token de autenticación Sanctum para autorización en requests posteriores"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "title": "Error Response",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "error"
+          },
+          "message": {
+            "type": "string",
+            "example": "Error description"
+          }
+        }
+      },
+      "ResetPasswordRequest": {
+        "type": "object",
+        "title": "Reset Password Request",
+        "required": ["email"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "juan@example.com",
+            "description": "Email del usuario para el cual se solicita recuperación de contraseña"
+          }
+        }
+      },
+      "ResetPasswordResponse": {
+        "type": "object",
+        "title": "Reset Password Response",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "success"
+          },
+          "message": {
+            "type": "string",
+            "example": "Token de restablecimiento de contraseña enviado",
+            "description": "Se envió un token al email del usuario"
+          }
+        }
+      },
+      "UpdatePasswordRequest": {
+        "type": "object",
+        "title": "Update Password Request",
+        "required": ["token", "password", "password_confirmation"],
+        "properties": {
+          "token": {
+            "type": "string",
+            "example": "abc123xyz789...",
+            "description": "Token recibido por email"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 6,
+            "example": "nueva_contraseña",
+            "description": "Nueva contraseña (mínimo 6 caracteres)"
+          },
+          "password_confirmation": {
+            "type": "string",
+            "format": "password",
+            "minLength": 6,
+            "example": "nueva_contraseña",
+            "description": "Confirmación de la nueva contraseña (debe ser igual a password)"
+          }
+        }
+      },
+      "UpdatePasswordResponse": {
+        "type": "object",
+        "title": "Update Password Response",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Contraseña actualizada correctamente, ingresa desde el login"
+          }
+        }
+      },
+      "ContactanosRequest": {
+        "type": "object",
+        "title": "Contactanos Request",
+        "required": ["nombre", "email", "numero", "mensaje"],
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Juan Pérez",
+            "description": "Nombre completo de quien contacta"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 255,
+            "example": "juan@example.com",
+            "description": "Email válido para responder"
+          },
+          "numero": {
+            "type": "string",
+            "maxLength": 20,
+            "example": "987654321",
+            "description": "Número de teléfono o contacto"
+          },
+          "mensaje": {
+            "type": "string",
+            "maxLength": 1050,
+            "example": "Quisiera obtener más información sobre los servicios de diseño web.",
+            "description": "Mensaje o consulta (máximo 1050 caracteres)"
+          }
+        }
+      },
+      "ContactanosResponse": {
+        "type": "object",
+        "title": "Contactanos Response",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "example": 201
+          },
+          "message": {
+            "type": "string",
+            "example": "Contacto guardado exitosamente",
+            "description": "El mensaje de contacto se ha guardado correctamente en la BD"
+          }
+        }
+      },
+      "ReclamacionesRequest": {
+        "type": "object",
+        "title": "Reclamaciones Request",
+        "required": ["nombre", "apellido", "documento", "numeroDocumento", "email", "celular", "direccion", "distrito", "ciudad", "tipoReclamo", "id_servicio", "reclamoPerson", "checkReclamoForm", "aceptaPoliticaPrivacidad", "fechaIncidente"],
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "Juan",
+            "description": "Nombre del reclamante"
+          },
+          "apellido": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "Pérez",
+            "description": "Apellido del reclamante"
+          },
+          "documento": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "DNI",
+            "description": "Tipo de documento (DNI, Pasaporte, etc.)"
+          },
+          "numeroDocumento": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "12345678",
+            "description": "Número del documento de identidad"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 100,
+            "example": "juan@example.com",
+            "description": "Email válido para contacto"
+          },
+          "celular": {
+            "type": "string",
+            "maxLength": 20,
+            "example": "987654321",
+            "description": "Número de celular"
+          },
+          "direccion": {
+            "type": "string",
+            "maxLength": 250,
+            "example": "Calle Principal 123",
+            "description": "Dirección del domicilio"
+          },
+          "distrito": {
+            "type": "string",
+            "maxLength": 250,
+            "example": "San Isidro",
+            "description": "Distrito del domicilio"
+          },
+          "ciudad": {
+            "type": "string",
+            "maxLength": 250,
+            "example": "Lima",
+            "description": "Ciudad del domicilio"
+          },
+          "tipoReclamo": {
+            "type": "string",
+            "maxLength": 20,
+            "enum": ["queja", "reclamo", "sugerencia"],
+            "example": "reclamo",
+            "description": "Tipo de reclamación"
+          },
+          "id_servicio": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "example": 1,
+            "description": "ID del servicio (1-4)"
+          },
+          "reclamoPerson": {
+            "type": "string",
+            "maxLength": 1050,
+            "example": "Descripcjón detallada de la reclamación...",
+            "description": "Descripción detallada de la reclamación (máximo 1050 caracteres)"
+          },
+          "checkReclamoForm": {
+            "type": "boolean",
+            "example": true,
+            "description": "Confirmación de verédicidad de datos"
+          },
+          "aceptaPoliticaPrivacidad": {
+            "type": "boolean",
+            "example": true,
+            "description": "Aceptación de la política de privacidad"
+          },
+          "fechaIncidente": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-03-19",
+            "description": "Fecha en que ocurrió el incidente (formato: YYYY-MM-DD)"
+          }
+        }
+      },
+      "ReclamacionesResponse": {
+        "type": "object",
+        "title": "Reclamaciones Response",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Reclamación guardada exitosamente",
+            "description": "Confirmación del registro guardado"
+          },
+          "data": {
+            "type": "object",
+            "description": "Objeto completo de la reclamación guardada con todos sus campos y ID"
+          }
+        }
+      },
+      "ModalesRequest": {
+        "type": "object",
+        "title": "Modales Request",
+        "required": ["nombre", "telefono", "correo", "id_servicio"],
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "Juan Pérez",
+            "description": "Nombre de la persona interesada"
+          },
+          "telefono": {
+            "type": "string",
+            "maxLength": 9,
+            "example": "987654321",
+            "description": "Número de teléfono (máximo 9 dígitos)"
+          },
+          "correo": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 200,
+            "example": "juan@example.com",
+            "description": "Email válido para contacto"
+          },
+          "id_servicio": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "example": 1,
+            "description": "ID del servicio (1-4)"
+          }
+        }
+      },
+      "ModalesResponse": {
+        "type": "object",
+        "title": "Modales Response",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "example": 201
+          },
+          "message": {
+            "type": "string",
+            "example": "Modal guardado exitosamente",
+            "description": "Confirmación de registro guardado. El sistema genera automáticamente 3 correos y 3 mensajes WhatsApp programados"
+          }
+        }
+      },
+      "BlogHeadResponse": {
+        "type": "object",
+        "title": "Blog Head Response",
+        "properties": {
+          "id_blog_head": {
+            "type": "integer",
+            "example": 1
+          },
+          "titulo": {
+            "type": "string",
+            "example": "Tu Bar, en la Mira"
+          },
+          "texto_frase": {
+            "type": "string",
+            "example": "Ilumina tu espacio, cautiva a tus clientes"
+          },
+          "texto_descripcion": {
+            "type": "string",
+            "example": "Transforma la atmósfera de tu bar..."
+          },
+          "public_image": {
+            "type": "string",
+            "nullable": true,
+            "example": "/blog/fondo_blog_extend.webp"
+          },
+          "url_image": {
+            "type": "string",
+            "nullable": true
+          },
+          "alt": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "meta_title": {
+            "type": "string",
+            "nullable": true
+          },
+          "meta_descripcion": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "BlogResponse": {
+        "type": "object",
+        "title": "Blog Response",
+        "properties": {
+          "id_blog": {
+            "type": "integer",
+            "example": 1
+          },
+          "id_blog_head": {
+            "type": "integer",
+            "example": 1
+          },
+          "id_blog_body": {
+            "type": "integer",
+            "example": 1
+          },
+          "id_blog_footer": {
+            "type": "integer",
+            "example": 1
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-04T19:37:58Z"
+          },
+          "link": {
+            "type": "string",
+            "example": "tu-bar-en-la-mira"
+          },
+          "head": {
+            "$ref": "#/components/schemas/BlogHeadResponse"
+          }
+        }
+      },
+      "CardResponse": {
+        "type": "object",
+        "title": "Card Response",
+        "properties": {
+          "id_card": {
+            "type": "integer",
+            "example": 1
+          },
+          "titulo": {
+            "type": "string",
+            "example": "Tu Bar, en la Mira"
+          },
+          "descripcion": {
+            "type": "string",
+            "example": "Haz que el nombre de tu bar destaque..."
+          },
+          "public_image": {
+            "type": "string",
+            "nullable": true,
+            "example": "/blog/fondo_blog_extend.webp"
+          },
+          "url_image": {
+            "type": "string",
+            "nullable": true
+          },
+          "id_plantilla": {
+            "type": "integer",
+            "example": 1
+          },
+          "id_blog": {
+            "type": "integer",
+            "example": 1
+          },
+          "id_empleado": {
+            "type": "integer",
+            "example": 2
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-10-15T10:30:00Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-10-15T10:30:00Z"
+          },
+          "estado_publicacion": {
+            "type": "integer",
+            "example": 1,
+            "description": "1 = publicado, 0 = no publicado"
+          },
+          "blog": {
+            "$ref": "#/components/schemas/BlogResponse"
+          }
+        }
+      },
+      "BlogFullResponse": {
+        "type": "object",
+        "title": "Blog Full Response",
+        "properties": {
+          "id_blog": {
+            "type": "integer",
+            "example": 1
+          },
+          "id_blog_head": {
+            "type": "integer",
+            "example": 1
+          },
+          "id_blog_body": {
+            "type": "integer",
+            "example": 1
+          },
+          "id_blog_footer": {
+            "type": "integer",
+            "example": 1
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-04T19:37:58Z"
+          },
+          "link": {
+            "type": "string",
+            "example": "tu-bar-en-la-mira"
+          },
+          "card": {
+            "type": "object",
+            "properties": {
+              "id_card": {
+                "type": "integer",
+                "example": 1
+              },
+              "titulo": {
+                "type": "string",
+                "example": "Tu Bar, en la Mira"
+              },
+              "descripcion": {
+                "type": "string",
+                "example": "Haz que el nombre de tu bar destaque..."
+              },
+              "public_image": {
+                "type": "string",
+                "nullable": true,
+                "example": "/blog/fondo_blog_extend.webp"
+              },
+              "url_image": {
+                "type": "string",
+                "nullable": true
+              },
+              "id_plantilla": {
+                "type": "integer",
+                "example": 1
+              },
+              "id_blog": {
+                "type": "integer",
+                "example": 1
+              },
+              "id_empleado": {
+                "type": "integer",
+                "example": 2
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2025-10-15T10:30:00Z"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2025-10-15T10:30:00Z"
+              },
+              "estado_publicacion": {
+                "type": "integer",
+                "example": 1,
+                "description": "1 = publicado, 0 = no publicado"
+              }
+            }
+          }
+        }
+      },
+      "BlogBodyResponse": {
+        "type": "object",
+        "title": "Blog Body Response",
+        "properties": {
+          "id_blog_body": {
+            "type": "integer",
+            "example": 1
+          },
+          "titulo": {
+            "type": "string",
+            "nullable": true
+          },
+          "contenido": {
+            "type": "string",
+            "nullable": true,
+            "description": "Contenido HTML del cuerpo del blog"
+          }
+        }
+      },
+      "BlogFullWithBodyResponse": {
+        "type": "object",
+        "title": "Blog Full With Body Response",
+        "properties": {
+          "id_blog": {
+            "type": "integer",
+            "example": 1
+          },
+          "id_blog_head": {
+            "type": "integer",
+            "example": 1
+          },
+          "id_blog_body": {
+            "type": "integer",
+            "example": 1
+          },
+          "id_blog_footer": {
+            "type": "integer",
+            "example": 1
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-04T19:37:58Z"
+          },
+          "link": {
+            "type": "string",
+            "example": "tu-bar-en-la-mira"
+          },
+          "card": {
+            "type": "object",
+            "properties": {
+              "id_card": {
+                "type": "integer",
+                "example": 1
+              },
+              "titulo": {
+                "type": "string",
+                "example": "Tu Bar, en la Mira"
+              },
+              "descripcion": {
+                "type": "string",
+                "example": "Haz que el nombre de tu bar destaque..."
+              },
+              "public_image": {
+                "type": "string",
+                "nullable": true,
+                "example": "/blog/fondo_blog_extend.webp"
+              },
+              "url_image": {
+                "type": "string",
+                "nullable": true
+              },
+              "id_plantilla": {
+                "type": "integer",
+                "example": 1
+              },
+              "id_blog": {
+                "type": "integer",
+                "example": 1
+              },
+              "id_empleado": {
+                "type": "integer",
+                "example": 2
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2025-10-15T10:30:00Z"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2025-10-15T10:30:00Z"
+              },
+              "estado_publicacion": {
+                "type": "integer",
+                "example": 1,
+                "description": "1 = publicado, 0 = no publicado"
+              }
+            }
+          },
+          "body": {
+            "$ref": "#/components/schemas/BlogBodyResponse"
+          },
+          "head": {
+            "$ref": "#/components/schemas/BlogHeadResponse"
+          }
+        }
+      },
+      "BlogHeadDetailResponse": {
+        "type": "object",
+        "title": "Blog Head Detail Response",
+        "properties": {
+          "id_blog_head": {
+            "type": "integer",
+            "example": 1
+          },
+          "titulo": {
+            "type": "string",
+            "maxLength": 50,
+            "example": "Tu Bar, en la Mira"
+          },
+          "texto_frase": {
+            "type": "string",
+            "maxLength": 140,
+            "example": "Ilumina tu espacio, cautiva a tus clientes"
+          },
+          "texto_descripcion": {
+            "type": "string",
+            "maxLength": 240,
+            "example": "Transforma la atmósfera de tu bar con luces neón LED vibrantes"
+          },
+          "public_image": {
+            "type": "string",
+            "nullable": true,
+            "example": "/blog/fondo_blog_extend.webp"
+          },
+          "url_image": {
+            "type": "string",
+            "nullable": true
+          },
+          "alt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Texto alternativo para SEO"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "description": "Atributo title para SEO"
+          },
+          "meta_title": {
+            "type": "string",
+            "nullable": true,
+            "description": "Meta title para SEO"
+          },
+          "meta_descripcion": {
+            "type": "string",
+            "nullable": true,
+            "description": "Meta descripción para SEO"
+          }
+        }
+      },
+      "BlogFooterDetailResponse": {
+        "type": "object",
+        "title": "Blog Footer Detail Response",
+        "properties": {
+          "id_blog_footer": {
+            "type": "integer",
+            "example": 1
+          },
+          "titulo": {
+            "type": "string",
+            "example": "Título Footer"
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          },
+          "public_image1": {
+            "type": "string",
+            "nullable": true
+          },
+          "url_image1": {
+            "type": "string",
+            "nullable": true
+          },
+          "alt_image1": {
+            "type": "string",
+            "nullable": true
+          },
+          "title_image1": {
+            "type": "string",
+            "nullable": true
+          },
+          "public_image2": {
+            "type": "string",
+            "nullable": true
+          },
+          "url_image2": {
+            "type": "string",
+            "nullable": true
+          },
+          "alt_image2": {
+            "type": "string",
+            "nullable": true
+          },
+          "title_image2": {
+            "type": "string",
+            "nullable": true
+          },
+          "public_image3": {
+            "type": "string",
+            "nullable": true
+          },
+          "url_image3": {
+            "type": "string",
+            "nullable": true
+          },
+          "alt_image3": {
+            "type": "string",
+            "nullable": true
+          },
+          "title_image3": {
+            "type": "string",
+            "nullable": true
+          },
+          "estado": {
+            "type": "boolean",
+            "example": true
+          },
+          "palabra": {
+            "type": "string",
+            "nullable": true,
+            "example": "palabra clave"
+          },
+          "enlace": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://ejemplo.com"
+          }
+        }
+      },
+      "CommendTarjetaResponse": {
+        "type": "object",
+        "title": "Commend Tarjeta Response",
+        "properties": {
+          "id_commend_tarjeta": {
+            "type": "integer",
+            "example": 1
+          },
+          "nombre": {
+            "type": "string",
+            "example": "Tarjeta Recomendada"
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "TarjetaResponse": {
+        "type": "object",
+        "title": "Tarjeta Response",
+        "properties": {
+          "id_tarjeta": {
+            "type": "integer",
+            "example": 1
+          },
+          "id_blog_body": {
+            "type": "integer",
+            "example": 1
+          },
+          "titulo": {
+            "type": "string",
+            "example": "Título Tarjeta"
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "BlogBodyDetailResponse": {
+        "type": "object",
+        "title": "Blog Body Detail Response",
+        "properties": {
+          "id_blog_body": {
+            "type": "integer",
+            "example": 1
+          },
+          "titulo": {
+            "type": "string",
+            "example": "Título Blog Body"
+          },
+          "descripcion": {
+            "type": "string",
+            "example": "Descripción detallada del contenido"
+          },
+          "id_commend_tarjeta": {
+            "type": "integer",
+            "nullable": true,
+            "example": 1
+          },
+          "public_image1": {
+            "type": "string",
+            "nullable": true
+          },
+          "url_image1": {
+            "type": "string",
+            "nullable": true
+          },
+          "alt_image1": {
+            "type": "string",
+            "nullable": true
+          },
+          "title_image1": {
+            "type": "string",
+            "nullable": true
+          },
+          "public_image2": {
+            "type": "string",
+            "nullable": true
+          },
+          "url_image2": {
+            "type": "string",
+            "nullable": true
+          },
+          "alt_image2": {
+            "type": "string",
+            "nullable": true
+          },
+          "title_image2": {
+            "type": "string",
+            "nullable": true
+          },
+          "public_image3": {
+            "type": "string",
+            "nullable": true
+          },
+          "url_image3": {
+            "type": "string",
+            "nullable": true
+          },
+          "alt_image3": {
+            "type": "string",
+            "nullable": true
+          },
+          "title_image3": {
+            "type": "string",
+            "nullable": true
+          },
+          "flag_galeria": {
+            "type": "boolean",
+            "example": true,
+            "description": "Muestra galería de imágenes"
+          },
+          "flag_consejos": {
+            "type": "boolean",
+            "example": true,
+            "description": "Muestra sección de consejos"
+          },
+          "flag_informacion": {
+            "type": "boolean",
+            "example": true,
+            "description": "Muestra sección de información"
+          },
+          "service_url": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://servicio.com"
+          },
+          "titulo_tarjeta": {
+            "type": "string",
+            "nullable": true
+          },
+          "commend_tarjeta": {
+            "$ref": "#/components/schemas/CommendTarjetaResponse"
+          },
+          "tarjetas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TarjetaResponse"
+            }
+          }
+        }
+      },
+      "ModalWatResponse": {
+        "type": "object",
+        "title": "Modal WhatsApp Redirect Response",
+        "properties": {
+          "id_modal_wat": {
+            "type": "integer",
+            "example": 5,
+            "description": "ID del registro en modal_wats"
+          },
+          "id_modalservicio": {
+            "type": "integer",
+            "example": 10,
+            "description": "ID del formulario modal asociado"
+          },
+          "telefono": {
+            "type": "string",
+            "example": "987654321",
+            "description": "Número de teléfono del contacto"
+          },
+          "id_servicio": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "example": 1,
+            "description": "Servicio (1=Diseño Web, 2=Redes Sociales, 3=Marketing, 4=Branding)"
+          },
+          "wa_url": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://wa.me/51987654321?text=%F0%9F%91%8B%20%C2%A1Hola%21%20Hemos%20recibido...",
+            "description": "URL de redirección a WhatsApp Web con mensaje preformateado"
+          },
+          "estado": {
+            "type": "integer",
+            "example": 1,
+            "description": "Estado: 1=enviado, 0=error"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-23T10:30:00Z",
+            "description": "Fecha de creación del registro"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "operationId": "register",
+        "summary": "Registrar nuevo usuario",
+        "description": "Crea un nuevo usuario y empleado en el sistema. Asigna un rol específico y genera un token de autenticación.",
+        "requestBody": {
+          "required": true,
+          "description": "Datos necesarios para registrar un nuevo usuario",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuario registrado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterSuccessResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación - Datos inválidos o duplicados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "operationId": "login",
+        "summary": "Iniciar sesión",
+        "description": "Autentica un usuario con sus credenciales (email y contraseña). Retorna los datos del usuario, empleado, roles, permisos y un token Sanctum para autorización.",
+        "requestBody": {
+          "required": true,
+          "description": "Credenciales de autenticación",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Autenticación exitosa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginSuccessResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuario no registrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Esta cuenta no está registrada en Digimedia."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales inválidas (email o contraseña incorrectos)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "El email o la contraseña son incorrectos."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuario sin rol asignado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "El usuario no tiene un rol asignado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reset_password": {
+      "post": {
+        "tags": ["Authentication"],
+        "operationId": "resetPassword",
+        "summary": "Solicitar restablecimiento de contraseña",
+        "description": "Envía un token de restablecimiento de contraseña al email del usuario. El usuario recibirá un email con instrucciones para restablecer su contraseña.",
+        "requestBody": {
+          "required": true,
+          "description": "Email del usuario",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token enviado correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetPasswordResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuario no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/update_password": {
+      "post": {
+        "tags": ["Authentication"],
+        "operationId": "updatePassword",
+        "summary": "Actualizar contraseña",
+        "description": "Actualiza la contraseña del usuario utilizando el token enviado por email. El token debe ser válido y no estar expirado.",
+        "requestBody": {
+          "required": true,
+          "description": "Token y nueva contraseña",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Contraseña actualizada correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdatePasswordResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validación fallida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Token inválido o expirado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contactanos": {
+      "post": {
+        "tags": ["Contactanos"],
+        "operationId": "createContactanos",
+        "summary": "Enviar mensaje de contacto",
+        "description": "Permite a cualquier persona enviar un mensaje de contacto. El mensaje se guarda en la base de datos para que el equipo de soporte pueda responder. NO requiere autenticación.",
+        "requestBody": {
+          "required": true,
+          "description": "Datos del contacto",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactanosRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Mensaje de contacto guardado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactanosResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validación fallida - Campos incompletos o inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reclamaciones": {
+      "post": {
+        "tags": ["Reclamaciones"],
+        "operationId": "createReclamaciones",
+        "summary": "Registrar una reclamación",
+        "description": "Permite registrar una reclamación, queja o sugerencia. Se requieren datos completos del reclamante y descripción del incidente. NO requiere autenticación. Los datos se guardan en el libro de reclamaciones.",
+        "requestBody": {
+          "required": true,
+          "description": "Datos completos de la reclamación",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReclamacionesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Reclamación registrada exitosamente en el libro de reclamaciones",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReclamacionesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validación fallida - Campos incompletos, inválidos o fuera de rango",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/modales": {
+      "post": {
+        "tags": ["Modales"],
+        "operationId": "createModales",
+        "summary": "Crear un modal de interés",
+        "description": "Registra un nuevo modal (formulario de interés) de un cliente. El sistema genera automáticamente 3 correos y 3 mensajes WhatsApp programados en horarios específicos. NO requiere autenticación.",
+        "requestBody": {
+          "required": true,
+          "description": "Datos del modal de interés",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModalesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Modal registrado exitosamente. Se han generado 3 correos y 3 mensajes WhatsApp programados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModalesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validación fallida - Campos incompletos, inválidos o fuera de rango",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cards_public": {
+      "get": {
+        "tags": ["Cards"],
+        "operationId": "getCardsPublic",
+        "summary": "Obtener tarjetas publicadas",
+        "description": "Retorna todas las tarjetas (cards) que están publicadas en el sistema. Incluye información completa de la tarjeta, el blog asociado y el encabezado del blog. NO requiere autenticación.",
+        "responses": {
+          "200": {
+            "description": "Lista de tarjetas publicadas obtenida exitosamente. Puede retornar un arreglo vacío si no hay tarjetas publicadas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CardResponse"
+                  },
+                  "example": [
+                    {
+                      "id_card": 1,
+                      "titulo": "Tu Bar, en la Mira",
+                      "descripcion": "Haz que el nombre de tu bar destaque...",
+                      "public_image": "/blog/fondo_blog_extend.webp",
+                      "url_image": null,
+                      "id_plantilla": 1,
+                      "id_blog": 1,
+                      "id_empleado": 2,
+                      "created_at": "2025-10-15T10:30:00Z",
+                      "updated_at": "2025-10-15T10:30:00Z",
+                      "estado_publicacion": 1,
+                      "blog": {
+                        "id_blog": 1,
+                        "id_blog_head": 1,
+                        "id_blog_body": 1,
+                        "id_blog_footer": 1,
+                        "fecha": "2026-03-04T19:37:58Z",
+                        "link": "tu-bar-en-la-mira",
+                        "head": {
+                          "id_blog_head": 1,
+                          "titulo": "Tu Bar, en la Mira",
+                          "texto_frase": "Ilumina tu espacio, cautiva a tus clientes",
+                          "texto_descripcion": "Transforma la atmósfera de tu bar...",
+                          "public_image": "/blog/fondo_blog_extend.webp",
+                          "url_image": null,
+                          "alt": null,
+                          "title": null,
+                          "meta_title": null,
+                          "meta_descripcion": null
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blogs/{id}": {
+      "get": {
+        "tags": ["Blogs"],
+        "operationId": "getBlogById",
+        "summary": "Obtener un blog por ID",
+        "description": "Retorna los detalles completos de un blog específico, incluyendo la tarjeta (card) asociada. Carga las relaciones del blog con su tarjeta. NO requiere autenticación.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID del blog a obtener",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blog obtenido exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BlogFullResponse"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Blog no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Blog no encontrada"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blogs/links/{link}": {
+      "get": {
+        "tags": ["Blogs"],
+        "operationId": "getBlogByLink",
+        "summary": "Obtener un blog por su enlace (slug)",
+        "description": "Retorna los detalles completos de un blog específico buscando por su enlace (slug). Carga todas las relaciones: card, head y body. NO requiere autenticación.",
+        "parameters": [
+          {
+            "name": "link",
+            "in": "path",
+            "required": true,
+            "description": "Slug/enlace único del blog (ej: tu-bar-en-la-mira)",
+            "schema": {
+              "type": "string",
+              "example": "tu-bar-en-la-mira"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blog obtenido exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BlogFullWithBodyResponse"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Blog no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Blog no encontrada"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blogs": {
+      "get": {
+        "tags": ["Blogs"],
+        "operationId": "getBlogs",
+        "summary": "Obtener lista de todos los blogs",
+        "description": "Retorna un arreglo con todos los blogs del sistema. Cada blog incluye la información de su tarjeta (card) asociada. NO requiere autenticación. Sin paginación - retorna TODOS los blogs.",
+        "responses": {
+          "200": {
+            "description": "Lista de blogs obtenida exitosamente. Puede retornar un arreglo vacío si no hay blogs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id_blog": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "id_blog_head": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "id_blog_body": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "id_blog_footer": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "fecha": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-03-04T19:37:58Z"
+                      },
+                      "link": {
+                        "type": "string",
+                        "example": "tu-bar-en-la-mira"
+                      },
+                      "card": {
+                        "type": "object",
+                        "properties": {
+                          "id_card": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "titulo": {
+                            "type": "string",
+                            "example": "Tu Bar, en la Mira"
+                          },
+                          "descripcion": {
+                            "type": "string",
+                            "example": "Haz que el nombre de tu bar destaque..."
+                          },
+                          "public_image": {
+                            "type": "string",
+                            "nullable": true,
+                            "example": "/blog/fondo_blog_extend.webp"
+                          },
+                          "url_image": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "id_plantilla": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "id_blog": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "id_empleado": {
+                            "type": "integer",
+                            "example": 2
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2025-10-15T10:30:00Z"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2025-10-15T10:30:00Z"
+                          },
+                          "estado_publicacion": {
+                            "type": "integer",
+                            "example": 1,
+                            "description": "1 = publicado, 0 = no publicado"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "example": [
+                    {
+                      "id_blog": 1,
+                      "id_blog_head": 1,
+                      "id_blog_body": 1,
+                      "id_blog_footer": 1,
+                      "fecha": "2026-03-04T19:37:58Z",
+                      "link": "tu-bar-en-la-mira",
+                      "card": {
+                        "id_card": 1,
+                        "titulo": "Tu Bar, en la Mira",
+                        "descripcion": "Haz que el nombre de tu bar destaque con letras neón LED...",
+                        "public_image": "/blog/fondo_blog_extend.webp",
+                        "url_image": null,
+                        "id_plantilla": 1,
+                        "id_blog": 1,
+                        "id_empleado": 2,
+                        "created_at": "2025-10-15T10:30:00Z",
+                        "updated_at": "2025-10-15T10:30:00Z",
+                        "estado_publicacion": 1
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blog_head/{id}": {
+      "get": {
+        "tags": ["Blog Components"],
+        "operationId": "getBlogHeadById",
+        "summary": "Obtener encabezado de blog por ID",
+        "description": "Retorna los detalles del encabezado (head) de un blog específico, incluyendo título, frases, descripciones y metadatos SEO. NO requiere autenticación.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID del blog head a obtener",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blog head obtenido exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BlogHeadDetailResponse"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Blog head no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Blog head no encontrado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blog_footer/{id}": {
+      "get": {
+        "tags": ["Blog Components"],
+        "operationId": "getBlogFooterById",
+        "summary": "Obtener pie de blog por ID",
+        "description": "Retorna los detalles del pie (footer) de un blog específico, incluyendo 3 imágenes con atributos SEO, estado, palabra clave y enlace. NO requiere autenticación.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID del blog footer a obtener",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blog footer obtenido exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BlogFooterDetailResponse"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Blog footer no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Blog footer no encontrado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blog_body/{id}": {
+      "get": {
+        "tags": ["Blog Components"],
+        "operationId": "getBlogBodyById",
+        "summary": "Obtener cuerpo de blog por ID",
+        "description": "Retorna los detalles del cuerpo (body) de un blog específico, incluyendo 3 imágenes, flags de contenido, y relaciones con tarjetas y tarjeta recomendada. NO requiere autenticación.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID del blog body a obtener",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blog body obtenido exitosamente con relaciones (commend_tarjeta y tarjetas)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/BlogBodyDetailResponse"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Blog body no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Blog body no encontrado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/modales/send_wat/{id}": {
+      "get": {
+        "tags": ["Modales"],
+        "operationId": "sendWatModal",
+        "summary": "Enviar mensaje WhatsApp de modal",
+        "description": "Genera un mensaje WhatsApp personalizado basado en un registro de modal y lo envía. El endpoint redirige al usuario a WhatsApp Web con el mensaje preformateado listo para enviar. El mensaje varía según el servicio solicitado (Diseño Web, Redes Sociales, Marketing, Branding). NO requiere autenticación.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID del registro en modal_wats (id_modal_wat)",
+            "schema": {
+              "type": "integer",
+              "example": 5
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirección exitosa a WhatsApp Web. El navegador abre automáticamente la URL de WhatsApp con el mensaje personalizado listo para enviarse.",
+            "headers": {
+              "Location": {
+                "description": "URL de redirección a WhatsApp Web con mensaje codificado",
+                "schema": {
+                  "type": "string",
+                  "format": "uri",
+                  "example": "https://wa.me/51987654321?text=%F0%9F%91%8B%20%C2%A1Hola%21%20Hemos%20recibido%20tu%20solicitud%20para%20Dise%C3%B1o%20Web..."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro no encontrado en modal_wats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Mensaje no encontrado"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
