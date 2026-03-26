@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use Carbon\Carbon;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\EmpleadoResource;
 use App\Models\User;
 use App\Models\Empleado;
 use App\Models\Rol;
@@ -68,7 +69,7 @@ class AuthController extends Controller
                 'status' => 'success',
                 'message' => 'Usuario registrado exitosamente',
                 'user' => $user,
-                'empleado' => $empleado,
+                'empleado' => new EmpleadoResource($empleado),
                 'rol' => $rol->nombre,
                 'token' => $token,
             ], 201);
@@ -188,10 +189,13 @@ class AuthController extends Controller
             // token incluyendo rol (capcidad)
             $token = $user->createToken('auth_token', $abilities)->plainTextToken;
 
+            // Evitar que la relación empleado se serialice dentro de user
+            $user->unsetRelation('empleado');
+
             return response()->json([
                 'status'   => 'success',
                 'user'     => $user,
-                'empleado' => $empleado,
+                'empleado' => new EmpleadoResource($empleado),
                 'rol'      => $rol->nombre,
                 'permisos' => $permisos,
                 'token'    => $token,
@@ -441,9 +445,11 @@ class AuthController extends Controller
 
         $permisos = $rol ? $rol->permisos->pluck('slug')->toArray() : [];
 
+        $user->unsetRelation('empleado');
+
         return response()->json([
             'user' => $user,
-            'empleado' => $empleado,
+            'empleado' => $empleado ? new EmpleadoResource($empleado) : null,
             'rol' => $rol ? $rol->nombre : null,
             'abilities' => $user->currentAccessToken()->abilities,
             'permisos' => $permisos
