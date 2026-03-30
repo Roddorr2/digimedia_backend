@@ -26,16 +26,28 @@ class CheckPermission
 
         // capacidades del token (roles)
         $userRoles = $request->user()->currentAccessToken()->abilities;
+
+        // cargar roles y permisos requeridos en bloque para evitar N+1
+        $roles = Rol::with('permisos:id_permiso')
+            ->whereIn('nombre', $userRoles)
+            ->get()
+            ->keyBy('nombre');
+
+        $permisos = Permiso::whereIn('slug', $permissions)
+            ->get(['id_permiso', 'slug'])
+            ->keyBy('slug');
         
         // verificar si el token tiene los permisos requeridos
         foreach ($userRoles as $roleName) {
-            $rol = Rol::where('nombre', $roleName)->first();
+            $rol = $roles->get($roleName);
             
             if ($rol) {
+                $permissionIdsByRole = array_flip($rol->permisos->pluck('id_permiso')->all());
+
                 foreach ($permissions as $permissionSlug) {
-                    $permiso = Permiso::where('slug', $permissionSlug)->first();
+                    $permiso = $permisos->get($permissionSlug);
                     
-                    if ($permiso && $rol->permisos()->where('permisos.id_permiso', $permiso->id_permiso)->exists()) {
+                    if ($permiso && isset($permissionIdsByRole[$permiso->id_permiso])) {
                         return $next($request);
                     }
                 }
