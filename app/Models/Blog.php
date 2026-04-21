@@ -21,6 +21,12 @@ class Blog extends Model
         'link'
     ];
 
+    protected $hidden = [
+        'id_blog_head',    
+        'id_blog_body',    
+        'id_blog_footer'   
+    ];
+
 //    public function head(){
 //         return $this->hasOne(BlogHead::class, 'id_blog_head', 'id_blog_head');
 //     }
