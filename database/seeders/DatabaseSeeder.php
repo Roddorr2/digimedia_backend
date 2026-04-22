@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             BlogSeeder::class,
             BlogAuditoriaSeeder::class,
             ServicioSeeder::class,
+            SubservicioSeeder::class,
             ContactanosSeeder::class,
             ReclamacionSeeder::class,
             ModalservicioSeeder::class,
