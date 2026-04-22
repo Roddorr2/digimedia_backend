@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\WhatsAppCampaignController;
 use App\Http\Controllers\Api\PlantillasWhatsappController;
 use App\Http\Controllers\Api\PlantillasEmailController;
 use App\Http\Controllers\Api\PopupConfigController;
+use App\Http\Controllers\Api\SubservicioController;
 
 // public routes test
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -201,16 +202,21 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/plantillas/email/{id}/actualizar', [PlantillasEmailController::class, 'actualizar']);
     });
     
-    // Pop-Ups - PROTEGIDO (marketing o administrador)
-    Route::middleware('role:marketing,administrador')->group(function () {
+    // Subservicios - combo de selección para pop-ups (dashboard)
+    Route::middleware('permission:ver-pop-ups')->group(function () {
+        Route::get('/subservicios', [SubservicioController::class, 'index']);
+        Route::get('/subservicios/by-servicio/{id_servicio}', [SubservicioController::class, 'byServicio']);
+    });
+
+    // Pop-Ups - permisos dedicados por acción
+    Route::middleware('permission:ver-pop-ups')->group(function () {
         Route::get('/popup-configs', [PopupConfigController::class, 'index']);
         Route::get('/popup-configs/{id}', [PopupConfigController::class, 'show']);
         Route::get('/popup-configs/subservicio/{id_subservicio}', [PopupConfigController::class, 'showBySubservicio']);
-        Route::post('/popup-configs', [PopupConfigController::class, 'store']);
-        Route::post('/popup-configs/{id}/actualizar', [PopupConfigController::class, 'update']);
-        Route::post('/popup-configs/{id}/image', [PopupConfigController::class, 'uploadImage']);
-        Route::delete('/popup-configs/{id}', [PopupConfigController::class, 'destroy']);
     });
+    Route::middleware('permission:crear-pop-ups')->post('/popup-configs', [PopupConfigController::class, 'store']);
+    Route::middleware('permission:editar-pop-ups')->post('/popup-configs/{id}/actualizar', [PopupConfigController::class, 'update']);
+    Route::middleware('permission:eliminar-pop-ups')->delete('/popup-configs/{id}', [PopupConfigController::class, 'destroy']);
     
     // fixes
     // Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
