@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\MetricasController;
 use App\Http\Controllers\Api\WhatsAppCampaignController;
 use App\Http\Controllers\Api\PlantillasWhatsappController;
 use App\Http\Controllers\Api\PlantillasEmailController;
+use App\Http\Controllers\Api\PopupConfigController;
 
 // public routes test
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -198,6 +199,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/plantillas/email', [PlantillasEmailController::class, 'index']);
         Route::get('/plantillas/email/{id}', [PlantillasEmailController::class, 'show']);
         Route::post('/plantillas/email/{id}/actualizar', [PlantillasEmailController::class, 'actualizar']);
+    });
+    
+    // Pop-Ups - PROTEGIDO (marketing o administrador)
+    Route::middleware('role:marketing,administrador')->group(function () {
+        Route::get('/popup-configs', [PopupConfigController::class, 'index']);
+        Route::get('/popup-configs/{id}', [PopupConfigController::class, 'show']);
+        Route::get('/popup-configs/subservicio/{id_subservicio}', [PopupConfigController::class, 'showBySubservicio']);
+        Route::post('/popup-configs', [PopupConfigController::class, 'store']);
+        Route::post('/popup-configs/{id}/actualizar', [PopupConfigController::class, 'update']);
+        Route::post('/popup-configs/{id}/image', [PopupConfigController::class, 'uploadImage']);
+        Route::delete('/popup-configs/{id}', [PopupConfigController::class, 'destroy']);
     });
     
     // fixes

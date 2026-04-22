@@ -38,6 +38,12 @@ class SubservicioSeeder extends Seeder
             ['id_servicio' => 4, 'nombre' => 'Diseño de Logo', 'slug' => 'diseno-de-logo'], 
             ['id_servicio' => 4, 'nombre' => 'Manual de Marca', 'slug' => 'manual-de-marca'],
         ];
-        DB::table('subservicios')->insert($subservicios);
+
+        foreach ($subservicios as $subservicio) {
+            Subservicio::updateOrCreate(
+                ['slug' => $subservicio['slug']],
+                $subservicio
+            );
+        }
     }
 }
