@@ -109,6 +109,7 @@ class PopupConfigController extends Controller
     /**
      * Crear nueva configuración de pop-up
      * Solo un pop-up por subservicio (relación 1:1)
+     * Acepta imágenes directamente vía multipart/form-data
      *
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -117,50 +118,74 @@ class PopupConfigController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'id_subservicio' => 'required|integer|exists:subservicios,id_subservicio|unique:popup_configs',
-                'title_text' => 'required|string|max:80',
-                'button_text' => 'required|string|max:25',
-                'service_color' => 'required|regex:/^#[0-9A-Fa-f]{6}$/',
-                'trigger_time' => 'required|in:3,5,8',
-                'left_image_url' => 'nullable|url|max:500',
-                'left_opacity' => 'nullable|integer|min:0|max:100',
-                'right_image_url' => 'nullable|url|max:500',
-                'right_opacity' => 'nullable|integer|min:0|max:100',
-                'mobile_image_url' => 'nullable|url|max:500',
-                'mobile_opacity' => 'nullable|integer|min:0|max:100'
+                'id_subservicio'  => 'required|integer|exists:subservicios,id_subservicio|unique:popup_configs',
+                'title_text'      => 'required|string|min:5|max:80',
+                'button_text'     => 'required|string|min:2|max:25',
+                'service_color'   => 'required|regex:/^#[0-9A-Fa-f]{6}$/',
+                'trigger_time'    => 'required|in:3,5,8',
+                // Desktop
+                'left_image'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+                'left_opacity'    => 'nullable|integer|min:0|max:100',
+                'right_image'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+                'right_opacity'   => 'nullable|integer|min:0|max:100',
+                // Mobile
+                'mobile_image'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+                'mobile_opacity'  => 'nullable|integer|min:0|max:100',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Error de validación',
-                    'errors' => $validator->errors()
+                    'errors'  => $validator->errors()
                 ], 422);
             }
 
-            $popup = PopupConfig::create([
-                ...$request->validated(),
-                'created_by' => $request->user()->id,
-                'updated_by' => $request->user()->id
-            ]);
+            $data = [
+                'id_subservicio' => $request->id_subservicio,
+                'title_text'     => $request->title_text,
+                'button_text'    => $request->button_text,
+                'service_color'  => $request->service_color,
+                'trigger_time'   => $request->trigger_time,
+                'left_opacity'   => $request->left_opacity   ?? 100,
+                'right_opacity'  => $request->right_opacity  ?? 100,
+                'mobile_opacity' => $request->mobile_opacity ?? 100,
+                'created_by'     => $request->user()->id,
+                'updated_by'     => $request->user()->id,
+            ];
+
+            // Subir imágenes a Cloudinary si se enviaron
+            if ($request->hasFile('left_image')) {
+                $data['left_image_url'] = $this->uploadCloudinaryImage($request->file('left_image'));
+            }
+            if ($request->hasFile('right_image')) {
+                $data['right_image_url'] = $this->uploadCloudinaryImage($request->file('right_image'));
+            }
+            if ($request->hasFile('mobile_image')) {
+                $data['mobile_image_url'] = $this->uploadCloudinaryImage($request->file('mobile_image'));
+            }
+
+            $popup = PopupConfig::create($data);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Pop-up creado exitosamente',
-                'data' => $popup->load('subservicio.servicio', 'createdBy:id,name', 'updatedBy:id,name')
+                'data'    => $popup->load('subservicio.servicio', 'createdBy:id,name', 'updatedBy:id,name')
             ], 201);
         } catch (\Exception $e) {
             Log::error('Error creating popup: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error al crear pop-up',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
 
     /**
      * Actualizar configuración de pop-up
+     * Acepta imágenes directamente vía multipart/form-data.
+     * Si se envía una imagen nueva, reemplaza la anterior en Cloudinary.
      *
      * @param \Illuminate\Http\Request $request
      * @param int $id
@@ -172,34 +197,66 @@ class PopupConfigController extends Controller
             $popup = PopupConfig::findOrFail($id);
 
             $validator = Validator::make($request->all(), [
-                'title_text' => 'nullable|string|max:80',
-                'button_text' => 'nullable|string|max:25',
-                'service_color' => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
-                'trigger_time' => 'nullable|in:3,5,8',
-                'left_image_url' => 'nullable|url|max:500',
-                'left_opacity' => 'nullable|integer|min:0|max:100',
-                'right_image_url' => 'nullable|url|max:500',
-                'right_opacity' => 'nullable|integer|min:0|max:100',
-                'mobile_image_url' => 'nullable|url|max:500',
-                'mobile_opacity' => 'nullable|integer|min:0|max:100'
+                'title_text'     => 'nullable|string|min:5|max:80',
+                'button_text'    => 'nullable|string|min:2|max:25',
+                'service_color'  => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+                'trigger_time'   => 'nullable|in:3,5,8',
+                // Desktop
+                'left_image'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+                'left_opacity'   => 'nullable|integer|min:0|max:100',
+                'right_image'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+                'right_opacity'  => 'nullable|integer|min:0|max:100',
+                // Mobile
+                'mobile_image'   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+                'mobile_opacity' => 'nullable|integer|min:0|max:100',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Error de validación',
-                    'errors' => $validator->errors()
+                    'errors'  => $validator->errors()
                 ], 422);
             }
 
-            $popup->fill($request->validated());
+            // Actualizar campos de texto / opciones si vienen en el request
+            $textFields = ['title_text', 'button_text', 'service_color', 'trigger_time',
+                           'left_opacity', 'right_opacity', 'mobile_opacity'];
+            foreach ($textFields as $field) {
+                if ($request->has($field)) {
+                    $popup->$field = $request->$field;
+                }
+            }
+
+            // Reemplazar imágenes en Cloudinary si se enviaron nuevas
+            if ($request->hasFile('left_image')) {
+                if ($popup->left_image_url && str_contains($popup->left_image_url, 'cloudinary')) {
+                    $this->deleteCloudinaryImage($popup->left_image_url);
+                }
+                $popup->left_image_url = $this->uploadCloudinaryImage($request->file('left_image'));
+            }
+
+            if ($request->hasFile('right_image')) {
+                if ($popup->right_image_url && str_contains($popup->right_image_url, 'cloudinary')) {
+                    $this->deleteCloudinaryImage($popup->right_image_url);
+                }
+                $popup->right_image_url = $this->uploadCloudinaryImage($request->file('right_image'));
+            }
+
+            if ($request->hasFile('mobile_image')) {
+                if ($popup->mobile_image_url && str_contains($popup->mobile_image_url, 'cloudinary')) {
+                    $this->deleteCloudinaryImage($popup->mobile_image_url);
+                }
+                $popup->mobile_image_url = $this->uploadCloudinaryImage($request->file('mobile_image'));
+            }
+
             $popup->updated_by = $request->user()->id;
             $popup->save();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Pop-up actualizado exitosamente',
-                'data' => $popup->load('subservicio.servicio', 'createdBy:id,name', 'updatedBy:id,name')
+                'data'    => $popup->load('subservicio.servicio', 'createdBy:id,name', 'updatedBy:id,name')
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
@@ -211,7 +268,7 @@ class PopupConfigController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar pop-up',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
@@ -255,87 +312,33 @@ class PopupConfigController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al eliminar pop-up',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Subir imagen a Cloudinary (desktop left/right o mobile)
+     * Subir imagen a Cloudinary en la carpeta popup_configs
      *
-     * @param \Illuminate\Http\Request $request
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
+     * @param \Illuminate\Http\UploadedFile $file
+     * @return string URL segura de Cloudinary
      */
-    public function uploadImage(Request $request, $id)
+    private function uploadCloudinaryImage($file): string
     {
-        try {
-            $popup = PopupConfig::findOrFail($id);
+        $uploaded = Cloudinary::uploadApi()->upload(
+            $file->getRealPath(),
+            [
+                'folder'        => 'popup_configs',
+                'resource_type' => 'image',
+            ]
+        );
 
-            $validator = Validator::make($request->all(), [
-                'field' => 'required|in:left_image,right_image,mobile_image',
-                'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error de validación',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $field = $request->input('field');
-            $urlField = "{$field}_url";
-            $opacityField = str_replace('_image', '_opacity', $field);
-
-            // Eliminar imagen anterior si existe
-            if ($popup->{$urlField} && str_contains($popup->{$urlField}, 'cloudinary')) {
-                $this->deleteCloudinaryImage($popup->{$urlField});
-            }
-
-            // Subir nueva imagen
-            $uploadedFile = Cloudinary::uploadApi()->upload(
-                $request->file('image')->getRealPath(),
-                [
-                    'folder' => 'popup_configs',
-                    'resource_type' => 'image'
-                ]
-            );
-
-            $popup->{$urlField} = $uploadedFile['secure_url'];
-            if (!isset($popup->{$opacityField}) || is_null($popup->{$opacityField})) {
-                $popup->{$opacityField} = 100;
-            }
-            $popup->updated_by = $request->user()->id;
-            $popup->save();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Imagen subida exitosamente',
-                'data' => [
-                    'field' => $field,
-                    'url' => $popup->{$urlField},
-                    'opacity' => $popup->{$opacityField}
-                ]
-            ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pop-up no encontrado'
-            ], 404);
-        } catch (\Exception $e) {
-            Log::error("Error uploading popup image: " . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al subir imagen',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return $uploaded['secure_url'];
     }
 
     /**
      * Eliminar imagen de Cloudinary extrayendo public_id de la URL
+     * Patrón idéntico a PlantillasWhatsappController
      *
      * @param string $imageUrl
      * @return void
@@ -343,18 +346,14 @@ class PopupConfigController extends Controller
     private function deleteCloudinaryImage($imageUrl)
     {
         try {
-            // Extraer public_id de la URL de Cloudinary
-            // Ejemplo: https://res.cloudinary.com/cloud_name/image/upload/v1234567890/popup_configs/abc123.jpg
-            // public_id: popup_configs/abc123
-            
+            // Ejemplo URL: https://res.cloudinary.com/cloud/image/upload/v123456/popup_configs/abc.jpg
+            // public_id:   popup_configs/abc
             preg_match('/upload\/(?:v\d+\/)?(.+)\.\w+$/', $imageUrl, $matches);
-            
+
             if (isset($matches[1])) {
-                $publicId = $matches[1];
-                Cloudinary::destroy($publicId);
+                Cloudinary::destroy($matches[1]);
             }
         } catch (\Exception $e) {
-            // Log pero no fallar si no se puede eliminar imagen antigua
             Log::warning("No se pudo eliminar imagen de Cloudinary: {$imageUrl}", [
                 'error' => $e->getMessage()
             ]);
