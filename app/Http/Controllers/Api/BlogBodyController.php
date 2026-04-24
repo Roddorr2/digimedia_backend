@@ -3,48 +3,22 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\BlogBody\StoreBlogBodyRequest;
+use App\Http\Requests\BlogBody\UpdateBlogBodyRequest;
 use App\Models\BlogBody;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
 class BlogBodyController extends Controller
 {
 
-    public function create(Request $request)
+    public function create(StoreBlogBodyRequest $request)
     {
         try{
-
-            $validator = Validator::make($request->all(), [
-                'titulo' => 'required|string|max:255',
-                'descripcion' => 'required|string',
-                'id_commend_tarjeta' => 'nullable|integer|exists:commend_tarjetas,id_commend_tarjeta',
-                'public_image1' => 'nullable|string',
-                'url_image1' => 'nullable|string',
-                'alt_image1' => 'nullable|string|min:60|max:240', // alt 60-240
-                'title_image1' => 'nullable|string|min:50|max:140', // title 50 - 140
-                'public_image2' => 'nullable|string',
-                'url_image2' => 'nullable|string',
-                'alt_image2' => 'nullable|string|min:60|max:240',
-                'title_image2' => 'nullable|string|min:50|max:140',
-                'public_image3' => 'nullable|string',
-                'url_image3' => 'nullable|string',
-                'alt_image3' => 'nullable|string|min:60|max:240',
-                'title_image3' => 'nullable|string||min:50|max:140',
-                'flag_galeria' => 'nullable|boolean',
-                'flag_consejos' => 'nullable|boolean',
-                'flag_informacion' => 'nullable|boolean',
-                'service_url' => 'nullable|string|max:255',
-                'titulo_tarjeta'=>'nullable|string', // titulo tarjetas
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()], 400);
-            }
+            $validatedData = $request->validated();
 
             DB::beginTransaction();
 
-            $blogBody = BlogBody::create($request->all());
+            $blogBody = BlogBody::create($validatedData);
 
             DB::commit();
 
@@ -64,34 +38,9 @@ class BlogBodyController extends Controller
         }
     }
 
-    public function update(Request $request, int $id){
+    public function update(UpdateBlogBodyRequest $request, int $id){
         try{
-            $validator =  Validator::make($request->all(), [
-                'titulo' => 'required|string|max:255',
-                'descripcion' => 'required|string',
-                'id_commend_tarjeta' => 'nullable|integer|exists:commend_tarjetas,id_commend_tarjeta',
-                'public_image1' => 'nullable|string',
-                'url_image1' => 'nullable|string',
-                'alt_image1' => 'nullable|string|min:60|max:240', // alt 60 - 240
-                'title_image1' => 'nullable|string|min:50|max:140', // title 50 - 140
-                'public_image2' => 'nullable|string',
-                'url_image2' => 'nullable|string',
-                'alt_image2' => 'nullable|string|min:60|max:240',
-                'title_image2' => 'nullable|string|min:50|max:140',
-                'public_image3' => 'nullable|string',
-                'url_image3' => 'nullable|string',
-                'alt_image3' => 'nullable|string|min:60|max:240',
-                'title_image3' => 'nullable|string|min:50|max:140',
-                'flag_galeria' => 'nullable|boolean',
-                'flag_consejos' => 'nullable|boolean',
-                'flag_informacion' => 'nullable|boolean',
-                'service_url' => 'nullable|string|max:255',
-                'titulo_tarjeta'=>'nullable|string', // titulo tarjetas
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json(['errors'=> $validator->errors()], 400);
-            }
+            $validatedData = $request->validated();
 
             $blogBody = BlogBody::find($id);
 
@@ -104,7 +53,7 @@ class BlogBodyController extends Controller
 
             DB::beginTransaction();
 
-            $blogBody->update($request->all());
+            $blogBody->update($validatedData);
 
             DB::commit();
             return response()->json([
