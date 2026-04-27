@@ -13,6 +13,54 @@ use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 class PopupConfigController extends Controller
 {
     /**
+     * Endpoint público para obtener configuración de pop-up por subservicio
+     * No requiere autenticación - solo devuelve lo necesario para renderizar
+     *
+     * @param int $id_subservicio
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function showBySubservicioPublic($id_subservicio)
+    {
+        try {
+            $popup = PopupConfig::with([
+                'subservicio.servicio'
+            ])->where('id_subservicio', $id_subservicio)->firstOrFail();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id_subservicio' => $popup->id_subservicio,
+                    'title_text' => $popup->title_text,
+                    'title_color' => $popup->title_color ?? '#FFFFFF',
+                    'button_text' => $popup->button_text,
+                    'button_color' => $popup->button_color ?? '#7C3FD9',
+                    'service_color' => $popup->service_color,
+                    'service_color_2' => $popup->service_color_2 ?? null,
+                    'gradient_direction' => $popup->gradient_direction ?? 'to bottom',
+                    'trigger_time' => $popup->trigger_time,
+                    'left_image_url' => $popup->left_image_url,
+                    'left_opacity' => $popup->left_opacity,
+                    'left_alt' => $popup->left_alt ?? '',
+                    'right_image_url' => $popup->right_image_url,
+                    'right_opacity' => $popup->right_opacity,
+                    'right_alt' => $popup->right_alt ?? '',
+                    'mobile_image_url' => $popup->mobile_image_url,
+                    'mobile_opacity' => $popup->mobile_opacity,
+                    'mobile_alt' => $popup->mobile_alt ?? '',
+                    'subservicio' => [
+                        'id_servicio' => $popup->subservicio->id_servicio ?? null
+                    ]
+                ]
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pop-up no encontrado para este subservicio'
+            ], 404);
+        }
+    }
+
+    /**
      * Listar todas las configuraciones de pop-ups
      *
      * @return \Illuminate\Http\JsonResponse

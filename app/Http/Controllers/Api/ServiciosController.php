@@ -10,12 +10,29 @@ use Illuminate\Support\Facades\Validator;
 
 class ServiciosController extends Controller
 {
-    public function get(){
-        return ServicioResource::collection(
-            Servicios::orderBy('id_servicio', 'desc')->paginate(20)
-        );
+    public function get()
+    {
+        try {
+            $servicios = Servicios::orderBy('id_servicio', 'desc')->paginate(20);
+            
+            return response()->json([
+                'success' => true,
+                'data' => ServicioResource::collection($servicios),
+                'links' => $servicios->links(),
+                'meta' => [
+                    'current_page' => $servicios->currentPage(),
+                    'last_page' => $servicios->lastPage(),
+                    'total' => $servicios->total(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
-
+    
     public function create(Request $request){
         $validator = Validator::make($request->all(),[
             'nombre' => 'required|string|max:100',

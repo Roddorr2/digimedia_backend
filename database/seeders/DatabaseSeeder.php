@@ -33,8 +33,8 @@ class DatabaseSeeder extends Seeder
             CampaniaWhatsAppSeeder::class,
             PermisosSeeder::class,
             PlantillasEmailSeeder::class,
-            PlantillasWhatsappSeeder::class
-
+            PlantillasWhatsappSeeder::class,
+            PopupConfigSeeder::class
         ]);
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
