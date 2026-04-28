@@ -3,10 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Empleado\DeleteEmpleadoRequest;
+use App\Http\Requests\Empleado\GenerateEmpleadoUploadSignatureRequest;
+use App\Http\Requests\Empleado\GetEmpleadoByIdRequest;
+use App\Http\Requests\Empleado\StoreEmpleadoRequest;
+use App\Http\Requests\Empleado\UpdateEmpleadoPasswordRequest;
+use App\Http\Requests\Empleado\UpdateEmpleadoProfileImageRequest;
+use App\Http\Requests\Empleado\UpdateEmpleadoRequest;
+use App\Http\Requests\Empleado\VerifyEmpleadoPasswordRequest;
 use App\Models\Empleado;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -48,16 +55,8 @@ class EmpleadoController extends Controller
         return null;
     }
 
-    public function getById($id)
+    public function getById(GetEmpleadoByIdRequest $request, $id)
     {
-        $validate = Validator::make(["id" => $id], [
-            "id" => "required|numeric",
-        ]);
-
-        if ($validate->fails()) {
-            return response()->json(["status" => 422, "message" => "Error de validación", "Errors" => $validate->errors()]);
-        }
-
         $empleado = Empleado::with('rol')->where('id_empleado', $id)->first();
 
         if (!$empleado) {
@@ -160,24 +159,8 @@ class EmpleadoController extends Controller
         }
     }
 
-    public function create(Request $request)
+    public function create(StoreEmpleadoRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'nombre' => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:empleados|unique:users',
-            'dni' => 'required|string|max:20|unique:empleados',
-            'telefono' => 'nullable|string|max:20',
-            'id_rol' => 'required|exists:roles,id_rol',
-        ],  [
-            'email.unique' => 'El correo ya esta en uso.',
-            'dni.unique' => 'El DNI ya está registrado.',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()->first()], 422);
-        }
-
         DB::beginTransaction();
         try {
 
@@ -240,20 +223,8 @@ class EmpleadoController extends Controller
         return $password;
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateEmpleadoRequest $request, $id)
     {
-        $validate = Validator::make(["id" => $id], [
-            "id" => "required|numeric",
-        ]);
-
-        if ($validate->fails()) {
-            return response()->json([
-                "status" => 422,
-                "message" => "Error de validación",
-                "Errors" => $validate->errors()
-            ]);
-        }
-
         $permissionCheck = $this->checkPermissionMiddleware($id);
         if ($permissionCheck) {
             return $permissionCheck;
@@ -266,26 +237,6 @@ class EmpleadoController extends Controller
                 "status" => 404,
                 "message" => "Empleado no encontrado"
             ]);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'nombre'    => 'sometimes|string|max:255',
-            'apellido'  => 'sometimes|string|max:255',
-            'email'     => 'sometimes|string|email|max:255|unique:empleados,email,' . $id . ',id_empleado|unique:users,email,' . $empleado->id_user,
-            'dni'       => 'sometimes|string|max:20|unique:empleados,dni,' . $id . ',id_empleado',
-            'telefono'  => 'nullable|string|max:20',
-            'id_rol'    => 'sometimes|exists:roles,id_rol',
-        ], [
-            'nombre.string' => 'Debes ingresar un nombre',
-            'apellido.string' => 'Debes ingresar un apellido',
-            'email.string' => 'Debes ingresar un email',
-            'dni.string' => 'Debes ingresar un DNI',
-            'dni.unique' => 'Este número de DNI ya ha sido registrado.',
-            'email.unique' => 'Este correo ya está en uso.',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()->first()], 422);
         }
 
         $user = User::find($empleado->id_user);
@@ -321,7 +272,7 @@ class EmpleadoController extends Controller
     }
 
 
-    public function generateUploadSignature(Request $request, $id)
+    public function generateUploadSignature(GenerateEmpleadoUploadSignatureRequest $request, $id)
     {
         $authUser     = Auth::user();
         $authEmpleado = $authUser->empleado;
@@ -344,15 +295,6 @@ class EmpleadoController extends Controller
         }
 
         $paramsToSign = $request->all();
-
-        // Validar que el timestamp esté presente y dentro de la ventana de 2 minutos
-        if (empty($paramsToSign['timestamp']) || !is_numeric($paramsToSign['timestamp'])) {
-            return response()->json(['status' => 422, 'message' => 'Timestamp requerido'], 422);
-        }
-
-        if (abs(time() - (int) $paramsToSign['timestamp']) > 120) {
-            return response()->json(['status' => 422, 'message' => 'Firma expirada, por favor reintente'], 422);
-        }
 
         // El backend impone los parámetros críticos; el frontend no puede redefinirlos
         $paramsToSign['folder']    = "empleados/perfiles/{$id}";
@@ -384,25 +326,8 @@ class EmpleadoController extends Controller
         ]);
     }
 
-    public function updateProfileImage(Request $request, $id)
+    public function updateProfileImage(UpdateEmpleadoProfileImageRequest $request, $id)
     {
-        $validate = Validator::make($request->all(), [
-            'public_id'  => 'required|string',
-            'secure_url' => ['required', 'url', function ($attribute, $value, $fail) {
-                if (parse_url($value, PHP_URL_HOST) !== 'res.cloudinary.com') {
-                    $fail('La URL de imagen no pertenece a un dominio autorizado.');
-                }
-            }],
-        ]);
-
-        if ($validate->fails()) {
-            return response()->json([
-                "status"  => 422,
-                "message" => "Error de validación",
-                "errors"  => $validate->errors()
-            ], 422);
-        }
-
         $authUser     = Auth::user();
         $authEmpleado = $authUser->empleado;
 
@@ -463,16 +388,8 @@ class EmpleadoController extends Controller
     }
 
 
-    public function updatePass(Request $request, $id)
+    public function updatePass(UpdateEmpleadoPasswordRequest $request, $id)
     {
-        $validate = Validator::make(["id" => $id], [
-            "id" => "required|numeric",
-        ]);
-
-        if ($validate->fails()) {
-            return response()->json(["status" => 422, "message" => "Error de validación", "Errors" => $validate->errors()]);
-        }
-
         $empleado = Empleado::where('id_empleado', $id)->first();
 
         if (!$empleado) {
@@ -484,24 +401,8 @@ class EmpleadoController extends Controller
         return $this->updatePass1($request, $userId);
     }
 
-    private function updatePass1(Request $request, $id)
+    private function updatePass1(UpdateEmpleadoPasswordRequest $request, $id)
     {
-        $validate = Validator::make(["id" => $request->id], [
-            "id" => "required|numeric",
-        ]);
-
-        if ($validate->fails()) {
-            return response()->json(["status" => 422, "message" => "Error de validación", "Errors" => $validate->errors()]);
-        }
-
-        $validate = Validator::make($request->all(), [
-            "password" => "required|string|min:4",
-        ]);
-
-        if ($validate->fails()) {
-            return response()->json(["status" => 422, "message" => "Error de validación", "Errors" => $validate->errors(), "data" => $request->all()]);
-        }
-
         $response = User::where(["id" => intval($id)])->update(["password" => Hash::make($request->password)]);
 
         if ($response) {
@@ -509,14 +410,9 @@ class EmpleadoController extends Controller
         }
     }
 
-    public function verifyPassword(Request $request)
+    public function verifyPassword(VerifyEmpleadoPasswordRequest $request)
     {
         try {
-            $request->validate([
-                'currentPassword' => 'required',
-                'id_empleado' => 'required|exists:empleados,id_empleado'
-            ]);
-
             $empleado = Empleado::with('user')->findOrFail($request->id_empleado);
 
             if (!$empleado->user) {
@@ -545,21 +441,8 @@ class EmpleadoController extends Controller
         }
     }
 
-    public function delete(Request $request, $id)
+    public function delete(DeleteEmpleadoRequest $request, $id)
     {
-        $validate = Validator::make(["id" => $id], [
-            "id" => "required|numeric",
-        ]);
-
-        if ($validate->fails()) {
-            Log::error("Validación fallida: ", $validate->errors()->toArray());
-            return response()->json([
-                "status" => 422,
-                "message" => "Error de validación",
-                "errors" => $validate->errors()
-            ], 422);
-        }
-
         $permissionCheck = $this->checkPermissionMiddleware($id);
         if ($permissionCheck) {
             return $permissionCheck;
