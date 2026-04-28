@@ -14,12 +14,17 @@ use Illuminate\Support\Facades\Log;
 
 class SendWhatsAppCampaignJob implements ShouldQueue
 {
+    /**
+     * Segundos de pausa entre el envío de cada mensaje individual.
+     */
+    private const DELAY_ENTRE_MENSAJES = 45;
+
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $campania;
     public $destinatarios;
     public $tries = 3;
-    public $timeout = 900; // 15 minutos por Job (para chunks grandes con reintentos)
+    public $timeout = 3600; // 1 hora: procesamiento individual (~45s × 20 destinatarios × chunks + reintentos)
 
     /**
      * Constructor
@@ -166,316 +171,230 @@ class SendWhatsAppCampaignJob implements ShouldQueue
     }
 
     /**
-     * Procesa un chunk de destinatarios
+     * Procesa un chunk de destinatarios enviando UN MENSAJE A LA VEZ.
+     * Esto permite actualizar los contadores en la BD después de cada envío,
+     * logrando que la barra de progreso del frontend se actualice en tiempo real.
      */
     private function processChunk(array $chunk, int $chunkNumber)
     {
-        try {
-            // Preparar payload para whatsapp-service
-            $recipients = array_map(function ($destinatario) {
-                return [
-                    'id_modalservicio' => $destinatario['id_modalservicio'],
-                    'nombre' => $destinatario['nombre'],
-                    'telefono' => formatearTelefonoWhatsApp($destinatario['telefono']),
-                ];
-            }, $chunk);
+        $totalEnChunk = count($chunk);
 
+        Log::info("Iniciando envío individual en chunk {$chunkNumber}", [
+            'campania_id'    => $this->campania->id_campania,
+            'total_en_chunk' => $totalEnChunk,
+        ]);
+
+        foreach ($chunk as $posicion => $destinatario) {
+            // --- Verificar conexión / estado antes de cada mensaje ---
+            $this->campania->refresh();
+            if ($this->campania->estado === 'pausada_sin_conexion') {
+                Log::info("Campaña pausada por desconexión - deteniendo envíos restantes en chunk", [
+                    'campania_id'      => $this->campania->id_campania,
+                    'pendientes_chunk' => $totalEnChunk - $posicion,
+                ]);
+                return;
+            }
+
+            // Verificar límite diario por cada mensaje
+            if ($this->campania->getRemainingDailyQuota() <= 0) {
+                Log::info('Límite diario alcanzado durante chunk - pausando', [
+                    'campania_id' => $this->campania->id_campania,
+                    'envios_hoy'  => $this->campania->envios_hoy,
+                ]);
+                $this->campania->update(['estado' => 'pausada_hasta_mañana']);
+                return;
+            }
+
+            // --- Preparar payload para UN solo destinatario ---
             $payload = [
-                'campania_id' => $this->campania->id_campania,
+                'campania_id'  => $this->campania->id_campania,
                 'chunk_number' => $chunkNumber,
-                'recipients' => $recipients,
-                'message' => $this->campania->parrafo,
-                'image_url' => $this->campania->imagen_url,
-                'id_servicio' => $this->campania->id_servicio,
+                'recipients'   => [
+                    [
+                        'id_modalservicio' => $destinatario['id_modalservicio'],
+                        'nombre'           => $destinatario['nombre'],
+                        'telefono'         => formatearTelefonoWhatsApp($destinatario['telefono']),
+                    ]
+                ],
+                'message'      => $this->campania->parrafo,
+                'image_url'    => $this->campania->imagen_url,
+                'id_servicio'  => $this->campania->id_servicio,
             ];
 
-            // Enviar chunk a whatsapp-service
-            // Timeout de 1800s (30 min) para permitir envío de chunks con delays largos
-            // 20 mensajes × ~45s promedio = ~900s (15 min) + margen de seguridad
-            $response = Http::timeout(1800)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                    'X-API-Key' => env('WHATSAPP_SERVICE_API_KEY'),
-                ])
-                ->post(env('WHATSAPP_API_URL') . '/api/whatsapp/send-campaign-batch', $payload);
+            try {
+                // Timeout de 120s por mensaje: 45s envío + margen holgado
+                $response = Http::timeout(120)
+                    ->withHeaders([
+                        'Content-Type' => 'application/json',
+                        'Accept'       => 'application/json',
+                        'X-API-Key'    => env('WHATSAPP_SERVICE_API_KEY'),
+                    ])
+                    ->post(env('WHATSAPP_API_URL') . '/api/whatsapp/send-campaign-batch', $payload);
 
-            if ($response->successful()) {
-                $result = $response->json();
+                if ($response->successful()) {
+                    $result  = $response->json();
+                    $exitoso = ($result['successful'] ?? 0) > 0;
+                    $fallido = !$exitoso;
 
-                Log::info("📊 Respuesta del whatsapp-service", [
-                    'campania_id' => $this->campania->id_campania,
-                    'chunk' => $chunkNumber,
-                    'response' => $result
-                ]);
-
-                // ⚡ DETECCIÓN INMEDIATA: whatsapp-service detectó desconexión en tiempo real
-                if (isset($result['paused']) && $result['paused'] === true) {
-                    $exitosos = $result['successful'] ?? 0;
-
-                    Log::warning("⚡ WhatsApp desconectado DURANTE chunk - pausando inmediatamente", [
-                        'campania_id' => $this->campania->id_campania,
-                        'chunk_number' => $chunkNumber,
-                        'exitosos_antes_desconexion' => $exitosos,
-                        'pause_reason' => $result['pause_reason'] ?? 'unknown'
-                    ]);
-
-                    // Registrar solo los exitosos antes de la desconexión
-                    if ($exitosos > 0) {
-                        $this->campania->increment('envios_exitosos', $exitosos);
-                        $this->campania->decrement('envios_pendientes', $exitosos);
-                        $this->campania->increment('envios_hoy', $exitosos);
-
-                        // Registrar en WatModal solo los exitosos
-                        foreach ($chunk as $destinatario) {
-                            $resultado = $result['results'][$destinatario['id_modalservicio']] ?? null;
-                            if ($resultado && isset($resultado['success']) && $resultado['success']) {
-                                WatModal::create([
-                                    'id_modalservicio' => $destinatario['id_modalservicio'],
-                                    'number_message' => 1,
-                                    'estado' => 1,
-                                    'error' => null,
-                                    'fecha' => now(),
-                                    'campania_id' => $this->campania->id_campania,
-                                    'intentos' => 1,
-                                    'puede_reintentar' => false,
-                                ]);
-                            }
-                        }
+                    // ⚡ Detectar desconexión reportada por el servicio
+                    if (isset($result['paused']) && $result['paused'] === true) {
+                        Log::warning("WhatsApp desconectado durante envío individual - pausando campaña", [
+                            'campania_id'      => $this->campania->id_campania,
+                            'id_modalservicio' => $destinatario['id_modalservicio'],
+                        ]);
+                        $this->campania->update([
+                            'estado'            => 'pausada_sin_conexion',
+                            'fecha_ultimo_envio' => now()->timezone('America/Lima')->toDateString(),
+                        ]);
+                        return;
                     }
 
-                    // Pausar campaña inmediatamente
+                    // ✅ Actualizar BD inmediatamente tras cada mensaje
+                    if ($exitoso) {
+                        $this->campania->increment('envios_exitosos');
+                        $this->campania->decrement('envios_pendientes');
+                        $this->campania->increment('envios_hoy');
+                    } else {
+                        $this->campania->increment('envios_fallidos');
+                        $this->campania->decrement('envios_pendientes');
+                        $this->campania->increment('envios_hoy');
+                    }
                     $this->campania->update([
-                        'estado' => 'pausada_sin_conexion',
                         'fecha_ultimo_envio' => now()->timezone('America/Lima')->toDateString()
                     ]);
 
-                    return; // Detener procesamiento inmediatamente
-                }
+                    $resultadoDestinatario = $result['results'][$destinatario['id_modalservicio']] ?? null;
+                    $errorMsg = $exitoso ? null : ($resultadoDestinatario['error'] ?? 'Error desconocido');
 
-                // Actualizar contadores según respuesta
-                $exitosos = $result['successful'] ?? 0;
-                $fallidos = $result['failed'] ?? 0;
+                    WatModal::create([
+                        'id_modalservicio' => $destinatario['id_modalservicio'],
+                        'number_message'   => 1,
+                        'estado'           => $exitoso ? 1 : 0,
+                        'error'            => $errorMsg,
+                        'fecha'            => now(),
+                        'campania_id'      => $this->campania->id_campania,
+                        'intentos'         => 1,
+                        'puede_reintentar' => $fallido,
+                    ]);
 
-                // 🔌 DETECCIÓN DE DESCONEXIÓN DURANTE ENVÍO DE CHUNK
-                // Si hay muchos fallos con error de conexión, pausar la campaña
-                if ($fallidos > 0 && isset($result['results'])) {
-                    $erroresConexion = 0;
-                    $totalResultados = count($result['results']);
+                    Log::info("📨 Mensaje enviado", [
+                        'campania_id'      => $this->campania->id_campania,
+                        'id_modalservicio' => $destinatario['id_modalservicio'],
+                        'exitoso'          => $exitoso,
+                        'progreso'         => ($posicion + 1) . '/' . $totalEnChunk . ' en chunk',
+                        'envios_exitosos'  => $this->campania->fresh()->envios_exitosos,
+                    ]);
 
-                    foreach ($result['results'] as $resultado) {
+                    // Detectar desconexión por errores en resultado
+                    if ($fallido && $resultadoDestinatario) {
+                        $errorDestinatario = strtolower($resultadoDestinatario['error'] ?? '');
                         if (
-                            isset($resultado['error']) &&
-                            (str_contains($resultado['error'], 'Cannot read properties of undefined') ||
-                                str_contains($resultado['error'], 'not connected') ||
-                                str_contains(strtolower($resultado['error']), 'no está conectado'))
+                            str_contains($errorDestinatario, 'not connected') ||
+                            str_contains($errorDestinatario, 'no está conectado') ||
+                            str_contains($errorDestinatario, 'desconectado')
                         ) {
-                            $erroresConexion++;
+                            Log::warning("Desconexión detectada en resultado - pausando campaña", [
+                                'campania_id' => $this->campania->id_campania,
+                            ]);
+                            $this->campania->update([
+                                'estado'            => 'pausada_sin_conexion',
+                                'fecha_ultimo_envio' => now()->timezone('America/Lima')->toDateString(),
+                            ]);
+                            return;
                         }
                     }
 
-                    // Si más del 80% de los mensajes fallaron por desconexión, pausar
-                    $porcentajeErrorConexion = ($erroresConexion / $totalResultados) * 100;
+                } else {
+                    // Error HTTP del request
+                    $responseBody   = $response->body();
+                    $responseStatus = $response->status();
 
-                    if ($porcentajeErrorConexion > 80) {
-                        Log::warning("WhatsApp se desconectó durante envío - pausando campaña", [
+                    Log::error("Error HTTP enviando mensaje individual", [
+                        'campania_id'      => $this->campania->id_campania,
+                        'id_modalservicio' => $destinatario['id_modalservicio'],
+                        'status'           => $responseStatus,
+                        'body'             => $responseBody,
+                    ]);
+
+                    // Detectar desconexión de WhatsApp
+                    if (
+                        $responseStatus === 500 &&
+                        (str_contains(strtolower($responseBody), 'no está conectado') ||
+                            str_contains(strtolower($responseBody), 'not connected'))
+                    ) {
+                        Log::warning("WhatsApp desconectado (HTTP 500) - pausando campaña", [
                             'campania_id' => $this->campania->id_campania,
-                            'chunk_number' => $chunkNumber,
-                            'exitosos_antes_desconexion' => $exitosos,
-                            'fallidos_por_desconexion' => $erroresConexion,
-                            'porcentaje_error' => round($porcentajeErrorConexion, 2)
                         ]);
-
-                        // Marcar solo los que realmente fallaron por desconexión como reintentos
-                        // Los exitosos ya se procesaron
-                        $this->campania->increment('envios_exitosos', $exitosos);
-                        $this->campania->decrement('envios_pendientes', $exitosos);
-                        $this->campania->increment('envios_hoy', $exitosos);
-                        $this->campania->update([
-                            'estado' => 'pausada_sin_conexion',
-                            'fecha_ultimo_envio' => now()->timezone('America/Lima')->toDateString()
-                        ]);
-
-                        // Registrar solo los exitosos (los fallidos quedan pendientes)
-                        foreach ($chunk as $destinatario) {
-                            $resultado = $result['results'][$destinatario['id_modalservicio']] ?? null;
-                            if ($resultado && isset($resultado['success']) && $resultado['success']) {
-                                WatModal::create([
-                                    'id_modalservicio' => $destinatario['id_modalservicio'],
-                                    'number_message' => 1,
-                                    'estado' => 1,
-                                    'error' => null,
-                                    'fecha' => now(),
-                                    'campania_id' => $this->campania->id_campania,
-                                    'intentos' => 1,
-                                    'puede_reintentar' => false,
-                                ]);
-                            }
-                        }
-
-                        return; // Detener procesamiento
+                        $this->campania->update(['estado' => 'pausada_sin_conexion']);
+                        return;
                     }
-                }
 
-                Log::info("🔄 Actualizando contadores", [
-                    'campania_id' => $this->campania->id_campania,
-                    'exitosos' => $exitosos,
-                    'fallidos' => $fallidos,
-                    'antes_exitosos' => $this->campania->envios_exitosos,
-                    'antes_fallidos' => $this->campania->envios_fallidos,
-                ]);
-
-                $this->campania->increment('envios_exitosos', $exitosos);
-                $this->campania->increment('envios_fallidos', $fallidos);
-                $this->campania->decrement('envios_pendientes', $exitosos + $fallidos);
-
-                // ACTUALIZAR CONTADOR DIARIO
-                $this->campania->increment('envios_hoy', $exitosos + $fallidos);
-                $this->campania->update(['fecha_ultimo_envio' => now()->timezone('America/Lima')->toDateString()]);
-
-                // Refrescar para obtener valores actuales
-                $this->campania->refresh();
-
-                Log::info("✅ Contadores actualizados", [
-                    'campania_id' => $this->campania->id_campania,
-                    'despues_exitosos' => $this->campania->envios_exitosos,
-                    'despues_fallidos' => $this->campania->envios_fallidos,
-                    'envios_hoy' => $this->campania->envios_hoy,
-                ]);
-
-                // Registrar en modal_wats
-                foreach ($chunk as $destinatario) {
-                    $estado = isset($result['results'][$destinatario['id_modalservicio']]) &&
-                        $result['results'][$destinatario['id_modalservicio']]['success'] ? 1 : 0;
+                    // Otro error: registrar como fallido y continuar con el siguiente
+                    $this->campania->increment('envios_fallidos');
+                    $this->campania->decrement('envios_pendientes');
+                    $this->campania->increment('envios_hoy');
 
                     WatModal::create([
                         'id_modalservicio' => $destinatario['id_modalservicio'],
-                        'number_message' => 1,
-                        'estado' => $estado,
-                        'error' => $estado ? null : ($result['results'][$destinatario['id_modalservicio']]['error'] ?? 'Error desconocido'),
-                        'fecha' => now(),
-                        'campania_id' => $this->campania->id_campania, // 🔁 FASE 3
-                        'intentos' => 1, // 🔁 FASE 3: Primer intento
-                        'puede_reintentar' => !$estado, // 🔁 FASE 3: Si falló, puede reintentar
+                        'number_message'   => 1,
+                        'estado'           => 0,
+                        'error'            => 'HTTP ' . $responseStatus . ' - ' . substr($responseBody, 0, 200),
+                        'fecha'            => now(),
+                        'campania_id'      => $this->campania->id_campania,
+                        'intentos'         => 1,
+                        'puede_reintentar' => true,
                     ]);
                 }
 
-                Log::info("Chunk {$chunkNumber} procesado", [
-                    'campania_id' => $this->campania->id_campania,
-                    'exitosos' => $exitosos,
-                    'fallidos' => $fallidos,
-                    'envios_hoy_total' => $this->campania->envios_hoy
-                ]);
+            } catch (\Exception $e) {
+                $errorMessage = $e->getMessage();
 
-            } else {
-                // Si falla el request (no es 2xx), verificar el tipo de error
-                $responseBody = $response->body();
-                $responseStatus = $response->status();
-
-                Log::error("Chunk {$chunkNumber} falló completamente", [
-                    'campania_id' => $this->campania->id_campania,
-                    'status' => $responseStatus,
-                    'body' => $responseBody
-                ]);
-
-                // 🔌 DETECCIÓN DE DESCONEXIÓN DE WHATSAPP
-                // Si el error es 500 y contiene "no está conectado", pausar en lugar de marcar como error
-                if (
-                    $responseStatus === 500 &&
-                    (str_contains(strtolower($responseBody), 'no está conectado') ||
-                        str_contains(strtolower($responseBody), 'not connected'))
-                ) {
-
-                    Log::warning("WhatsApp desconectado - pausando campaña automáticamente", [
-                        'campania_id' => $this->campania->id_campania,
-                        'chunk_number' => $chunkNumber,
-                        'mensaje' => 'Campaña se reanudará automáticamente cuando WhatsApp se reconecte'
-                    ]);
-
-                    // Pausar campaña con nuevo estado
-                    $this->campania->update(['estado' => 'pausada_sin_conexion']);
-
-                    // NO marcar mensajes como fallidos, quedarán pendientes para reintento
-                    // El Cron Job los reanudará automáticamente cuando detecte conexión
-
-                    // Retornar para detener procesamiento de este chunk
-                    // El loop principal detectará el cambio de estado y detendrá chunks restantes
-                    return;
-                }
-
-                // Si es otro tipo de error (no es desconexión), marcar como error
-                $this->campania->update(['estado' => 'error']);
-
-                // Marcar todos como fallidos
-                $this->campania->increment('envios_fallidos', count($chunk));
-                $this->campania->decrement('envios_pendientes', count($chunk));
-
-                foreach ($chunk as $destinatario) {
-                    WatModal::create([
+                if (str_contains($errorMessage, 'timeout') || str_contains($errorMessage, 'timed out')) {
+                    Log::warning("Timeout enviando mensaje individual - puede haberse enviado", [
+                        'campania_id'      => $this->campania->id_campania,
                         'id_modalservicio' => $destinatario['id_modalservicio'],
-                        'number_message' => 1,
-                        'estado' => 0,
-                        'error' => 'Error en request a whatsapp-service: ' . $responseStatus,
-                        'fecha' => now(),
-                        'campania_id' => $this->campania->id_campania, // 🔁 FASE 3
-                        'intentos' => 1, // 🔁 FASE 3
-                        'puede_reintentar' => true, // 🔁 FASE 3
+                        'error'            => $errorMessage,
                     ]);
+                } else {
+                    Log::error("Error enviando mensaje individual", [
+                        'campania_id'      => $this->campania->id_campania,
+                        'id_modalservicio' => $destinatario['id_modalservicio'],
+                        'error'            => $errorMessage,
+                    ]);
+                    $this->campania->increment('envios_fallidos');
+                    $this->campania->decrement('envios_pendientes');
+                    $this->campania->increment('envios_hoy');
                 }
+
+                WatModal::create([
+                    'id_modalservicio' => $destinatario['id_modalservicio'],
+                    'number_message'   => 1,
+                    'estado'           => 0,
+                    'error'            => substr($errorMessage, 0, 255),
+                    'fecha'            => now(),
+                    'campania_id'      => $this->campania->id_campania,
+                    'intentos'         => 1,
+                    'puede_reintentar' => true,
+                ]);
             }
 
-        } catch (\Exception $e) {
-            // Manejo de errores del chunk
-            $errorMessage = $e->getMessage();
-
-            // Si es timeout, los mensajes pueden haberse enviado
-            // Registramos el error pero no marcamos definitivamente como fallidos
-            if (str_contains($errorMessage, 'timeout') || str_contains($errorMessage, 'timed out')) {
-                Log::warning("Timeout en chunk {$chunkNumber} - mensajes pueden haberse enviado", [
+            // ⏱ Pausa entre mensajes para evitar bloqueos de WhatsApp por spam.
+            // Solo se aplica si NO es el último destinatario del chunk.
+            if ($posicion < $totalEnChunk - 1) {
+                Log::info('Pausa entre mensajes', [
                     'campania_id' => $this->campania->id_campania,
-                    'chunk_size' => count($chunk),
-                    'error' => $errorMessage,
-                    'nota' => 'Verificar manualmente si los mensajes se enviaron'
+                    'segundos'    => self::DELAY_ENTRE_MENSAJES,
+                    'siguiente'   => ($posicion + 2) . '/' . $totalEnChunk,
                 ]);
-
-                // Marcar como pendientes en vez de fallidos para revisión manual
-                foreach ($chunk as $destinatario) {
-                    WatModal::create([
-                        'id_modalservicio' => $destinatario['id_modalservicio'],
-                        'number_message' => 1,
-                        'estado' => 0,
-                        'error' => 'Timeout en envío - requiere verificación manual',
-                        'fecha' => now(),
-                        'campania_id' => $this->campania->id_campania, // 🔁 FASE 3
-                        'intentos' => 1, // 🔁 FASE 3
-                        'puede_reintentar' => true, // 🔁 FASE 3
-                    ]);
-                }
-            } else {
-                // Error real (no timeout)
-                $this->campania->increment('envios_fallidos', count($chunk));
-                $this->campania->decrement('envios_pendientes', count($chunk));
-
-                Log::error("Error procesando chunk {$chunkNumber}", [
-                    'campania_id' => $this->campania->id_campania,
-                    'error' => $errorMessage
-                ]);
-
-                // Registrar todos como fallidos
-                foreach ($chunk as $destinatario) {
-                    WatModal::create([
-                        'id_modalservicio' => $destinatario['id_modalservicio'],
-                        'number_message' => 1,
-                        'estado' => 0,
-                        'error' => $errorMessage,
-                        'fecha' => now(),
-                        'campania_id' => $this->campania->id_campania, // 🔁 FASE 3
-                        'intentos' => 1, // 🔁 FASE 3
-                        'puede_reintentar' => true, // 🔁 FASE 3
-                    ]);
-                }
+                sleep(self::DELAY_ENTRE_MENSAJES);
             }
-        }
+        } // end foreach destinatario
+
+        Log::info("Chunk {$chunkNumber} procesado (envío individual)", [
+            'campania_id'    => $this->campania->id_campania,
+            'total_en_chunk' => $totalEnChunk,
+            'envios_hoy'     => $this->campania->fresh()->envios_hoy,
+        ]);
     }
 
     /**

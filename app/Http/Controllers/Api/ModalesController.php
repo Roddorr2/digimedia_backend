@@ -15,7 +15,18 @@ class ModalesController extends Controller
 {
     public function get(Request $request)
     {
-        $modals = modalservicios::with('servicio')->orderBy('id_modalservicio', 'asc')->paginate(5);
+        $query = modalservicios::with('servicio');
+
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nombre', 'like', "%{$search}%")
+                  ->orWhere('correo', 'like', "%{$search}%")
+                  ->orWhere('id_modalservicio', 'like', "%{$search}%");
+            });
+        }
+
+        $modals = $query->orderBy('id_modalservicio', 'asc')->paginate(15);
 
         return response()->json($modals, 200);
     }
