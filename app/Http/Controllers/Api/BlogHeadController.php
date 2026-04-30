@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\BlogHeadResource;
 use App\Models\BlogHead;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -134,7 +135,8 @@ class BlogHeadController extends Controller
 
             return response()->json([
                 "status" => 200,
-                "data" => $blogHead
+                //"data" => $blogHead
+                "data"=>new BlogHeadResource($blogHead)
             ], 200);
 
         }catch(\Exception $ex){

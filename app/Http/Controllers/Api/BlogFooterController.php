@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\BlogFooterResource;
 use Illuminate\Http\Request;
 use App\Models\BlogFooter;
 use Illuminate\Support\Facades\Validator;
@@ -126,7 +127,8 @@ class BlogFooterController extends Controller
 
             return response()->json([
                 "status" => 200,
-                "data" => $blogFooter
+                //"data" => $blogFooter
+                "data" => new BlogFooterResource($blogFooter)
                 ], 200);
 
         }catch(\Exception $ex){
