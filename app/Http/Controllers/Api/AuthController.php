@@ -102,13 +102,12 @@ class AuthController extends Controller
                     'email' => $request->email,
                     'ip'    => $request->ip(),
                 ]);
-
                 return response()->json([
                     'status'  => 'error',
                     'message' => 'Verificación de seguridad fallida. Recarga la página e intenta de nuevo.',
-                ], 422);
-            }
-
+                    ], 422);
+                }
+                    
             $activeBackoffSeconds = $this->obtenerEsperaBackoffSegundos($backoffKey);
             if ($activeBackoffSeconds > 0) {
                 $attemptResult = $this->registrarIntentoFallido(

@@ -14,15 +14,22 @@ class PopupConfig extends Model
     protected $fillable = [
         'id_subservicio',
         'title_text',
+        'title_color',
         'button_text',
+        'button_color',       
         'service_color',
+        'service_color_2',    
+        'gradient_direction', 
         'trigger_time',
         'left_image_url',
         'left_opacity',
+        'left_alt',           
         'right_image_url',
         'right_opacity',
+        'right_alt',          
         'mobile_image_url',
         'mobile_opacity',
+        'mobile_alt',         
         'created_by',
         'updated_by'
     ];

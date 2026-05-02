@@ -47,6 +47,9 @@ Route::get('/blog_head/{id}', [BlogHeadController::class, "show"]);
 Route::get('/blog_footer/{id}', [BlogFooterController::class, "show"]);
 Route::get('/blog_body/{id}', [BlogBodyController::class, "show"]);
 
+// Rutas públicas para ver los pop-ups
+Route::get('/public/popup-configs/subservicio/{id_subservicio}', [PopupConfigController::class, 'showBySubservicioPublic']);
+
 //ModeloControlador
 
 Route::get('/modales/send_wat/{id}', [ModalWatController::class, "sendWat"]);
