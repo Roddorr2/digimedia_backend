@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\PlantillaWhatsapp;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -9,7 +10,12 @@ class PlantillasWhatsappSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('plantillas_whatsapp')->insert($this->buildAll());
+        foreach ($this->buildAll() as $plantilla) {
+            PlantillaWhatsapp::updateOrCreate(
+                ['id_servicio' => $plantilla['id_servicio'], 'numero_plantilla' => $plantilla['numero_plantilla']],
+                $plantilla
+            );
+        }
     }
 
     private function buildAll(): array

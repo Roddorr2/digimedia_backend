@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Card;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -215,7 +216,10 @@ class CardSeeder extends Seeder
         ];
 
         foreach ($cards as $card) {
-            DB::table('cards')->insert($card);
+            Card::updateOrCreate(
+                ['id_blog' => $card['id_blog']],
+                $card
+            );
         }
     }
 }
