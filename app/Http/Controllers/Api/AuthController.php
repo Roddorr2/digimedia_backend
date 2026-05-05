@@ -89,13 +89,14 @@ class AuthController extends Controller
             $request->validate([
                 'email'         => 'required|email',
                 'password'      => 'required',
-                'captcha_token' => 'required|string',
+                //'captcha_token' => 'required|string',
             ]);
 
             $normalizedEmail = strtolower($request->email);
             $backoffKey = 'login_backoff:' . $normalizedEmail;
             $attemptsKey = 'login_attempts:' . $normalizedEmail;
 
+            /*
             // verificar Turnstile CAPTCHA antes de consultar la BD
             if (!$this->verifyTurnstile($request->captcha_token, $request->ip())) {
                 Log::warning('Turnstile verification failed', [
@@ -107,6 +108,7 @@ class AuthController extends Controller
                     'message' => 'Verificación de seguridad fallida. Recarga la página e intenta de nuevo.',
                     ], 422);
                 }
+            */
                     
             $activeBackoffSeconds = $this->obtenerEsperaBackoffSegundos($backoffKey);
             if ($activeBackoffSeconds > 0) {
