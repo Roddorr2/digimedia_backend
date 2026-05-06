@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CommendTarjeta\StoreCommendTarjetaRequest;
 use App\Http\Resources\CommendTarjetaResource;
 use Illuminate\Http\Request;
 use App\Models\CommendTarjeta;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class CommendTarjetaController extends Controller
 {
