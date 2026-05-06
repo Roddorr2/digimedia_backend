@@ -21,7 +21,11 @@ return [
     'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
 
     // Orígenes CORS permitidos - cargados desde .env
-    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')),
+    'allowed_origins' => [
+        'http://localhost:3000',
+        'https://digimedia-marketing.com',
+        'https://www.digimedia-marketing.com',
+    ],
 
     'allowed_origins_patterns' => [],
 
