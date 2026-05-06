@@ -3,41 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\BlogFooter\StoreBlogFooterRequest;
+use App\Http\Requests\BlogFooter\UpdateBlogFooterRequest;
 use App\Models\BlogFooter;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
 class BlogFooterController extends Controller
 {
-    public function create(Request $request)
+    public function create(StoreBlogFooterRequest $request)
     {
         try{
-            $validator = Validator::make($request->all(), [
-                'titulo' => 'nullable|string',
-                'descripcion' => 'nullable|string',
-                'public_image1' => 'nullable|string',
-                'url_image1' => 'nullable|string',
-                'public_image2' => 'nullable|string',
-                'url_image2' => 'nullable|string',
-                'public_image3' => 'nullable|string',
-                'url_image3' => 'nullable|string',
-                'alt_image1' => 'nullable|string|min:60|max:240',
-                'title_image1' => 'nullable|string|min:50|max:140',
-                'alt_image2' => 'nullable|string|min:60|max:240',
-                'title_image2' => 'nullable|string|min:50|max:140',
-                'alt_image3' => 'nullable|string|min:60|max:240',
-                'title_image3' => 'nullable|string|min:50|max:140',
-                'estado' => 'nullable|boolean',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()], 400);
-            }
+            $validatedData = $request->validated();
 
             DB::beginTransaction();
 
-            $blogFooter = BlogFooter::create($request->all());
+            $blogFooter = BlogFooter::create($validatedData);
 
             DB::commit();
 
@@ -57,32 +37,10 @@ class BlogFooterController extends Controller
         }
     }
 
-    public function update(Request $request, int $id)
+    public function update(UpdateBlogFooterRequest $request, int $id)
     {
         try{
-            $validator = Validator::make($request->all(), [
-                'titulo' => 'nullable|string|max:255',
-                'descripcion' => 'nullable|string',
-                'public_image1' => 'nullable|string',
-                'url_image1' => 'nullable|string',
-                'public_image2' => 'nullable|string',
-                'url_image2' => 'nullable|string',
-                'public_image3' => 'nullable|string',
-                'url_image3' => 'nullable|string',
-                'alt_image1' => 'nullable|string|min:60|max:240',
-                'title_image1' => 'nullable|string|min:50|max:140',
-                'alt_image2' => 'nullable|string|min:60|max:240',
-                'title_image2' => 'nullable|string|min:50|max:140',
-                'alt_image3' => 'nullable|string|min:60|max:240',
-                'title_image3' => 'nullable|string|min:50|max:140',
-                'estado' => 'nullable|boolean',
-                'palabra' => 'nullable|string|max:255',
-                'enlace' => 'nullable|string|max:255',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json(['errors'=> $validator->errors()], 400);
-            }
+            $validatedData = $request->validated();
 
             $blogFooter = BlogFooter::find($id);
 
@@ -95,7 +53,7 @@ class BlogFooterController extends Controller
 
             DB::beginTransaction();
 
-            $blogFooter->update($request->all());
+            $blogFooter->update($validatedData);
 
             DB::commit();
             return response()->json([
