@@ -325,7 +325,7 @@ class AuthController extends Controller
         $secret = config('services.turnstile.secret_key');
 
         try {
-            $response = Http::asForm()
+            $response = Http::withoutVerifying()->asForm()
                 ->timeout(5)
                 ->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
                     'secret'   => $secret,
