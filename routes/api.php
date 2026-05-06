@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\PlantillasWhatsappController;
 use App\Http\Controllers\Api\PlantillasEmailController;
 use App\Http\Controllers\Api\PopupConfigController;
 use App\Http\Controllers\Api\SubservicioController;
+use App\Http\Controllers\Api\CampaniasController;
 
 // public routes test
 Route::middleware('throttle:5,1')->post('/register', [AuthController::class, 'register']);
@@ -192,7 +193,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/whatsapp/campaign/{id}/status', [WhatsAppCampaignController::class, 'getCampaignStatus']);
         Route::get('/whatsapp/campaigns', [WhatsAppCampaignController::class, 'listCampaigns']);
     });
-    
+
+    // Campañas - Sección dedicada (historial, monitoreo, trazabilidad por lead)
+    Route::middleware('role:marketing,administrador')->group(function () {
+        Route::get('/campanias', [CampaniasController::class, 'index']);
+        Route::get('/campanias/{id}', [CampaniasController::class, 'show']);
+        Route::get('/campanias/{id}/leads', [CampaniasController::class, 'leads']);
+        Route::post('/campanias/{id}/leads/{wat_modal_id}/retry', [CampaniasController::class, 'retryLead']);
+    });
+
     // Plantillas - PROTEGIDO (marketing o administrador)
     Route::middleware('role:marketing,administrador')->group(function () {
         // WhatsApp
