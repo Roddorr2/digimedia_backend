@@ -4,21 +4,49 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BlogBody\StoreBlogBodyRequest;
-use App\Http\Requests\BlogBody\UpdateBlogBodyRequest;
+use App\Http\Resources\BlogBodyResource;
+use Illuminate\Http\Request;
 use App\Models\BlogBody;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class BlogBodyController extends Controller
 {
 
     public function create(StoreBlogBodyRequest $request)
     {
-        try{
-            $validatedData = $request->validated();
+        try {
+
+            $validator = Validator::make($request->all(), [
+                'titulo' => 'required|string|max:255',
+                'descripcion' => 'required|string',
+                'id_commend_tarjeta' => 'nullable|integer|exists:commend_tarjetas,id_commend_tarjeta',
+                'public_image1' => 'nullable|string',
+                'url_image1' => 'nullable|string',
+                'alt_image1' => 'nullable|string|min:60|max:240', // alt 60-240
+                'title_image1' => 'nullable|string|min:50|max:140', // title 50 - 140
+                'public_image2' => 'nullable|string',
+                'url_image2' => 'nullable|string',
+                'alt_image2' => 'nullable|string|min:60|max:240',
+                'title_image2' => 'nullable|string|min:50|max:140',
+                'public_image3' => 'nullable|string',
+                'url_image3' => 'nullable|string',
+                'alt_image3' => 'nullable|string|min:60|max:240',
+                'title_image3' => 'nullable|string||min:50|max:140',
+                'flag_galeria' => 'nullable|boolean',
+                'flag_consejos' => 'nullable|boolean',
+                'flag_informacion' => 'nullable|boolean',
+                'service_url' => 'nullable|string|max:255',
+                'titulo_tarjeta' => 'nullable|string', // titulo tarjetas
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 400);
+            }
 
             DB::beginTransaction();
 
-            $blogBody = BlogBody::create($validatedData);
+            $blogBody = BlogBody::create($validator->validated());
 
             DB::commit();
 
@@ -27,8 +55,7 @@ class BlogBodyController extends Controller
                 "message" => "BlogBody creado correctamente",
                 "id" => $blogBody->id_blog_body
             ], 200);
-
-        }catch(\Exception $ex){
+        } catch (\Exception $ex) {
             DB::rollback();
             return response()->json([
                 "status" => 500,
@@ -38,40 +65,68 @@ class BlogBodyController extends Controller
         }
     }
 
-    public function update(UpdateBlogBodyRequest $request, int $id){
-        try{
-            $validatedData = $request->validated();
+    public function update(Request $request, int $id)
+    {
+        try {
+            $validator =  Validator::make($request->all(), [
+                'titulo' => 'required|string|max:255',
+                'descripcion' => 'required|string',
+                'id_commend_tarjeta' => 'nullable|integer|exists:commend_tarjetas,id_commend_tarjeta',
+                'public_image1' => 'nullable|string',
+                'url_image1' => 'nullable|string',
+                'alt_image1' => 'nullable|string|min:60|max:240', // alt 60 - 240
+                'title_image1' => 'nullable|string|min:50|max:140', // title 50 - 140
+                'public_image2' => 'nullable|string',
+                'url_image2' => 'nullable|string',
+                'alt_image2' => 'nullable|string|min:60|max:240',
+                'title_image2' => 'nullable|string|min:50|max:140',
+                'public_image3' => 'nullable|string',
+                'url_image3' => 'nullable|string',
+                'alt_image3' => 'nullable|string|min:60|max:240',
+                'title_image3' => 'nullable|string|min:50|max:140',
+                'flag_galeria' => 'nullable|boolean',
+                'flag_consejos' => 'nullable|boolean',
+                'flag_informacion' => 'nullable|boolean',
+                'service_url' => 'nullable|string|max:255',
+                'titulo_tarjeta' => 'nullable|string', // titulo tarjetas
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 400);
+            }
 
             $blogBody = BlogBody::find($id);
 
-            if (!$blogBody){
+            if (!$blogBody) {
                 return response()->json([
-                    'status'=> 404,
-                    'message'=> 'BlogBody no encontrado'
+                    'status' => 404,
+                    'message' => 'BlogBody no encontrado'
                 ], 404);
             }
 
             DB::beginTransaction();
 
-            $blogBody->update($validatedData);
+            $blogBody->update($validator->validated());
 
             DB::commit();
             return response()->json([
-                'status'=> 200,
-                'message'=> 'Blog Body actualizado',
-                'id'=> $blogBody->id_blog_body
+                'status' => 200,
+                'message' => 'Blog Body actualizado',
+                'id' => $blogBody->id_blog_body
             ], 200);
-        }catch(\Exception $ex){
+        } catch (\Exception $ex) {
             DB::rollback();
             return response()->json([
-                "status"=> 500,
-                "message"=> $ex->getMessage(),
-                "error"=> "Error interno del servidor"
-            ],500);
+                "status" => 500,
+                "message" => $ex->getMessage(),
+                "error" => "Error interno del servidor"
+            ], 500);
         }
     }
 
-    public function show(int $id){
+    public function show(int $id)
+    {
+        /*
         try{
             $blogBody = BlogBody::with('commend_tarjeta','tarjetas')->find($id);
             if (!$blogBody) {
@@ -92,11 +147,38 @@ class BlogBodyController extends Controller
                 "error" => $ex->getMessage()
             ], 500);
         }
+        */
+        try {
+
+            $blogBody = BlogBody::with([
+                'commend_tarjeta',
+                'tarjetas'
+            ])->find($id);
+
+            if (!$blogBody) {
+                return response()->json([
+                    "status" => 404,
+                    "message" => "BlogBody no encontrada"
+                ], 404);
+            }
+
+            return response()->json([
+                "status" => 200,
+                "data" => new BlogBodyResource($blogBody)
+            ], 200);
+        } catch (\Exception $ex) {
+
+            return response()->json([
+                "status" => 500,
+                "message" => "Error interno",
+                "error" => $ex->getMessage()
+            ], 500);
+        }
     }
 
     public function destroy(int $id)
     {
-        try{
+        try {
 
             $blogBody = BlogBody::find($id);
 
@@ -104,7 +186,7 @@ class BlogBodyController extends Controller
                 return response()->json([
                     "status" => 404,
                     "message" => "BlogBody no encontrada"
-                ],404);
+                ], 404);
             }
 
             $blogBody->delete();
@@ -113,8 +195,7 @@ class BlogBodyController extends Controller
                 "status" => 200,
                 "message" => "BlogBody eliminada correctamente"
             ], 200);
-
-        }catch(\Exception $ex){
+        } catch (\Exception $ex) {
             return response()->json([
                 "status" => 500,
                 "message" => "Error al eliminar el BlogBody",

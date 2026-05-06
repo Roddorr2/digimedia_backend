@@ -21,25 +21,6 @@ class Blog extends Model
         'link'
     ];
 
-    protected $hidden = [
-        'id_blog_head',    
-        'id_blog_body',    
-        'id_blog_footer'   
-    ];
-
-//    public function head(){
-//         return $this->hasOne(BlogHead::class, 'id_blog_head', 'id_blog_head');
-//     }
-
-//     public function body(){
-//         return $this->hasOne(BlogBody::class, 'id_blog_body', 'id_blog_body');
-//     }
-
-//     public function footer(){
-//         return $this->hasOne(BlogFooter::class, 'id_blog_footer', 'id_blog_footer');
-//     }
-
-
     public function head()
     {
         return $this->belongsTo(BlogHead::class, 'id_blog_head', 'id_blog_head');
@@ -128,9 +109,9 @@ class Blog extends Model
         }
 
         return $query->where('link', 'like', "%{$termino}%")
-                     ->orWhereHas('head', function ($q) use ($termino) {
-                         $q->where('titulo', 'like', "%{$termino}%");
-                     });
+            ->orWhereHas('head', function ($q) use ($termino) {
+                $q->where('titulo', 'like', "%{$termino}%");
+            });
     }
 
     /**
@@ -150,4 +131,16 @@ class Blog extends Model
         return $link;
     }
 
+
+    public function scopeCompleto($query)
+    {
+        return $query->with([
+            'head',
+            'body',
+            'footer',
+            'card',
+            'blogAuditoria.empleado',
+        ]);
+    }
 }
+

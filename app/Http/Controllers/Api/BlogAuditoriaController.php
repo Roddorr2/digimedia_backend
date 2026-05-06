@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\BlogAuditoriaResource;
 use App\Models\BlogAuditoria;
 use Illuminate\Http\Request;
 
@@ -30,7 +31,7 @@ class BlogAuditoriaController extends Controller
 
             return response()->json([
                 'status' => 200,
-                'data' => $auditorias
+                'data' => BlogAuditoriaResource::collection($auditorias)
             ], 200);
 
         } catch (\Exception $ex) {
@@ -42,3 +43,5 @@ class BlogAuditoriaController extends Controller
         }
     }
 }
+
+

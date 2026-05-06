@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BlogFooter\StoreBlogFooterRequest;
 use App\Http\Requests\BlogFooter\UpdateBlogFooterRequest;
+use App\Http\Resources\BlogFooterResource;
 use App\Models\BlogFooter;
 use Illuminate\Support\Facades\DB;
 
@@ -84,7 +85,8 @@ class BlogFooterController extends Controller
 
             return response()->json([
                 "status" => 200,
-                "data" => $blogFooter
+                //"data" => $blogFooter
+                "data" => new BlogFooterResource($blogFooter)
                 ], 200);
 
         }catch(\Exception $ex){
