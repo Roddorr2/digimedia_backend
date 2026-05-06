@@ -27,22 +27,24 @@ use App\Http\Controllers\Api\PlantillasWhatsappController;
 use App\Http\Controllers\Api\PlantillasEmailController;
 use App\Http\Controllers\Api\PopupConfigController;
 use App\Http\Controllers\Api\SubservicioController;
+use App\Http\Controllers\Api\CampaniasController;
 
 // public routes test
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
-Route::post('/reset_password', [AuthController::class, "forgotPassword"])->middleware('throttle:reset_password');
-Route::post('/update_password', [AuthController::class, "updatePassword"])->middleware('throttle:update_password');
+Route::middleware('throttle:5,1')->post('/register', [AuthController::class, 'register']);
+Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login']);
+Route::middleware('throttle:5,1')->post('/reset_password', [AuthController::class, "forgotPassword"]);
+Route::middleware('throttle:5,1')->post('/update_password', [AuthController::class, "updatePassword"]);
 
-Route::post('/contactanos', [ContactanosController::class, "create"]);
-Route::post('/reclamaciones', [ReclamacionesController::class, "create"]);
-Route::post('/modales', [ModalesController::class, "create"]);
+Route::middleware('throttle:10,1')->post('/contactanos', [ContactanosController::class, "create"]);
+Route::middleware('throttle:10,1')->post('/reclamaciones', [ReclamacionesController::class, "create"]);
+Route::middleware('throttle:10,1')->post('/modales', [ModalesController::class, "create"]);
 
 // blogs públicos para ver los clientes
 Route::get('/cards_public', [CardController::class, "index_public"]);
 //Route::get('/cards', [CardController::class, "index"]);
 Route::get('/blogs/{id}', [BlogController::class, "show"]);
 Route::get('/blogs/links/{link}', [BlogController::class, 'showLink']);
-Route::get('/blogs', [BlogController::class, "index"]);
+Route::middleware('throttle:60,1')->get('/blogs', [BlogController::class, "index"]);
 Route::get('/blog_head/{id}', [BlogHeadController::class, "show"]);
 Route::get('/blog_footer/{id}', [BlogFooterController::class, "show"]);
 Route::get('/blog_body/{id}', [BlogBodyController::class, "show"]);
@@ -93,9 +95,9 @@ Route::middleware('auth:sanctum')->group(function () {
     //revisar emails y messages
     Route::middleware('permission:ver-modales')->get('/modales/modals_emails_wats/{id}', [ModalesController::class, "getSendModales"]);
     //enviar emails y messages
-    Route::middleware('permission:enviar-mensajes')->get('/modales/send_mail/{id}',[ModalMailController::class, "sendMail"]);
-    Route::middleware('permission:enviar-mensajes')->put('/modales/reportar_error/{id}', [ModalMailController::class, "reportarError"]);
-    Route::middleware('permission:enviar-mensajes')->put('/modales/estado_wat/{id}', [ModalWatController::class, "cambiarEstado"]);
+    Route::middleware('permission:enviar-mensajes', 'throttle:10,1')->get('/modales/send_mail/{id}',[ModalMailController::class, "sendMail"]);
+    Route::middleware('permission:enviar-mensajes', 'throttle:10,1')->put('/modales/reportar_error/{id}', [ModalMailController::class, "reportarError"]);
+    Route::middleware('permission:enviar-mensajes', 'throttle:10,1')->put('/modales/estado_wat/{id}', [ModalWatController::class, "cambiarEstado"]);
 
     // rutas update
     Route::middleware('permission:editar-contactos')->put('/contactanos/{id}', [ContactanosController::class, "update"]);
@@ -104,19 +106,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:editar-modales')->put('/modales/{id}', [ModalesController::class, "update"]);
 
     // rutas create
-    Route::middleware('permission:crear-servicios')->post('/servicios', [ServiciosController::class, "create"]);
+    Route::middleware('permission:crear-servicios', 'throttle:60,1')->post('/servicios', [ServiciosController::class, "create"]);
 
     //rutas create blog
-    Route::middleware('permission:crear-blogs')->post('/card', [CardController::class, "create"]);
-    Route::middleware('permission:crear-blogs')->post('/blog', [BlogController::class, "create"]);
-    Route::middleware('permission:crear-blogs')->post('/blog_head', [BlogHeadController::class, "create"]);
-    Route::middleware('permission:crear-blogs')->post('/blog_body', [BlogBodyController::class, "create"]);
-    Route::middleware('permission:crear-blogs')->post('/blog_footer', [BlogFooterController::class, "create"]);
-    Route::middleware('permission:crear-tarjetas')->post('/commend_tarjeta', [CommendTarjetaController::class, "create"]);
-    Route::middleware('permission:crear-tarjetas')->post('/tarjeta', [TarjetaController::class, "create"]);
-    Route::middleware('permission:crear-tarjetas')->post('/card/blog/image_head/{id}', [CardController::class, "imageHeader"]);
-    Route::middleware('permission:crear-tarjetas')->post('/card/blog/images_body/{id}', [CardController::class, "imagesBody"]);
-    Route::middleware('permission:crear-tarjetas')->post('/card/blog/images_footer/{id}', [CardController::class, "imagesFooter"]);
+    Route::middleware('permission:crear-blogs', 'throttle:60,1')->post('/card', [CardController::class, "create"]);
+    Route::middleware('permission:crear-blogs', 'throttle:60,1')->post('/blog', [BlogController::class, "create"]);
+    Route::middleware('permission:crear-blogs', 'throttle:60,1')->post('/blog_head', [BlogHeadController::class, "create"]);
+    Route::middleware('permission:crear-blogs', 'throttle:60,1')->post('/blog_body', [BlogBodyController::class, "create"]);
+    Route::middleware('permission:crear-blogs', 'throttle:60,1')->post('/blog_footer', [BlogFooterController::class, "create"]);
+    Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/commend_tarjeta', [CommendTarjetaController::class, "create"]);
+    Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/tarjeta', [TarjetaController::class, "create"]);
+    Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/card/blog/image_head/{id}', [CardController::class, "imageHeader"]);
+    Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/card/blog/images_body/{id}', [CardController::class, "imagesBody"]);
+    Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/card/blog/images_footer/{id}', [CardController::class, "imagesFooter"]);
 
     //rutas update blog
     Route::middleware('permission:editar-blogs')->put('/card/{id}', [CardController::class, "update"]);
@@ -145,9 +147,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:eliminar-servicios')->delete('/servicios/{id}', [ServiciosController::class, "delete"]);
 
 
-    Route::middleware('permission:ver-empleados')->get('/empleados', [EmpleadoController::class, "getAllByPage"]);
+    Route::middleware('permission:ver-empleados', 'throttle:60,1')->get('/empleados', [EmpleadoController::class, "getAllByPage"]);
     Route::middleware('permission:ver-empleados')->get('/empleados/{id}', [EmpleadoController::class, "getById"]);
-    Route::middleware('permission:crear-empleados')->post('/empleados', [EmpleadoController::class, "create"]);
+    Route::middleware('permission:crear-empleados', 'throttle:60,1')->post('/empleados', [EmpleadoController::class, "create"]);
     Route::middleware('permission:permisos-generales')->put('/empleados/{id}', [EmpleadoController::class, "update"]);
     Route::middleware('permission:permisos-generales')->put('/empleados/pass/{id}', [EmpleadoController::class, "updatePass"]);
     Route::middleware('permission:eliminar-empleados')->delete('/empleados/{id}', [EmpleadoController::class, "delete"]);
@@ -191,7 +193,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/whatsapp/campaign/{id}/status', [WhatsAppCampaignController::class, 'getCampaignStatus']);
         Route::get('/whatsapp/campaigns', [WhatsAppCampaignController::class, 'listCampaigns']);
     });
-    
+
+    // Campañas - Sección dedicada (historial, monitoreo, trazabilidad por lead)
+    Route::middleware('role:marketing,administrador')->group(function () {
+        Route::get('/campanias', [CampaniasController::class, 'index']);
+        Route::get('/campanias/{id}', [CampaniasController::class, 'show']);
+        Route::get('/campanias/{id}/leads', [CampaniasController::class, 'leads']);
+        Route::post('/campanias/{id}/leads/{wat_modal_id}/retry', [CampaniasController::class, 'retryLead']);
+    });
+
     // Plantillas - PROTEGIDO (marketing o administrador)
     Route::middleware('role:marketing,administrador')->group(function () {
         // WhatsApp

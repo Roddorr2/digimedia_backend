@@ -3,30 +3,35 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Blog\StoreBlogRequest;
+use App\Http\Requests\Blog\UpdateBlogRequest;
 use App\Models\Blog;
 use App\Models\BlogBody;
 use App\Models\BlogHead;
 use App\Http\Resources\BlogResource;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use App\Services\AuditoriaService;
+use Illuminate\Http\Request;
 
 class BlogController extends Controller
 {
     public function index()
     {
+        /*
         $blogs = Blog::with('card')->get();
         return BlogResource::collection($blogs);
+        */
+        $blogs = Blog::completo()->reciente()->get();
+        return BlogResource::collection($blogs);
     }
-    
+
     //nuevos features
-    public function blogByMonthYear($request)
+    public function blogByMonthYear(Request $request)
     {
         $blogs = Blog::with(['card', 'body', 'head']);
-        if ($request->has('month') && $request->input('month')!=''){
+        if ($request->has('month') && $request->input('month') != '') {
             $month = $request->input('month');
             $blogs->array_filter('fecha', $month);
         }
@@ -34,26 +39,15 @@ class BlogController extends Controller
     }
     //nuevos features
 
-    public function create(Request $request)
+    public function create(StoreBlogRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'id_blog_head' => 'required|integer|exists:blog_heads,id_blog_head',
-            'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
-            'id_blog_footer' => 'required|integer|exists:blog_footers,id_blog_footer',
-            'fecha' => 'required|date',
-            'id_empleado' => 'required|integer|exists:empleados,id_empleado',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 400);
-        }
-
-        $id_empleado = $request->id_empleado;
+        $validatedData = $request->validated();
+        $id_empleado = $validatedData['id_empleado'];
 
         DB::beginTransaction();
 
         try {
-            $blogHead = BlogHead::findOrFail($request->id_blog_head);
+            $blogHead = BlogHead::findOrFail($validatedData['id_blog_head']);
             $titulo = $blogHead->titulo ?? 'blog';
 
             // Generar slug único para el campo 'link'
@@ -65,7 +59,7 @@ class BlogController extends Controller
                 $link = $originalSlug . '-' . $counter++;
             }
 
-            $data = $request->all();
+            $data = $validatedData;
             $data['link'] = $link;
 
             $blog = Blog::create($data);
@@ -75,7 +69,7 @@ class BlogController extends Controller
                 $blog->id_blog,
                 $id_empleado,
                 'CREAR',
-                (BlogHead::findOrFail($request->id_blog_head))->titulo,
+                (BlogHead::findOrFail($validatedData['id_blog_head']))->titulo,
             );
 
             return response()->json([
@@ -84,45 +78,30 @@ class BlogController extends Controller
                 "id" => $blog->id_blog,
                 "link" => $blog->link,
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-    public function update(Request $request, $id){
+    public function update(UpdateBlogRequest $request, $id){
         try{
-            $validator = Validator::make($request->all(), [
-                'id_blog_head' => 'required|integer|exists:blog_heads,id_blog_head',
-                'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
-                'id_blog_footer' => 'required|integer|exists:blog_footers,id_blog_footer',
-                'fecha' => 'required|date',
-                'id_empleado' => 'required|integer|exists:empleados,id_empleado', // No necesario
-                'descripcion' => 'nullable|string',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json(['errors'=> $validator->errors()], 400);
-            }
-
-            // $id_empleado = $request->id_empleado;
-            $id_empleado = $blog->card->id_empleado ?? null;
-            $descripcion = $request->descripcion;
+            $validatedData = $request->validated();
+            $descripcion = $validatedData['descripcion'] ?? null;
 
             $blog = Blog::find($id);
 
-            if (!$blog){
+            if (!$blog) {
                 return response()->json([
-                    'status'=> 404,
-                    'message'=> 'Blog no encontrado'
+                    'status' => 404,
+                    'message' => 'Blog no encontrado'
                 ], 404);
             }
 
             DB::beginTransaction();
 
             // Get the blog head to generate link from title
-            $blogHead = BlogHead::findOrFail($request->id_blog_head);
+            $blogHead = BlogHead::findOrFail($validatedData['id_blog_head']);
             $titulo = $blogHead->titulo ?? 'blog';
 
             // Generate unique slug for the 'link' field, excluding current blog
@@ -134,35 +113,36 @@ class BlogController extends Controller
                 $link = $originalSlug . '-' . $counter++;
             }
 
-            $data = $request->all();
+            $data = $validatedData;
             $data['link'] = $link;
 
             $blog->update($data);
 
             AuditoriaService::registrar(
                 $blog->id_blog,
-                $request->id_empleado,
+                $validatedData['id_empleado'],
                 'ACTUALIZAR',
-                (\App\Models\BlogHead::findOrFail($request->id_blog_head))->titulo,
+                (\App\Models\BlogHead::findOrFail($validatedData['id_blog_head']))->titulo,
                 $descripcion,
             );
 
             DB::commit();
 
             return response()->json([
-                'status'=> 200,
-                'message'=> 'Blog actualizado',
-                'id'=> $blog->id_blog,
-                'link'=> $blog->link,
-            ],200);
-        }catch(\Exception $e){
+                'status' => 200,
+                'message' => 'Blog actualizado',
+                'id' => $blog->id_blog,
+                'link' => $blog->link,
+            ], 200);
+        } catch (\Exception $e) {
             DB::rollback();
-            return response()->json(['error'=> $e->getMessage()], 500);
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
     public function show(int $id)
     {
+        /*
         try{
 
             $blog = Blog::with('card')->find($id);
@@ -182,41 +162,64 @@ class BlogController extends Controller
         }catch(\Exception $e){
             return response()->json(['error' => $e->getMessage()], 500);
         }
+        */
+        try {
+
+            $blog = Blog::completo()->find($id);
+
+            if (!$blog) {
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'Blog no encontrado'
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => 200,
+                'data' => new BlogResource($blog)
+            ]);
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-     public function showLink(string $link)
+    public function showLink(string $link)
     {
-        try{
+        try {
 
-            $blog = Blog::with(['card', 'body', 'head'])->where('link', $link)->first();
+            //$blog = Blog::with(['card', 'body', 'head'])->where('link', $link)->first();
+            $blog=Blog::completo()->where('link', $link)->first();
 
             if (!$blog) {
                 return response()->json([
                     "status" => 404,
                     "message" => "Blog no encontrada"
-                ],400);
+                ], 400);
             }
 
             return response()->json([
                 "status" => 200,
-                'data' => $blog,
-            ],200);
-
-        }catch(\Exception $e){
+                //'data' => $blog,
+                'data' => new BlogResource($blog)
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
     public function destroy(int $id)
     {
-        try{
+        try {
 
             $blog = Blog::with(['card', 'head'])->find($id);
             $id_empleado = $blog->card->id_empleado ?? null;
 
-            if (!$blog){
+            if (!$blog) {
                 return response()->json([
-                    'status'=> 404,
-                    'message'=> 'Blog no encontrado'
+                    'status' => 404,
+                    'message' => 'Blog no encontrado'
                 ], 404);
             }
 
@@ -227,8 +230,8 @@ class BlogController extends Controller
             $id_footer_blog = $blog->id_blog_footer;
 
             $relativePath = "images/templates/plantilla{$blog->card->id_plantilla}/"
-            //  . Str::slug($blog->head->titulo)
-             . $blog->id_blog;
+                //  . Str::slug($blog->head->titulo)
+                . $blog->id_blog;
 
             //eliminarla pero ver si existe asi que normal obvia la anterior
             if (Storage::disk('public')->exists($relativePath)) {
@@ -274,10 +277,8 @@ class BlogController extends Controller
             return response()->json([
                 "status" => 200,
                 "message" => "Blog eliminado correctamente"
-            ],200);
-
-
-        }catch(\Exception $e){
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
