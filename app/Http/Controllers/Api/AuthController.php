@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use Carbon\Carbon;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Resources\EmpleadoResource;
 use App\Models\User;
 use App\Models\Empleado;
@@ -22,8 +24,11 @@ use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
-    {
+    public function register(
+        //Request $request
+        RegisterRequest $request
+    ) {
+        /*
         $validator = Validator::make($request->all(), [
             'nombre' => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
@@ -81,35 +86,208 @@ class AuthController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    }
+        */
+        $data = $request->validated();
 
-    public function login(Request $request)
-    {
+        DB::beginTransaction();
+
         try {
-            $request->validate([
-                'email'         => 'required|email',
-                'password'      => 'required',
-                //'captcha_token' => 'required|string',
+            // crear usuario
+            $user = User::create([
+                'name'     => $data['nombre'] . ' ' . $data['apellido'],
+                'email'    => $data['email'],
+                'password' => Hash::make('1234'),
             ]);
 
-            $normalizedEmail = strtolower($request->email);
+            // crear empleado
+            $empleado = Empleado::create([
+                'nombre'   => $data['nombre'],
+                'apellido' => $data['apellido'],
+                'email'    => $data['email'],
+                'dni'      => $data['dni'],
+                'telefono' => $data['telefono'] ?? null,
+                'id_user'  => $user->id,
+                'id_rol'   => $data['id_rol'],
+            ]);
+
+            DB::commit();
+
+            // token incluyendo rol
+            $rol = Rol::find($data['id_rol']);
+            $abilities = [$rol->nombre];
+
+            $token = $user->createToken('auth_token', $abilities)->plainTextToken;
+
+            return response()->json([
+                'status'   => 'success',
+                'message'  => 'Usuario registrado exitosamente',
+                'user'     => $user,
+                'empleado' => new EmpleadoResource($empleado),
+                'rol'      => $rol->nombre,
+                'token'    => $token,
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Error al registrar usuario',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    // public function login(Request $request)
+    // {
+    //     try {
+    //         $request->validate([
+    //             'email'         => 'required|email',
+    //             'password'      => 'required',
+    //             //'captcha_token' => 'required|string',
+    //         ]);
+
+    //         $normalizedEmail = strtolower($request->email);
+    //         $backoffKey = 'login_backoff:' . $normalizedEmail;
+    //         $attemptsKey = 'login_attempts:' . $normalizedEmail;
+
+    //         /*
+    //         // verificar Turnstile CAPTCHA antes de consultar la BD
+    //         if (!$this->verifyTurnstile($request->captcha_token, $request->ip())) {
+    //             Log::warning('Turnstile verification failed', [
+    //                 'email' => $request->email,
+    //                 'ip'    => $request->ip(),
+    //             ]);
+    //             return response()->json([
+    //                 'status'  => 'error',
+    //                 'message' => 'Verificación de seguridad fallida. Recarga la página e intenta de nuevo.',
+    //                 ], 422);
+    //             }
+    //         */
+
+    //         $activeBackoffSeconds = $this->obtenerEsperaBackoffSegundos($backoffKey);
+    //         if ($activeBackoffSeconds > 0) {
+    //             $attemptResult = $this->registrarIntentoFallido(
+    //                 $attemptsKey,
+    //                 $backoffKey,
+    //                 $request,
+    //                 'blocked_by_backoff'
+    //             );
+
+    //             return $this->responderBloqueoBackoff(
+    //                 $request,
+    //                 max($activeBackoffSeconds, $attemptResult['wait_seconds'])
+    //             );
+    //         }
+
+    //         $user = User::where('email', $request->email)->first();
+
+    //         if (!$user) {
+    //             $attemptResult = $this->registrarIntentoFallido(
+    //                 $attemptsKey,
+    //                 $backoffKey,
+    //                 $request,
+    //                 'user_not_found'
+    //             );
+
+    //             if ($attemptResult['wait_seconds'] > 0) {
+    //                 return $this->responderBloqueoBackoff($request, $attemptResult['wait_seconds']);
+    //             }
+
+    //             return response()->json([
+    //                 'status'  => 'error',
+    //                 'message' => 'Esta cuenta no está registrada en Digimedia.',
+    //             ], 404);
+    //         }
+
+    //         if (!Hash::check($request->password, $user->password)) {
+    //             $attemptResult = $this->registrarIntentoFallido(
+    //                 $attemptsKey,
+    //                 $backoffKey,
+    //                 $request,
+    //                 'wrong_password'
+    //             );
+
+    //             if ($attemptResult['wait_seconds'] > 0) {
+    //                 return $this->responderBloqueoBackoff($request, $attemptResult['wait_seconds']);
+    //             }
+
+    //             return response()->json([
+    //                 'status'  => 'error',
+    //                 'message' => 'El email o la contraseña son incorrectos.',
+    //             ], 401);
+    //         }
+
+    //         // login exitoso → resetear contadores de backoff
+    //         Cache::forget($backoffKey);
+    //         Cache::forget($attemptsKey);
+
+    //         $empleado = $user->empleado;
+    //         if (!$empleado || !$empleado->rol) {
+    //             return response()->json([
+    //                 'status'  => 'error',
+    //                 'message' => 'El usuario no tiene un rol asignado'
+    //             ], 403);
+    //         }
+
+    //         /**
+    //          * Aquí se carga la información necesaria para la cookie que almacenará la jerarquía
+    //          * de administrador
+    //          */
+    //         $empleado->load(['rol', 'subtipoAdmin']);
+
+    //         $rol = $empleado->rol;
+    //         $abilities = [$rol->nombre];
+    //         $permisos = $rol->permisos->pluck('slug')->toArray();
+
+    //         // quitar tokens anteriores
+    //         $user->tokens()->delete();
+    //         // token incluyendo rol (capcidad)
+    //         $token = $user->createToken('auth_token', $abilities)->plainTextToken;
+
+    //         // Evitar que la relación empleado se serialice dentro de user
+    //         $user->unsetRelation('empleado');
+
+    //         return response()->json([
+    //             'status'   => 'success',
+    //             'user'     => $user,
+    //             'empleado' => new EmpleadoResource($empleado),
+    //             'rol'      => $rol->nombre,
+    //             'permisos' => $permisos,
+    //             'token'    => $token,
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status'  => 'error',
+    //             'message' => 'Ocurrió un error en el servidor',
+    //             'error'   => config('app.debug') ? $e->getMessage() : null,
+    //         ], 500);
+    //     }
+    // }
+
+    public function login(\App\Http\Requests\LoginRequest $request)
+    {
+        try {
+            $data = $request->validated();
+
+            $normalizedEmail = $data['email'];
             $backoffKey = 'login_backoff:' . $normalizedEmail;
             $attemptsKey = 'login_attempts:' . $normalizedEmail;
 
             /*
-            // verificar Turnstile CAPTCHA antes de consultar la BD
-            if (!$this->verifyTurnstile($request->captcha_token, $request->ip())) {
-                Log::warning('Turnstile verification failed', [
-                    'email' => $request->email,
-                    'ip'    => $request->ip(),
-                ]);
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'Verificación de seguridad fallida. Recarga la página e intenta de nuevo.',
-                    ], 422);
-                }
-            */
-                    
+        // verificar Turnstile CAPTCHA antes de consultar la BD
+        if (!$this->verifyTurnstile($data['captcha_token'], $request->ip())) {
+            Log::warning('Turnstile verification failed', [
+                'email' => $data['email'],
+                'ip'    => $request->ip(),
+            ]);
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Verificación de seguridad fallida. Recarga la página e intenta de nuevo.',
+            ], 422);
+        }
+        */
+
             $activeBackoffSeconds = $this->obtenerEsperaBackoffSegundos($backoffKey);
             if ($activeBackoffSeconds > 0) {
                 $attemptResult = $this->registrarIntentoFallido(
@@ -125,7 +303,7 @@ class AuthController extends Controller
                 );
             }
 
-            $user = User::where('email', $request->email)->first();
+            $user = User::where('email', $data['email'])->first();
 
             if (!$user) {
                 $attemptResult = $this->registrarIntentoFallido(
@@ -145,7 +323,7 @@ class AuthController extends Controller
                 ], 404);
             }
 
-            if (!Hash::check($request->password, $user->password)) {
+            if (!Hash::check($data['password'], $user->password)) {
                 $attemptResult = $this->registrarIntentoFallido(
                     $attemptsKey,
                     $backoffKey,
@@ -163,11 +341,12 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            // login exitoso → resetear contadores de backoff
+            // login exitoso → resetear contadores
             Cache::forget($backoffKey);
             Cache::forget($attemptsKey);
 
             $empleado = $user->empleado;
+
             if (!$empleado || !$empleado->rol) {
                 return response()->json([
                     'status'  => 'error',
@@ -175,22 +354,19 @@ class AuthController extends Controller
                 ], 403);
             }
 
-            /**
-             * Aquí se carga la información necesaria para la cookie que almacenará la jerarquía
-             * de administrador
-             */
             $empleado->load(['rol', 'subtipoAdmin']);
 
             $rol = $empleado->rol;
             $abilities = [$rol->nombre];
             $permisos = $rol->permisos->pluck('slug')->toArray();
 
-            // quitar tokens anteriores
+            // eliminar tokens anteriores
             $user->tokens()->delete();
-            // token incluyendo rol (capcidad)
+
+            // crear nuevo token
             $token = $user->createToken('auth_token', $abilities)->plainTextToken;
 
-            // Evitar que la relación empleado se serialice dentro de user
+            // evitar serialización innecesaria
             $user->unsetRelation('empleado');
 
             return response()->json([
@@ -232,8 +408,7 @@ class AuthController extends Controller
         string $backoffKey,
         Request $request,
         string $reason
-    ): array
-    {
+    ): array {
         if (Cache::has($attemptsKey)) {
             $attempts = Cache::increment($attemptsKey);
         } else {
@@ -390,6 +565,7 @@ class AuthController extends Controller
         ]);
     }
 
+    /*
     public function updatePassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -436,6 +612,56 @@ class AuthController extends Controller
         DB::table('password_reset_tokens')->where('token', $request->token)->delete();
 
         return response()->json(['message' => 'Contraseña actualizada correctamente, ingresa desde el login'], 200);
+    }
+    */
+
+    public function updatePassword(UpdatePasswordRequest $request)
+    {
+        try {
+            $data = $request->validated();
+
+            Log::info('Token recibido: ' . $data['token']);
+
+            $tokenUser = DB::table('password_reset_tokens')
+                ->whereRaw('LOWER(token) = ?', [strtolower($data['token'])])
+                ->first();
+
+            if (!$tokenUser) {
+                Log::info('Token no encontrado. Tokens disponibles: ' .
+                    json_encode(DB::table('password_reset_tokens')->pluck('token')->toArray()));
+
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Token inválido o expirado'
+                ], 404);
+            }
+
+            $user = User::where('email', $tokenUser->email)->first();
+
+            if (!$user) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Usuario no encontrado'
+                ], 404);
+            }
+
+            $user->password = Hash::make($data['password']);
+            $user->save();
+
+            DB::table('password_reset_tokens')
+                ->where('token', $data['token'])
+                ->delete();
+
+            return response()->json([
+                'message' => 'Contraseña actualizada correctamente, ingresa desde el login'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Ocurrió un error en el servidor',
+                'error'   => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
     }
 
     public function me(Request $request)
