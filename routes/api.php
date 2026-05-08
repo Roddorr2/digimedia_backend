@@ -146,12 +146,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:eliminar-modales')->delete('/modales/{id}', [ModalesController::class, "delete"]);
     Route::middleware('permission:eliminar-servicios')->delete('/servicios/{id}', [ServiciosController::class, "delete"]);
 
-
-    Route::middleware('permission:ver-empleados', 'throttle:60,1')->get('/empleados', [EmpleadoController::class, "getAllByPage"]);
-    Route::middleware('permission:ver-empleados')->get('/empleados/{id}', [EmpleadoController::class, "getById"]);
+    // Empleados
+    Route::middleware('permission:ver-empleados', 'role:administrador', 'throttle:60,1')->get('/empleados', [EmpleadoController::class, "getAllByPage"]);
+    Route::middleware('permission:ver-empleados', 'role:administrador')->get('/empleados/{id}', [EmpleadoController::class, "getById"]);
     Route::middleware('permission:crear-empleados', 'throttle:60,1')->post('/empleados', [EmpleadoController::class, "create"]);
-    Route::middleware('permission:permisos-generales')->put('/empleados/{id}', [EmpleadoController::class, "update"]);
-    Route::middleware('permission:permisos-generales')->put('/empleados/pass/{id}', [EmpleadoController::class, "updatePass"]);
+    Route::middleware('permission:editar-empleados')->put('/empleados/{id}', [EmpleadoController::class, "update"]);
+    Route::put('/empleados/pass/{id}', [EmpleadoController::class, "updatePass"]);
     Route::middleware('permission:eliminar-empleados')->delete('/empleados/{id}', [EmpleadoController::class, "delete"]);
 
     // roles
@@ -171,17 +171,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:eliminar-permisos')->delete('/permisos/{id}', [PermisoController::class, "destroy"]);
 
     // metricas
-    Route::middleware('permission:ver-blogs')->get('/metrics/count_blogs_by_month', [MetricasController::class, "countBlogsByMonth"]);//1.1 Cantidad de blogs creados en un mes específico
-    Route::middleware('permission:ver-blogs')->get('/metrics/list_blogs_by_months_12', [MetricasController::class, "listBlogsByMonths12"]);//1.2 Lista de cantidad de blogs creados en los últimos 12 meses
-    Route::middleware('permission:ver-blogs')->get('/metrics/top5_months_with_more_blogs', [MetricasController::class, "top5MothsWithMoreBlogs"]);//1.3 Top 5 meses con más blogs creados
-    Route::middleware('permission:ver-blogs')->get('/metrics/cards_by_plantilla', [MetricasController::class, "listOfCardsByPlantilla"]);//2.1 Lista de cards creadas por plantilla
-    Route::middleware('permission:ver-blogs')->get('/metrics/count_cards_by_plantilla', [MetricasController::class, "countListOfCardsByPlantilla"]);//2.2 Cantidad de cards creadas por plantilla
-    Route::middleware('permission:ver-blogs')->get('/metrics/count_total_cards', [MetricasController::class, "tableCardsByIdPlantilla"]);//2.3 Cantidad total de cards creadas por plantilla
-    Route::middleware('permission:ver-blogs')->get('/metrics/list_empleado_cards', [MetricasController::class, "listEmpleadoWithCards"]);//3.1 Lista de empleados con cantidad de cards creadas
-    Route::middleware('permission:ver-blogs')->get('/metrics/count_cards_by_empleado', [MetricasController::class, "countListOfCardsByEmpleado"]);//3.2 Cantidad de cards creadas por empleado
-    Route::middleware('permission:ver-blogs')->get('/metrics/count_total_cards_by_empleado', [MetricasController::class, "tableCardsByEmpleado"]);//3.3 Top 5 empleados con más cards creadas
-    Route::middleware('permission:ver-blogs')->get('/metrics/frecuencia_publicacion_cards_todos_empleados', [MetricasController::class, "frecuenciaPublicacionCardsTodosEmpleados"]);//4.1 Frecuencia de publicación de cards por empleado
-    Route::middleware('permission:ver-blogs')->get('/metrics/tiempo_creacion_edicion_publicacion_card', [MetricasController::class, "tiempoCreacionEdicionPublicacionCard"]);//4.2 Tiempo promedio de creación, edición y publicación de una card por empleado
+    Route::middleware('permission:ver-blogs', 'role:administrador')->group(function () {
+        Route::get('/metrics/count_blogs_by_month', [MetricasController::class, "countBlogsByMonth"]);
+        Route::get('/metrics/list_blogs_by_months_12', [MetricasController::class, "listBlogsByMonths12"]);
+        Route::get('/metrics/top5_months_with_more_blogs', [MetricasController::class, "top5MothsWithMoreBlogs"]);
+        Route::get('/metrics/cards_by_plantilla', [MetricasController::class, "listOfCardsByPlantilla"]);
+        Route::get('/metrics/count_cards_by_plantilla', [MetricasController::class, "countListOfCardsByPlantilla"]);
+        Route::get('/metrics/count_total_cards', [MetricasController::class, "tableCardsByIdPlantilla"]);
+        Route::get('/metrics/list_empleado_cards', [MetricasController::class, "listEmpleadoWithCards"]);
+        Route::get('/metrics/count_cards_by_empleado', [MetricasController::class, "countListOfCardsByEmpleado"]);
+        Route::get('/metrics/count_total_cards_by_empleado', [MetricasController::class, "tableCardsByEmpleado"]);
+        Route::get('/metrics/frecuencia_publicacion_cards_todos_empleados', [MetricasController::class, "frecuenciaPublicacionCardsTodosEmpleados"]);
+        Route::get('/metrics/tiempo_creacion_edicion_publicacion_card', [MetricasController::class, "tiempoCreacionEdicionPublicacionCard"]);
+    });
     
     // Campañas de WhatsApp - PROTEGIDO (marketing o administrador)
     Route::middleware('role:marketing,administrador')->group(function () {
@@ -222,7 +224,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Pop-Ups - permisos dedicados por acción
-    Route::middleware('permission:ver-pop-ups')->group(function () {
+     Route::middleware('permission:ver-pop-ups')->group(function () {
         Route::get('/popup-configs', [PopupConfigController::class, 'index']);
         Route::get('/popup-configs/{id}', [PopupConfigController::class, 'show']);
         Route::get('/popup-configs/subservicio/{id_subservicio}', [PopupConfigController::class, 'showBySubservicio']);

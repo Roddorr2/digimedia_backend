@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Auth;
 
 class EmpleadoController extends Controller
 {
-    private function checkPermissionMiddleware($id)
+    private function checkPermissionMiddleware(int $id)
     {
         $empleado = Empleado::where('id_empleado', $id)->first();
 
@@ -55,7 +55,7 @@ class EmpleadoController extends Controller
         return null;
     }
 
-    public function getById(GetEmpleadoByIdRequest $request, $id)
+    public function getById(GetEmpleadoByIdRequest $request, int $id)
     {
         $empleado = Empleado::with('rol')->where('id_empleado', $id)->first();
 
@@ -223,7 +223,7 @@ class EmpleadoController extends Controller
         return $password;
     }
 
-    public function update(UpdateEmpleadoRequest $request, $id)
+    public function update(UpdateEmpleadoRequest $request, int $id)
     {
         $permissionCheck = $this->checkPermissionMiddleware($id);
         if ($permissionCheck) {
@@ -272,7 +272,7 @@ class EmpleadoController extends Controller
     }
 
 
-    public function generateUploadSignature(GenerateEmpleadoUploadSignatureRequest $request, $id)
+    public function generateUploadSignature(GenerateEmpleadoUploadSignatureRequest $request, int $id)
     {
         $authUser     = Auth::user();
         $authEmpleado = $authUser->empleado;
@@ -326,7 +326,7 @@ class EmpleadoController extends Controller
         ]);
     }
 
-    public function updateProfileImage(UpdateEmpleadoProfileImageRequest $request, $id)
+    public function updateProfileImage(UpdateEmpleadoProfileImageRequest $request, int $id)
     {
         $authUser     = Auth::user();
         $authEmpleado = $authUser->empleado;
@@ -388,8 +388,13 @@ class EmpleadoController extends Controller
     }
 
 
-    public function updatePass(UpdateEmpleadoPasswordRequest $request, $id)
+    public function updatePass(UpdateEmpleadoPasswordRequest $request, int $id)
     {
+        $permissionCheck = $this->checkPermissionMiddleware($id);
+        if ($permissionCheck) {
+            return $permissionCheck;
+        }
+
         $empleado = Empleado::where('id_empleado', $id)->first();
 
         if (!$empleado) {
@@ -401,7 +406,7 @@ class EmpleadoController extends Controller
         return $this->updatePass1($request, $userId);
     }
 
-    private function updatePass1(UpdateEmpleadoPasswordRequest $request, $id)
+    private function updatePass1(UpdateEmpleadoPasswordRequest $request, int $id)
     {
         $response = User::where(["id" => intval($id)])->update(["password" => Hash::make($request->password)]);
 
@@ -441,7 +446,7 @@ class EmpleadoController extends Controller
         }
     }
 
-    public function delete(DeleteEmpleadoRequest $request, $id)
+    public function delete(DeleteEmpleadoRequest $request, int $id)
     {
         $permissionCheck = $this->checkPermissionMiddleware($id);
         if ($permissionCheck) {
@@ -474,7 +479,7 @@ class EmpleadoController extends Controller
         ], 200);
     }
 
-    public function deleteProfileImage($id)
+    public function deleteProfileImage(int $id)
     {
         $authUser     = Auth::user();
         $authEmpleado = $authUser->empleado;
