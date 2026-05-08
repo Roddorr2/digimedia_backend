@@ -6,9 +6,9 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\CampaniaWhatsApp;
 
-
 class CampaniasController extends Controller
 {
+    // GET /api/campanias
     public function index(Request $request)
     {
         try {
@@ -58,7 +58,7 @@ class CampaniasController extends Controller
         }
     }
     
-    // GET /api/campanias
+    // GET /api/campanias/{id}
     public function show($id){
         try {
 
@@ -150,12 +150,75 @@ class CampaniasController extends Controller
             ], 500);
         }
     }    
-                            // GET /api/campanias/{id}
-    public function leads(Request $request, $id){
-        //hola
-    }         // GET /api/campanias/{id}/leads
 
-    public function retryLead(Request $request, $id, $wat_modal_id) // POST /api/campanias/{id}/leads/{wat_modal_id}/retry
+    // GET /api/campanias/{id}/leads
+    public function leads(Request $request, $id)
+    {
+        $campania = CampaniaWhatsApp::findOrFail($id);
+
+        $query = $campania->mensajesWhatsApp()
+            ->with('modalServicio');
+
+        // 🔹 FILTRO ESTADO
+        if ($request->filled('estado')) {
+
+            if ($request->estado === 'pendiente') {
+                $query->whereNull('campania_id');
+            }
+
+            if ($request->estado === 'enviado') {
+                $query->where('estado', 1);
+            }
+
+            if ($request->estado === 'fallido') {
+                $query->where('estado', 0)
+                    ->whereNotNull('campania_id');
+            }
+        }
+
+        // 🔹 FILTRO SEARCH
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->whereHas('modalServicio', function ($q) use ($search) {
+                $q->where('nombre', 'like', "%{$search}%")
+                ->orWhere('telefono', 'like', "%{$search}%");
+            });
+        }
+
+        $leads = $query->orderBy('fecha', 'desc')
+            ->paginate($request->get('per_page', 15));
+
+        $data = $leads->getCollection()->map(function ($lead) {
+            return [
+                'id_modal_wat' => $lead->id_modal_wat,
+                'nombre' => optional($lead->modalServicio)->nombre,
+                'telefono' => optional($lead->modalServicio)->telefono,
+                'estado' => is_null($lead->campania_id)
+                    ? 'pendiente'
+                    : ($lead->estado ? 'enviado' : 'fallido'),
+                'intentos' => $lead->intentos,
+                'puede_reintentar' => (bool) $lead->puede_reintentar,
+                'error' => $lead->error,
+                'fecha' => $lead->fecha
+                    ? \Carbon\Carbon::parse($lead->fecha)->format('Y-m-d\TH:i:s')
+                    : null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'data' => $data,
+                'current_page' => $leads->currentPage(),
+                'last_page' => $leads->lastPage(),
+                'total' => $leads->total(),
+            ]
+        ]);
+    }
+
+    // POST /api/campanias/{id}/leads/{wat_modal_id}/retry
+    public function retryLead(Request $request, $id, $wat_modal_id) 
     {
         // 1. Obtener campaña y verificar que existe
         $campania = CampaniaWhatsApp::findOrFail($id);
