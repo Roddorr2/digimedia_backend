@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\CampaniaWhatsApp;
+use App\Models\WatModal;
+use App\Models\modalservicios;
+use Illuminate\Support\Facades\Http;
 
 class CampaniasController extends Controller
 {
@@ -153,69 +156,88 @@ class CampaniasController extends Controller
 
     // GET /api/campanias/{id}/leads
     public function leads(Request $request, $id)
-    {
-        $campania = CampaniaWhatsApp::findOrFail($id);
+{
+    $campania = CampaniaWhatsApp::findOrFail($id);
 
-        $query = $campania->mensajesWhatsApp()
-            ->with('modalServicio');
+    $query = $campania->mensajesWhatsApp()
+        ->with('modalServicio');
 
-        // 🔹 FILTRO ESTADO
-        if ($request->filled('estado')) {
+    // 🔹 FILTRO ESTADO
+    if ($request->filled('estado')) {
 
-            if ($request->estado === 'pendiente') {
-                $query->whereNull('campania_id');
-            }
+        if ($request->estado === 'pendiente') {
 
-            if ($request->estado === 'enviado') {
-                $query->where('estado', 1);
-            }
-
-            if ($request->estado === 'fallido') {
-                $query->where('estado', 0)
-                    ->whereNotNull('campania_id');
-            }
+            $query->whereNull('estado');
         }
 
-        // 🔹 FILTRO SEARCH
-        if ($request->filled('search')) {
-            $search = $request->search;
+        if ($request->estado === 'enviado') {
 
-            $query->whereHas('modalServicio', function ($q) use ($search) {
-                $q->where('nombre', 'like', "%{$search}%")
-                ->orWhere('telefono', 'like', "%{$search}%");
-            });
+            $query->where('estado', 1);
         }
 
-        $leads = $query->orderBy('fecha', 'desc')
-            ->paginate($request->get('per_page', 15));
+        if ($request->estado === 'fallido') {
 
-        $data = $leads->getCollection()->map(function ($lead) {
-            return [
-                'id_modal_wat' => $lead->id_modal_wat,
-                'nombre' => optional($lead->modalServicio)->nombre,
-                'telefono' => optional($lead->modalServicio)->telefono,
-                'estado' => is_null($lead->campania_id)
-                    ? 'pendiente'
-                    : ($lead->estado ? 'enviado' : 'fallido'),
-                'intentos' => $lead->intentos,
-                'puede_reintentar' => (bool) $lead->puede_reintentar,
-                'error' => $lead->error,
-                'fecha' => $lead->fecha
-                    ? \Carbon\Carbon::parse($lead->fecha)->format('Y-m-d\TH:i:s')
-                    : null,
-            ];
-        });
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'data' => $data,
-                'current_page' => $leads->currentPage(),
-                'last_page' => $leads->lastPage(),
-                'total' => $leads->total(),
-            ]
-        ]);
+            $query->where('estado', 0);
+        }
     }
+
+    // 🔹 FILTRO SEARCH
+    if ($request->filled('search')) {
+
+        $search = $request->search;
+
+        $query->whereHas('modalServicio', function ($q) use ($search) {
+
+            $q->where('nombre', 'like', "%{$search}%")
+              ->orWhere('telefono', 'like', "%{$search}%");
+        });
+    }
+
+    $leads = $query
+        ->orderByRaw('fecha IS NULL DESC')
+        ->orderBy('fecha', 'desc')
+        ->paginate($request->get('per_page', 15));
+
+    $data = $leads->getCollection()->map(function ($lead) {
+
+        return [
+
+            'id_modalservicio' => $lead->id_modalservicio,
+
+            'id_modal_wat' => $lead->id_modal_wat,
+
+            'nombre' => optional($lead->modalServicio)->nombre,
+
+            'telefono' => optional($lead->modalServicio)->telefono,
+
+            'estado' => is_null($lead->estado)
+                ? 'pendiente'
+                : ($lead->estado ? 'enviado' : 'fallido'),
+
+            'intentos' => $lead->intentos ?? 0,
+
+            'puede_reintentar' => (bool) ($lead->puede_reintentar ?? false),
+
+            'error' => $lead->error,
+
+            'fecha' => $lead->fecha
+                ? \Carbon\Carbon::parse($lead->fecha)
+                    ->format('Y-m-d\TH:i:s')
+                : null,
+        ];
+    });
+
+    return response()->json([
+        'success' => true,
+
+        'data' => [
+            'data' => $data,
+            'current_page' => $leads->currentPage(),
+            'last_page' => $leads->lastPage(),
+            'total' => $leads->total(),
+        ]
+    ]);
+}
 
     // POST /api/campanias/{id}/leads/{wat_modal_id}/retry
     public function retryLead(Request $request, $id, $wat_modal_id) 
@@ -243,6 +265,13 @@ class CampaniasController extends Controller
                 'message' => 'Fuera del horario permitido (8am–11pm hora Lima)'
             ], 400);
         }
+        
+        if ($campania->hasReachedDailyLimit()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La campaña alcanzó el límite diario de envíos'
+            ], 400);
+        }
 
         // 5. Obtener datos del lead desde modalservicios
         $modalServicio = modalservicios::findOrFail($watModal->id_modalservicio);
@@ -266,6 +295,7 @@ class CampaniasController extends Controller
                 'fecha'           => now(),
             ]);
             $campania->increment('envios_exitosos');
+            $campania->increment('envios_hoy');
             $campania->decrement('envios_fallidos');
 
             return response()->json(['success' => true, 'message' => 'Mensaje reenviado correctamente']);
@@ -274,6 +304,7 @@ class CampaniasController extends Controller
         // 8. Si falló, incrementar intentos
         $newIntentos = $watModal->intentos + 1;
         $watModal->update([
+            'estado'           => 0,
             'intentos'         => $newIntentos,
             'error'            => $response->json('error') ?? 'Error en reintento manual',
             'puede_reintentar' => $newIntentos < 3,
