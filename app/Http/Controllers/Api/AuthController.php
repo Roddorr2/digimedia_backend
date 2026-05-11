@@ -85,7 +85,6 @@ class AuthController extends Controller
             $backoffKey = 'login_backoff:' . $normalizedEmail;
             $attemptsKey = 'login_attempts:' . $normalizedEmail;
 
-            // verificar Turnstile CAPTCHA antes de consultar la BD
             if (!$this->verifyTurnstile($validated['captcha_token'], $request->ip())) {
                 Log::warning('Turnstile verification failed', [
                     'email' => $email,
@@ -94,9 +93,9 @@ class AuthController extends Controller
                 return response()->json([
                     'status'  => 'error',
                     'message' => 'Verificación de seguridad fallida. Recarga la página e intenta de nuevo.',
-                    ], 422);
-                }
-                    
+                ], 422);
+            }
+
             $activeBackoffSeconds = $this->obtenerEsperaBackoffSegundos($backoffKey);
             if ($activeBackoffSeconds > 0) {
                 $attemptResult = $this->registrarIntentoFallido(
@@ -111,33 +110,17 @@ class AuthController extends Controller
                     max($activeBackoffSeconds, $attemptResult['wait_seconds'])
                 );
             }
-
             $user = User::where('email', $email)->first();
+            $credencialesValidas = $user && Hash::check($validated['password'], $user->password);
 
-            if (!$user) {
+            if (!$credencialesValidas) {
+                $reason = !$user ? 'user_not_found' : 'wrong_password'; 
+
                 $attemptResult = $this->registrarIntentoFallido(
                     $attemptsKey,
                     $backoffKey,
                     $request,
-                    'user_not_found'
-                );
-
-                if ($attemptResult['wait_seconds'] > 0) {
-                    return $this->responderBloqueoBackoff($request, $attemptResult['wait_seconds']);
-                }
-
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'Esta cuenta no está registrada en Digimedia.',
-                ], 404);
-            }
-
-            if (!Hash::check($validated['password'], $user->password)) {
-                $attemptResult = $this->registrarIntentoFallido(
-                    $attemptsKey,
-                    $backoffKey,
-                    $request,
-                    'wrong_password'
+                    $reason
                 );
 
                 if ($attemptResult['wait_seconds'] > 0) {
@@ -150,7 +133,6 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            // login exitoso → resetear contadores de backoff
             Cache::forget($backoffKey);
             Cache::forget($attemptsKey);
 
@@ -158,26 +140,19 @@ class AuthController extends Controller
             if (!$empleado || !$empleado->rol) {
                 return response()->json([
                     'status'  => 'error',
-                    'message' => 'El usuario no tiene un rol asignado'
+                    'message' => 'El usuario no tiene un rol asignado',
                 ], 403);
             }
 
-            /**
-             * Aquí se carga la información necesaria para la cookie que almacenará la jerarquía
-             * de administrador
-             */
             $empleado->load(['rol', 'subtipoAdmin']);
 
-            $rol = $empleado->rol;
+            $rol      = $empleado->rol;
             $abilities = [$rol->nombre];
-            $permisos = $rol->permisos->pluck('slug')->toArray();
+            $permisos  = $rol->permisos->pluck('slug')->toArray();
 
-            // quitar tokens anteriores
             $user->tokens()->delete();
-            // token incluyendo rol (capcidad)
             $token = $user->createToken('auth_token', $abilities)->plainTextToken;
 
-            // Evitar que la relación empleado se serialice dentro de user
             $user->unsetRelation('empleado');
 
             return response()->json([
@@ -188,6 +163,7 @@ class AuthController extends Controller
                 'permisos' => $permisos,
                 'token'    => $token,
             ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => 'error',
