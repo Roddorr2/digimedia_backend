@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CardResource;
 use Illuminate\Http\Request;
 use App\Models\Blog;
 use App\Models\Card;
@@ -125,24 +126,34 @@ class MetricasController extends Controller
 
         $validated = $request->validate([
             'id_plantilla' => ['required', 'integer', 'min:1'],
-            // Si existe tabla plantillas, habilitar esta regla:
-            // Rule::exists('plantillas', 'id_plantilla')
         ]);
 
         $plantilla = $validated['id_plantilla'];
+
         $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
-        $cards = Card::join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
+        $query = Card::with(['blog.head', 'empleado'])
+            ->leftJoin('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
             ->where('cards.id_plantilla', $plantilla)
-            ->where('ba.accion', 'CREAR')
-            ->whereBetween('ba.fecha_hora', [$startDate, $endDate])
-            ->select('cards.*')
-            ->get();
+            ->select('cards.*');
+
+        // Filtrar por acción (solo si existe auditoría)
+        $query->where(function ($q) {
+            $q->where('ba.accion', 'CREAR')
+                ->orWhereNull('ba.accion'); // evita que desaparezcan registros sin auditoría
+        });
+
+        // Aplicar filtro de fechas SOLO si vienen explícitamente
+        if ($request->has(['month', 'year'])) {
+            $query->whereBetween('ba.fecha_hora', [$startDate, $endDate]);
+        }
+
+        $cards = $query->get();
 
         return response()->json([
             "status" => 200,
-            "data" => $cards
+            "data" => CardResource::collection($cards)
         ]);
     }
 
@@ -183,8 +194,8 @@ class MetricasController extends Controller
             ->selectRaw('cards.id_plantilla, COUNT(cards.id_card) as count_cards')
             ->join('blog_auditoria as ba', function ($join) use ($startDate, $endDate) {
                 $join->on('ba.id_blog', '=', 'cards.id_blog')
-                     ->where('ba.accion', '=', 'CREAR')
-                     ->whereBetween('ba.fecha_hora', [$startDate, $endDate]);
+                    ->where('ba.accion', '=', 'CREAR')
+                    ->whereBetween('ba.fecha_hora', [$startDate, $endDate]);
             })
             ->groupBy('cards.id_plantilla')
             ->orderBy('cards.id_plantilla')
@@ -206,7 +217,9 @@ class MetricasController extends Controller
 
         $validated = $request->validate([
             'id_empleado' => [
-                'required', 'integer', 'min:1',
+                'required',
+                'integer',
+                'min:1',
                 // Si el campo clave en tabla empleados es id_empleado:
                 // Rule::exists('empleados', 'id_empleado')
             ],
@@ -216,7 +229,17 @@ class MetricasController extends Controller
         $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
+        /*
         $cards = Card::join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
+            ->where('cards.id_empleado', $id)
+            ->where('ba.accion', 'CREAR')
+            ->whereBetween('ba.fecha_hora', [$startDate, $endDate])
+            ->select('cards.*')
+            ->get();
+        */
+
+        $cards = Card::with(['blog.head', 'empleado'])
+            ->join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
             ->where('cards.id_empleado', $id)
             ->where('ba.accion', 'CREAR')
             ->whereBetween('ba.fecha_hora', [$startDate, $endDate])
@@ -225,7 +248,7 @@ class MetricasController extends Controller
 
         return response()->json([
             "status" => 200,
-            "data" => $cards
+            "data" => CardResource::collection($cards)
         ]);
     }
 
@@ -236,7 +259,9 @@ class MetricasController extends Controller
 
         $validated = $request->validate([
             'id_empleado' => [
-                'required', 'integer', 'min:1',
+                'required',
+                'integer',
+                'min:1',
                 // Rule::exists('empleados', 'id_empleado')
             ],
         ]);
@@ -269,8 +294,8 @@ class MetricasController extends Controller
             ->leftJoin('cards', 'cards.id_empleado', '=', 'empleados.id_empleado')
             ->leftJoin('blog_auditoria as ba', function ($join) use ($startDate, $endDate) {
                 $join->on('ba.id_blog', '=', 'cards.id_blog')
-                     ->where('ba.accion', '=', 'CREAR')
-                     ->whereBetween('ba.fecha_hora', [$startDate, $endDate]);
+                    ->where('ba.accion', '=', 'CREAR')
+                    ->whereBetween('ba.fecha_hora', [$startDate, $endDate]);
             })
             ->where('empleados.id_rol', 1)
             ->groupBy('empleados.id_empleado', 'empleados.nombre')
@@ -306,8 +331,8 @@ class MetricasController extends Controller
                 return [
                     "id_blog" => $id_blog,
                     "tiempo_minutos" =>
-                        Carbon::parse($crear->fecha_hora)
-                            ->diffInMinutes(Carbon::parse($editar->fecha_hora))
+                    Carbon::parse($crear->fecha_hora)
+                        ->diffInMinutes(Carbon::parse($editar->fecha_hora))
                 ];
             })
             ->filter()
@@ -340,7 +365,7 @@ class MetricasController extends Controller
                         'id_empleado' => $empleado->id_empleado,
                         'nombre_empleado' => $empleado->nombre,
                         'frecuencia_publicacion_mensual' =>
-                            round($empleado->cards_count / $mesesTrabajados, 2),
+                        round($empleado->cards_count / $mesesTrabajados, 2),
                     ];
                 });
 

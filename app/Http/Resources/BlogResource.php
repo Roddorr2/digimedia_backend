@@ -14,6 +14,7 @@ class BlogResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        /*
         return [
             'id_blog' => $this->id_blog,
             'id_blog_head' => $this->id_blog_head,
@@ -23,5 +24,34 @@ class BlogResource extends JsonResource
             'link' => $this->link,
             'card' => $this->whenLoaded('card'),
         ];
+        */
+        return [
+            'id_blog' => $this->id_blog,
+
+            'fecha' => $this->fecha,
+
+            'link' => $this->link,
+
+            'head' => new BlogHeadResource(
+                $this->whenLoaded('head')
+            ),
+
+            'body' => new BlogBodyResource(
+                $this->whenLoaded('body')
+            ),
+
+            'footer' => new BlogFooterResource(
+                $this->whenLoaded('footer')
+            ),
+
+            'card' => new CardResource(
+                $this->whenLoaded('card')
+            ),
+
+            'auditoria' => BlogAuditoriaResource::collection(
+                $this->whenLoaded('blogAuditoria')
+            ),
+        ];
     }
 }
+

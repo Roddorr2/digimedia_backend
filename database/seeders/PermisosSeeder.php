@@ -31,7 +31,13 @@ class PermisosSeeder extends Seeder
             'Eliminar modales' => 'Permite eliminar modales',
             'Enviar mensajes' => 'Enviar modales de Emails y WhatsApp',
 
-            // Servicios
+            // Pop-Ups
+            'Ver pop-ups' => 'Permite ver configuraciones de pop-ups',
+            'Crear pop-ups' => 'Permite crear nuevos pop-ups',
+            'Editar pop-ups' => 'Permite editar pop-ups existentes',
+            'Eliminar pop-ups' => 'Permite eliminar pop-ups',
+
+            // Servicios (se puede descomentar en caso se implementen los servicios em el dashboard; las rutas ya están incluidas en el api.php)
             'Ver servicios' => 'Permite ver los servicios',
             'Crear servicios' => 'Permite crear nuevos servicios',
             'Editar servicios' => 'Permite editar servicios existentes',
@@ -113,6 +119,11 @@ class PermisosSeeder extends Seeder
                 'Editar reclamaciones',
 
                 'Enviar mensajes',
+
+                'Ver pop-ups',
+                'Crear pop-ups',
+                'Editar pop-ups',
+                'Eliminar pop-ups',
 
                 'Ver blogs',
                 'Crear blogs',

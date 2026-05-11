@@ -11,7 +11,19 @@ class DatabaseSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
         $this->call([
-            // Core: roles and related
+            UserSeeder::class,
+            BlogHeaderSeeder::class,
+            BlogFooterSeeder::class,
+            CommendTarjetaSeeder::class,
+            BlogBodySeeder::class,
+            TarjetaSeeder::class,
+            BlogSeeder::class,
+            BlogAuditoriaSeeder::class,
+            ServicioSeeder::class,
+            SubservicioSeeder::class,
+            ContactanosSeeder::class,
+            ReclamacionSeeder::class,
+            ModalservicioSeeder::class,
             RolSeeder::class,
             SubtipoAdminSeeder::class,
             PermisosSeeder::class,
@@ -37,8 +49,8 @@ class DatabaseSeeder extends Seeder
             CampaniaWhatsAppSeeder::class,
             PermisosSeeder::class,
             PlantillasEmailSeeder::class,
-            PlantillasWhatsappSeeder::class
-
+            PlantillasWhatsappSeeder::class,
+            PopupConfigSeeder::class
         ]);
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');

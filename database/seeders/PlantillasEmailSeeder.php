@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\PlantillaEmail;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -17,7 +18,12 @@ class PlantillasEmailSeeder extends Seeder
 
     public function run(): void
     {
-        DB::table('plantillas_email')->insert($this->buildAll());
+        foreach ($this->buildAll() as $plantilla) {
+            PlantillaEmail::updateOrCreate(
+                ['id_servicio' => $plantilla['id_servicio'], 'numero_plantilla' => $plantilla['numero_plantilla']],
+                $plantilla
+            );
+        }
     }
 
     private function buildAll(): array

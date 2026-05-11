@@ -1,0 +1,72 @@
+openapi: 3.0.0
+info:
+  title: Digimedia Backend API
+  version: 1.0.0
+  description: API REST para el sistema de gestión de blogs, campañas WhatsApp y administración de empleados
+  contact:
+    name: Digimedia Support
+    email: soporte@digimedia.com
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8000/api
+    description: Development Server
+  - url: https://api.digimedia.com
+    description: Production Server
+
+components:
+  securitySchemes:
+    sanctum:
+      type: http
+      scheme: bearer
+      description: Authentication token via Sanctum
+    api_key:
+      type: apiKey
+      name: X-API-Key
+      in: header
+      description: API Key for template endpoints
+
+paths:
+  /login:
+    post:
+      tags:
+        - Authentication
+      summary: Login de usuario
+      description: Autentica un usuario con email y contraseña
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: password123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: Login successful
+                  data:
+                    type: object
+        '401':
+          description: Invalid credentials
