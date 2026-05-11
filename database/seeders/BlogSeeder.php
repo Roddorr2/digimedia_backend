@@ -130,16 +130,12 @@ class BlogSeeder extends Seeder
         ];
 
         foreach ($blogs as $b) {
-            $head = BlogHead::where('titulo', 'Tu Bar, en la Mira')->first();
-            $body = BlogBody::where('titulo', 'Tu Bar, en la Mira')->first();
-            $footer = BlogFooter::where('titulo', 'Conclusion')->first();
-
             Blog::updateOrCreate(
                 ['link' => $b['link']],
                 [
-                    'id_blog_head' => $head ? $head->id_blog_head : null,
-                    'id_blog_body' => $body ? $body->id_blog_body : null,
-                    'id_blog_footer' => $footer ? $footer->id_blog_footer : null,
+                    'id_blog_head' => $b['id_blog_head'] ?? null,
+                    'id_blog_body' => $b['id_blog_body'] ?? null,
+                    'id_blog_footer' => $b['id_blog_footer'] ?? null,
                 ]
             );
         }
