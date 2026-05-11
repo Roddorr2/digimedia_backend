@@ -3,16 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Blog\StoreBlogRequest;
+use App\Http\Requests\Blog\UpdateBlogRequest;
 use App\Models\Blog;
 use App\Models\BlogBody;
 use App\Models\BlogHead;
 use App\Http\Resources\BlogResource;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use App\Services\AuditoriaService;
+use Illuminate\Http\Request;
 
 class BlogController extends Controller
 {
@@ -38,26 +39,15 @@ class BlogController extends Controller
     }
     //nuevos features
 
-    public function create(Request $request)
+    public function create(StoreBlogRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'id_blog_head' => 'required|integer|exists:blog_heads,id_blog_head',
-            'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
-            'id_blog_footer' => 'required|integer|exists:blog_footers,id_blog_footer',
-            'fecha' => 'required|date',
-            'id_empleado' => 'required|integer|exists:empleados,id_empleado',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 400);
-        }
-
-        $id_empleado = $request->id_empleado;
+        $validatedData = $request->validated();
+        $id_empleado = $validatedData['id_empleado'];
 
         DB::beginTransaction();
 
         try {
-            $blogHead = BlogHead::findOrFail($request->id_blog_head);
+            $blogHead = BlogHead::findOrFail($validatedData['id_blog_head']);
             $titulo = $blogHead->titulo ?? 'blog';
 
             // Generar slug único para el campo 'link'
@@ -69,7 +59,7 @@ class BlogController extends Controller
                 $link = $originalSlug . '-' . $counter++;
             }
 
-            $data = $request->all();
+            $data = $validatedData;
             $data['link'] = $link;
 
             $blog = Blog::create($data);
@@ -79,7 +69,7 @@ class BlogController extends Controller
                 $blog->id_blog,
                 $id_empleado,
                 'CREAR',
-                (BlogHead::findOrFail($request->id_blog_head))->titulo,
+                (BlogHead::findOrFail($validatedData['id_blog_head']))->titulo,
             );
 
             return response()->json([
@@ -94,25 +84,10 @@ class BlogController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
-    {
-        try {
-            $validator = Validator::make($request->all(), [
-                'id_blog_head' => 'required|integer|exists:blog_heads,id_blog_head',
-                'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
-                'id_blog_footer' => 'required|integer|exists:blog_footers,id_blog_footer',
-                'fecha' => 'required|date',
-                'id_empleado' => 'required|integer|exists:empleados,id_empleado', // No necesario
-                'descripcion' => 'nullable|string',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()], 400);
-            }
-
-            // $id_empleado = $request->id_empleado;
-            $id_empleado = $blog->card->id_empleado ?? null;
-            $descripcion = $request->descripcion;
+    public function update(UpdateBlogRequest $request, $id){
+        try{
+            $validatedData = $request->validated();
+            $descripcion = $validatedData['descripcion'] ?? null;
 
             $blog = Blog::find($id);
 
@@ -126,7 +101,7 @@ class BlogController extends Controller
             DB::beginTransaction();
 
             // Get the blog head to generate link from title
-            $blogHead = BlogHead::findOrFail($request->id_blog_head);
+            $blogHead = BlogHead::findOrFail($validatedData['id_blog_head']);
             $titulo = $blogHead->titulo ?? 'blog';
 
             // Generate unique slug for the 'link' field, excluding current blog
@@ -138,16 +113,16 @@ class BlogController extends Controller
                 $link = $originalSlug . '-' . $counter++;
             }
 
-            $data = $request->all();
+            $data = $validatedData;
             $data['link'] = $link;
 
             $blog->update($data);
 
             AuditoriaService::registrar(
                 $blog->id_blog,
-                $request->id_empleado,
+                $validatedData['id_empleado'],
                 'ACTUALIZAR',
-                (\App\Models\BlogHead::findOrFail($request->id_blog_head))->titulo,
+                (\App\Models\BlogHead::findOrFail($validatedData['id_blog_head']))->titulo,
                 $descripcion,
             );
 

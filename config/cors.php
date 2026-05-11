@@ -17,19 +17,38 @@ return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['*'],
+    // Métodos HTTP permitidos (especificar en lugar de usar *)
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
 
-    // 'allowed_origins' => ['*'],
-    'allowed_origins' => ['*'], //['https://app.dominio.com']
+    // Orígenes CORS permitidos - cargados desde .env
+    'allowed_origins' => [
+        'http://localhost:3000',
+        'https://digimedia-marketing.com',
+        'https://www.digimedia-marketing.com',
+    ],
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['*'],
+    // Headers permitidos en requests CORS
+    'allowed_headers' => [
+        'Content-Type',
+        'Accept',
+        'Authorization',
+        'X-CSRF-Token',
+        'X-API-Key',
+        'X-Requested-With',
+    ],
 
-    'exposed_headers' => [],
+    'exposed_headers' => [
+        'X-Total-Count',
+        'X-Page-Count',
+        'X-Links',
+    ],
 
-    'max_age' => 0,
+    // Cache CORS headers por 1 hora
+    'max_age' => 3600,
 
+    // Permitir credenciales (cookies, headers auth)
     'supports_credentials' => true,
 
 ];

@@ -3,16 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BlogBody\StoreBlogBodyRequest;
 use App\Http\Resources\BlogBodyResource;
 use Illuminate\Http\Request;
 use App\Models\BlogBody;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class BlogBodyController extends Controller
 {
 
-    public function create(Request $request)
+    public function create(StoreBlogBodyRequest $request)
     {
         try {
 
@@ -45,7 +46,7 @@ class BlogBodyController extends Controller
 
             DB::beginTransaction();
 
-            $blogBody = BlogBody::create($request->all());
+            $blogBody = BlogBody::create($validator->validated());
 
             DB::commit();
 
@@ -105,7 +106,7 @@ class BlogBodyController extends Controller
 
             DB::beginTransaction();
 
-            $blogBody->update($request->all());
+            $blogBody->update($validator->validated());
 
             DB::commit();
             return response()->json([

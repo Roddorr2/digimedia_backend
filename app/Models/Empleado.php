@@ -27,6 +27,10 @@ class Empleado extends Model
         'id_subtipo_admin'
     ];
 
+    protected $hidden = [
+        'id_user',           // FK interna - frontend no la necesita
+        'id_subtipo_admin'   // Estructura interna de admin
+    ];
 
     public function user()
     {

@@ -3,15 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CommendTarjeta\StoreCommendTarjetaRequest;
 use App\Http\Resources\CommendTarjetaResource;
 use Illuminate\Http\Request;
 use App\Models\CommendTarjeta;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class CommendTarjetaController extends Controller
 {
-    public function create(Request $request)
+    public function create(StoreCommendTarjetaRequest $request)
     {
         try {
             $validator = Validator::make($request->all(), [
@@ -65,19 +66,6 @@ class CommendTarjetaController extends Controller
     public function update(Request $request, int $id)
     {
         try {
-
-            $validator = Validator::make($request->all(), [
-                'titulo' => 'required|string|max:255',
-                'texto1' => 'required|string|max:255',
-                'texto2' => 'required|string|max:255',
-                'texto3' => 'required|string|max:255',
-                'texto4' => 'nullable|string|max:255',
-                'texto5' => 'nullable|string|max:255',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()], 400);
-            }
 
             $tarjeta = CommendTarjeta::find($id);
 
