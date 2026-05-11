@@ -18,6 +18,9 @@ class BlogSeeder extends Seeder
     {
         $blogs = [
             [
+                'id_blog_head' => 1,
+                'id_blog_body' => 1,
+                'id_blog_footer' => 1,
                 'link' => 'tu-bar-en-la-mira'
             ],
             [
