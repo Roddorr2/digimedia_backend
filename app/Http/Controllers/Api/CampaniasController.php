@@ -8,6 +8,7 @@ use App\Models\CampaniaWhatsApp;
 use App\Models\WatModal;
 use App\Models\modalservicios;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
 
 class CampaniasController extends Controller
 {
@@ -156,88 +157,150 @@ class CampaniasController extends Controller
 
     // GET /api/campanias/{id}/leads
     public function leads(Request $request, $id)
-{
-    $campania = CampaniaWhatsApp::findOrFail($id);
+    {
+        $campania = CampaniaWhatsApp::findOrFail($id);
 
-    $query = $campania->mensajesWhatsApp()
-        ->with('modalServicio');
+        // Leads válidos para la campaña:
+        // - mismo servicio
+        // - existentes antes de iniciar campaña
+        // - solo activos
+        // - teléfono válido
+        // - SIN teléfonos duplicados (mismo criterio usado al crear campaña)
+        $telefonosValidos = modalservicios::query()
 
-    // 🔹 FILTRO ESTADO
-    if ($request->filled('estado')) {
+            ->where('id_servicio', $campania->id_servicio)
 
-        if ($request->estado === 'pendiente') {
+            ->where('estado', 1)
 
-            $query->whereNull('estado');
+            ->whereNotNull('telefono')
+
+            ->where('telefono', '!=', '')
+
+            ->where(
+                'modalservicios.fecha',
+                '<=',
+                \Carbon\Carbon::parse($campania->fecha_inicio)
+                    ->setTimezone('America/Lima')
+                    ->format('Y-m-d H:i:s')
+            )
+
+            ->orderBy('id_modalservicio')
+
+            ->get()
+
+            ->unique('telefono')
+
+            ->pluck('id_modalservicio');
+
+        $query = modalservicios::query()
+
+            ->whereIn('modalservicios.id_modalservicio', $telefonosValidos)
+
+            ->leftJoin('modal_wats', function ($join) use ($id) {
+
+                $join->on(
+                    'modalservicios.id_modalservicio',
+                    '=',
+                    'modal_wats.id_modalservicio'
+                )
+
+                ->where('modal_wats.campania_id', $id);
+            })
+
+            ->select([
+                'modalservicios.id_modalservicio',
+                'modalservicios.nombre',
+                'modalservicios.telefono',
+
+                'modal_wats.id_modal_wat',
+                'modal_wats.estado',
+                'modal_wats.intentos',
+                'modal_wats.puede_reintentar',
+                'modal_wats.error',
+                'modal_wats.fecha',
+            ]);
+
+        // 🔹 FILTRO ESTADO
+        if ($request->filled('estado')) {
+
+            if ($request->estado === 'pendiente') {
+
+                $query->whereNull('modal_wats.id_modal_wat');
+            }
+
+            if ($request->estado === 'enviado') {
+
+                $query->where('modal_wats.estado', 1);
+            }
+
+            if ($request->estado === 'fallido') {
+
+                $query->where('modal_wats.estado', 0);
+            }
         }
 
-        if ($request->estado === 'enviado') {
+        // 🔹 FILTRO SEARCH
+        if ($request->filled('search')) {
 
-            $query->where('estado', 1);
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+
+                $q->where('modalservicios.nombre', 'like', "%{$search}%")
+                    ->orWhere('modalservicios.telefono', 'like', "%{$search}%");
+            });
         }
 
-        if ($request->estado === 'fallido') {
+        $leads = $query
 
-            $query->where('estado', 0);
-        }
-    }
+            // pendientes primero
+            ->orderByRaw('modal_wats.id_modal_wat IS NULL DESC')
 
-    // 🔹 FILTRO SEARCH
-    if ($request->filled('search')) {
+            // luego más recientes
+            ->orderBy('modal_wats.fecha', 'desc')
 
-        $search = $request->search;
+            ->paginate($request->get('per_page', 15));
 
-        $query->whereHas('modalServicio', function ($q) use ($search) {
+        $data = $leads->getCollection()->map(function ($lead) {
 
-            $q->where('nombre', 'like', "%{$search}%")
-              ->orWhere('telefono', 'like', "%{$search}%");
+            return [
+
+                'id_modalservicio' => $lead->id_modalservicio,
+
+                'id_modal_wat' => $lead->id_modal_wat,
+
+                'nombre' => $lead->nombre,
+
+                'telefono' => $lead->telefono,
+
+                'estado' => is_null($lead->id_modal_wat)
+                    ? 'pendiente'
+                    : ($lead->estado ? 'enviado' : 'fallido'),
+
+                'intentos' => $lead->intentos ?? 0,
+
+                'puede_reintentar' => (bool) ($lead->puede_reintentar ?? false),
+
+                'error' => $lead->error,
+
+                'fecha' => $lead->fecha
+                    ? \Carbon\Carbon::parse($lead->fecha)
+                        ->format('Y-m-d\TH:i:s')
+                    : null,
+            ];
         });
+
+        return response()->json([
+            'success' => true,
+
+            'data' => [
+                'data' => $data,
+                'current_page' => $leads->currentPage(),
+                'last_page' => $leads->lastPage(),
+                'total' => $leads->total(),
+            ]
+        ]);
     }
-
-    $leads = $query
-        ->orderByRaw('fecha IS NULL DESC')
-        ->orderBy('fecha', 'desc')
-        ->paginate($request->get('per_page', 15));
-
-    $data = $leads->getCollection()->map(function ($lead) {
-
-        return [
-
-            'id_modalservicio' => $lead->id_modalservicio,
-
-            'id_modal_wat' => $lead->id_modal_wat,
-
-            'nombre' => optional($lead->modalServicio)->nombre,
-
-            'telefono' => optional($lead->modalServicio)->telefono,
-
-            'estado' => is_null($lead->estado)
-                ? 'pendiente'
-                : ($lead->estado ? 'enviado' : 'fallido'),
-
-            'intentos' => $lead->intentos ?? 0,
-
-            'puede_reintentar' => (bool) ($lead->puede_reintentar ?? false),
-
-            'error' => $lead->error,
-
-            'fecha' => $lead->fecha
-                ? \Carbon\Carbon::parse($lead->fecha)
-                    ->format('Y-m-d\TH:i:s')
-                : null,
-        ];
-    });
-
-    return response()->json([
-        'success' => true,
-
-        'data' => [
-            'data' => $data,
-            'current_page' => $leads->currentPage(),
-            'last_page' => $leads->lastPage(),
-            'total' => $leads->total(),
-        ]
-    ]);
-}
 
     // POST /api/campanias/{id}/leads/{wat_modal_id}/retry
     public function retryLead(Request $request, $id, $wat_modal_id) 
