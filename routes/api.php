@@ -231,6 +231,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:editar-pop-ups')->post('/popup-configs/{id}/actualizar', [PopupConfigController::class, 'update']);
     Route::middleware('permission:eliminar-pop-ups')->delete('/popup-configs/{id}', [PopupConfigController::class, 'destroy']);
     
+    // Campañas - Sección dedicada
+    Route::middleware('role:marketing,administrador')->group(function () {
+        Route::get('/campanias', [CampaniasController::class, 'index']);
+        Route::get('/campanias/{id}', [CampaniasController::class, 'show']);
+        Route::get('/campanias/{id}/leads', [CampaniasController::class, 'leads']);
+        Route::post('/campanias/{id}/leads/{wat_modal_id}/retry', [CampaniasController::class, 'retryLead']);
+    });
+
     // fixes
     // Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
 });

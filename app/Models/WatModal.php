@@ -34,7 +34,7 @@ class WatModal extends Model
      * Relación con modalservicios
      */
     public function modalServicio(){
-        return $this->belongsTo(modalservicios::class,'id_modal_servicio', 'id_modalservicio');
+        return $this->belongsTo(modalservicios::class,'id_modalservicio', 'id_modalservicio');
     }
 
     /**
