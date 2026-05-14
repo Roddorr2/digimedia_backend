@@ -14,24 +14,17 @@ class BlogResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        /*
         return [
             'id_blog' => $this->id_blog,
-            'id_blog_head' => $this->id_blog_head,
-            'id_blog_body' => $this->id_blog_body,
-            'id_blog_footer' => $this->id_blog_footer,
             'fecha' => $this->fecha,
             'link' => $this->link,
-            'card' => $this->whenLoaded('card'),
-        ];
-        */
-        return [
-            'id_blog' => $this->id_blog,
 
-            'fecha' => $this->fecha,
+            // 🔥 IDs planos (esto soluciona tu problema)
+            'id_blog_head' => $this->head->id_blog_head ?? null,
+            'id_blog_body' => $this->body->id_blog_body ?? null,
+            'id_blog_footer' => $this->footer->id_blog_footer ?? null,
 
-            'link' => $this->link,
-
+            // 🔥 Mantienes también los objetos completos (best of both worlds)
             'head' => new BlogHeadResource(
                 $this->whenLoaded('head')
             ),
@@ -54,4 +47,3 @@ class BlogResource extends JsonResource
         ];
     }
 }
-
