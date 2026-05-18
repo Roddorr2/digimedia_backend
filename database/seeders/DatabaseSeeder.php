@@ -34,7 +34,8 @@ class DatabaseSeeder extends Seeder
             PermisosSeeder::class,
             PlantillasEmailSeeder::class,
             PlantillasWhatsappSeeder::class,
-            PopupConfigSeeder::class
+            PopupConfigSeeder::class,
+            ConfiguracionTiempoSeeder::class
         ]);
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
