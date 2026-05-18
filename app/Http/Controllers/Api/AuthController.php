@@ -31,14 +31,14 @@ class AuthController extends Controller
 
         DB::beginTransaction();
         try {
-            // crea usuario
+            // crear usuario
             $user = User::create([
                 'name' => $validated['nombre'] . ' ' . $validated['apellido'],
                 'email' => $validated['email'],
-                'password' => Hash::make('1234'),
+                'password' => Hash::make('1234'), // puedes cambiar esto luego
             ]);
 
-            // crea empleado
+            // crear empleado
             $empleado = Empleado::create([
                 'nombre' => $validated['nombre'],
                 'apellido' => $validated['apellido'],
@@ -51,9 +51,9 @@ class AuthController extends Controller
 
             DB::commit();
 
-            // token incluyendo rol
+            // generar token con rol
             $rol = Rol::find($validated['id_rol']);
-            $abilities = [$rol->nombre]; // capacidad del token => rol
+            $abilities = [$rol->nombre];
 
             $token = $user->createToken('auth_token', $abilities)->plainTextToken;
 
@@ -66,14 +66,16 @@ class AuthController extends Controller
                 'token' => $token,
             ], 201);
         } catch (\Exception $e) {
-            DB::rollback();
+            DB::rollBack();
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Error al registrar usuario',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
+
 
     public function login(LoginRequest $request)
     {
@@ -133,10 +135,12 @@ class AuthController extends Controller
                 ], 401);
             }
 
+            // login exitoso → resetear contadores
             Cache::forget($backoffKey);
             Cache::forget($attemptsKey);
 
             $empleado = $user->empleado;
+
             if (!$empleado || !$empleado->rol) {
                 return response()->json([
                     'status'  => 'error',
@@ -150,9 +154,13 @@ class AuthController extends Controller
             $abilities = [$rol->nombre];
             $permisos  = $rol->permisos->pluck('slug')->toArray();
 
+            // eliminar tokens anteriores
             $user->tokens()->delete();
+
+            // crear nuevo token
             $token = $user->createToken('auth_token', $abilities)->plainTextToken;
 
+            // evitar serialización innecesaria
             $user->unsetRelation('empleado');
 
             return response()->json([
@@ -195,8 +203,7 @@ class AuthController extends Controller
         string $backoffKey,
         Request $request,
         string $reason
-    ): array
-    {
+    ): array {
         if (Cache::has($attemptsKey)) {
             $attempts = Cache::increment($attemptsKey);
         } else {
@@ -354,44 +361,51 @@ class AuthController extends Controller
 
     public function updatePassword(UpdatePasswordRequest $request)
     {
-        $validated = $request->validated();
-        $token = $validated['token'];
+        try {
+            $data = $request->validated();
 
-        Log::info('Token recibido: ' . $token);
+            Log::info('Token recibido: ' . $data['token']);
 
-        $tokenUser = DB::table('password_reset_tokens')
-            ->whereRaw('LOWER(token) = ?', [strtolower($token)])
-            ->first();
-
-        if (!$tokenUser) {
-            $exactToken = DB::table('password_reset_tokens')
-                ->where('token', $token)
+            $tokenUser = DB::table('password_reset_tokens')
+                ->whereRaw('LOWER(token) = ?', [strtolower($data['token'])])
                 ->first();
 
-            Log::info('Token no encontrado. Tokens disponibles: ' .
-                json_encode(DB::table('password_reset_tokens')->pluck('token')->toArray()));
+            if (!$tokenUser) {
+                Log::info('Token no encontrado. Tokens disponibles: ' .
+                    json_encode(DB::table('password_reset_tokens')->pluck('token')->toArray()));
+
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Token inválido o expirado'
+                ], 404);
+            }
+
+            $user = User::where('email', $tokenUser->email)->first();
+
+            if (!$user) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Usuario no encontrado'
+                ], 404);
+            }
+
+            $user->password = Hash::make($data['password']);
+            $user->save();
+
+            DB::table('password_reset_tokens')
+                ->where('token', $data['token'])
+                ->delete();
 
             return response()->json([
-                'status' => 'error',
-                'message' => 'Token inválido o expirado'
-            ], 404);
-        }
-
-        $user = User::where('email', $tokenUser->email)->first();
-
-        if (!$user) {
+                'message' => 'Contraseña actualizada correctamente, ingresa desde el login'
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Usuario no encontrado'
-            ], 404);
+                'status'  => 'error',
+                'message' => 'Ocurrió un error en el servidor',
+                'error'   => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
         }
-
-        $user->password = Hash::make($validated['password']);
-        $user->save();
-
-        DB::table('password_reset_tokens')->where('token', $token)->delete();
-
-        return response()->json(['message' => 'Contraseña actualizada correctamente, ingresa desde el login'], 200);
     }
 
     public function me(Request $request)

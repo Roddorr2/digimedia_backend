@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\PlantillasEmailController;
 use App\Http\Controllers\Api\PopupConfigController;
 use App\Http\Controllers\Api\SubservicioController;
 use App\Http\Controllers\Api\CampaniasController;
+use App\Http\Controllers\Api\ConfiguracionTiempoController;
 
 // public routes test
 Route::middleware('throttle:5,1')->post('/register', [AuthController::class, 'register']);
@@ -102,6 +103,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // rutas update
     Route::middleware('permission:editar-contactos')->put('/contactanos/{id}', [ContactanosController::class, "update"]);
     Route::middleware('permission:editar-servicios')->put('/servicios/{id}', [ServiciosController::class, "update"]);
+    // Configuración de tiempos de envío
+    Route::middleware('role:marketing,administrador')->group(function () {
+        Route::get('/servicios/{id_servicio}/tiempos', [ConfiguracionTiempoController::class, 'get']);
+        Route::put('/servicios/{id_servicio}/tiempos', [ConfiguracionTiempoController::class, 'update']);
+        Route::post('/servicios/{id_servicio}/tiempos', [ConfiguracionTiempoController::class, 'store']);
+        Route::delete('/servicios/{id_servicio}/tiempos/{tipo}/{numero_mensaje}', [ConfiguracionTiempoController::class, 'destroy']);
+    });
+
     Route::middleware('permission:editar-reclamaciones')->put('/reclamaciones/{id}', [ReclamacionesController::class, "update"]);
     Route::middleware('permission:editar-modales')->put('/modales/{id}', [ModalesController::class, "update"]);
 
@@ -233,6 +242,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:editar-pop-ups')->post('/popup-configs/{id}/actualizar', [PopupConfigController::class, 'update']);
     Route::middleware('permission:eliminar-pop-ups')->delete('/popup-configs/{id}', [PopupConfigController::class, 'destroy']);
     
+    // Campañas - Sección dedicada
+    Route::middleware('role:marketing,administrador')->group(function () {
+        Route::get('/campanias', [CampaniasController::class, 'index']);
+        Route::get('/campanias/{id}', [CampaniasController::class, 'show']);
+        Route::get('/campanias/{id}/leads', [CampaniasController::class, 'leads']);
+        Route::post('/campanias/{id}/leads/{wat_modal_id}/retry', [CampaniasController::class, 'retryLead']);
+    });
+
     // fixes
     // Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
 });
