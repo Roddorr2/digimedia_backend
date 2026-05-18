@@ -14,18 +14,19 @@ class BlogHeadResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // 🔥 Solo devolvemos la ruta, sin dominio
+        $imagePath = $this->url_image
+            ? $this->url_image
+            : ($this->public_image ?? null);
+
         return [
             'id_blog_head' => $this->id_blog_head,
-
             'titulo' => $this->titulo,
-
             'texto_frase' => $this->texto_frase,
-
             'texto_descripcion' => $this->texto_descripcion,
 
             'imagen' => [
-                'public_image' => $this->public_image,
-                'url_image' => $this->url_image,
+                'path' => $imagePath, // ✅ solo ruta tipo /blog/xxx.webp
                 'alt' => $this->alt,
                 'title' => $this->title,
             ],
@@ -37,5 +38,3 @@ class BlogHeadResource extends JsonResource
         ];
     }
 }
-
-
