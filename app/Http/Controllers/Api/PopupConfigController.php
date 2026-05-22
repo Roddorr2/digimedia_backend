@@ -13,6 +13,14 @@ use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 class PopupConfigController extends Controller
 {
     /**
+     * Notas de cambios: ahora este controlador valida y persiste los campos de estilo
+     * del popup que antes no se guardaban en store/update.
+     * - title_color
+     * - button_color
+     * - service_color_2
+     * - gradient_direction
+     */
+    /**
      * Endpoint público para obtener configuración de pop-up por subservicio
      * No requiere autenticación - solo devuelve lo necesario para renderizar
      *
@@ -166,19 +174,23 @@ class PopupConfigController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'id_subservicio'  => 'required|integer|exists:subservicios,id_subservicio|unique:popup_configs',
-                'title_text'      => 'required|string|min:5|max:80',
-                'button_text'     => 'required|string|min:2|max:25',
-                'service_color'   => 'required|regex:/^#[0-9A-Fa-f]{6}$/',
-                'trigger_time'    => 'required|in:3,5,8',
+                'id_subservicio'    => 'required|integer|exists:subservicios,id_subservicio|unique:popup_configs',
+                'title_text'        => 'required|string|min:5|max:80',
+                'title_color'       => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+                'button_text'       => 'required|string|min:2|max:25',
+                'button_color'      => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+                'service_color'     => 'required|regex:/^#[0-9A-Fa-f]{6}$/',
+                'service_color_2'   => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+                'gradient_direction'=> 'nullable|string|max:20',
+                'trigger_time'      => 'required|in:3,5,8',
                 // Desktop
-                'left_image'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-                'left_opacity'    => 'nullable|integer|min:0|max:100',
-                'right_image'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-                'right_opacity'   => 'nullable|integer|min:0|max:100',
+                'left_image'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+                'left_opacity'      => 'nullable|integer|min:0|max:100',
+                'right_image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+                'right_opacity'     => 'nullable|integer|min:0|max:100',
                 // Mobile
-                'mobile_image'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-                'mobile_opacity'  => 'nullable|integer|min:0|max:100',
+                'mobile_image'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+                'mobile_opacity'    => 'nullable|integer|min:0|max:100',
             ]);
 
             if ($validator->fails()) {
@@ -190,16 +202,20 @@ class PopupConfigController extends Controller
             }
 
             $data = [
-                'id_subservicio' => $request->id_subservicio,
-                'title_text'     => $request->title_text,
-                'button_text'    => $request->button_text,
-                'service_color'  => $request->service_color,
-                'trigger_time'   => $request->trigger_time,
-                'left_opacity'   => $request->left_opacity   ?? 100,
-                'right_opacity'  => $request->right_opacity  ?? 100,
-                'mobile_opacity' => $request->mobile_opacity ?? 100,
-                'created_by'     => $request->user()->id,
-                'updated_by'     => $request->user()->id,
+                'id_subservicio'    => $request->id_subservicio,
+                'title_text'        => $request->title_text,
+                'title_color'       => $request->title_color,
+                'button_text'       => $request->button_text,
+                'button_color'      => $request->button_color,
+                'service_color'     => $request->service_color,
+                'service_color_2'   => $request->service_color_2,
+                'gradient_direction'=> $request->gradient_direction,
+                'trigger_time'      => $request->trigger_time,
+                'left_opacity'      => $request->left_opacity   ?? 100,
+                'right_opacity'     => $request->right_opacity  ?? 100,
+                'mobile_opacity'    => $request->mobile_opacity ?? 100,
+                'created_by'        => $request->user()->id,
+                'updated_by'        => $request->user()->id,
             ];
 
             // Subir imágenes a Cloudinary si se enviaron
@@ -245,18 +261,22 @@ class PopupConfigController extends Controller
             $popup = PopupConfig::findOrFail($id);
 
             $validator = Validator::make($request->all(), [
-                'title_text'     => 'nullable|string|min:5|max:80',
-                'button_text'    => 'nullable|string|min:2|max:25',
-                'service_color'  => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
-                'trigger_time'   => 'nullable|in:3,5,8',
+                'title_text'        => 'nullable|string|min:5|max:80',
+                'title_color'       => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+                'button_text'       => 'nullable|string|min:2|max:25',
+                'button_color'      => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+                'service_color'     => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+                'service_color_2'   => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+                'gradient_direction'=> 'nullable|string|max:20',
+                'trigger_time'      => 'nullable|in:3,5,8',
                 // Desktop
-                'left_image'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-                'left_opacity'   => 'nullable|integer|min:0|max:100',
-                'right_image'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-                'right_opacity'  => 'nullable|integer|min:0|max:100',
+                'left_image'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+                'left_opacity'      => 'nullable|integer|min:0|max:100',
+                'right_image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+                'right_opacity'     => 'nullable|integer|min:0|max:100',
                 // Mobile
-                'mobile_image'   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-                'mobile_opacity' => 'nullable|integer|min:0|max:100',
+                'mobile_image'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+                'mobile_opacity'    => 'nullable|integer|min:0|max:100',
             ]);
 
             if ($validator->fails()) {
@@ -268,7 +288,7 @@ class PopupConfigController extends Controller
             }
 
             // Actualizar campos de texto / opciones si vienen en el request
-            $textFields = ['title_text', 'button_text', 'service_color', 'trigger_time',
+            $textFields = ['title_text', 'title_color', 'button_text', 'button_color', 'service_color', 'service_color_2', 'gradient_direction', 'trigger_time',
                            'left_opacity', 'right_opacity', 'mobile_opacity'];
             foreach ($textFields as $field) {
                 if ($request->has($field)) {
