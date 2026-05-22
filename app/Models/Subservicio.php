@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Subservicio extends Model
@@ -17,10 +18,10 @@ class Subservicio extends Model
 
     public function popupConfig()
     {
-        return $this->hasOne(PopupConfig::class, 'id_subservicio');
+        return $this->morphOne(PopupConfig::class, 'popupable');
     }
 
-    public function scopeByServicio($query, $idServicio)
+    public function scopeByServicio(Builder $query, int $idServicio): Builder
     {
         return $query->where('id_servicio', $idServicio);
     }

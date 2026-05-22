@@ -120,5 +120,11 @@ class AppServiceProvider extends ServiceProvider
                     }),
             ];
         });
+
+        if (app()->environment('local')) {
+        \Cloudinary\Configuration\Configuration::instance()->cloud->apiSecret;
+        // Deshabilitar SSL verification globalmente para Cloudinary en local
+        config(['cloudinary.curl_options' => [CURLOPT_SSL_VERIFYPEER => false]]);
+        }
     }
 }
