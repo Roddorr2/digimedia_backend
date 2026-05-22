@@ -12,7 +12,6 @@ use App\Http\Controllers\Api\BlogBodyController;
 use App\Http\Controllers\Api\BlogHeadController;
 use App\Http\Controllers\Api\EmpleadoController;
 use App\Http\Controllers\Api\ModalWatController;
-
 use App\Http\Controllers\Api\ModalMailController;
 use App\Http\Controllers\Api\ServiciosController;
 use App\Http\Controllers\Api\BlogFooterController;
@@ -30,7 +29,10 @@ use App\Http\Controllers\Api\SubservicioController;
 use App\Http\Controllers\Api\CampaniasController;
 use App\Http\Controllers\Api\ConfiguracionTiempoController;
 
-// public routes test
+// ============================================================
+// RUTAS PÚBLICAS (sin autenticación)
+// ============================================================
+
 Route::middleware('throttle:5,1')->post('/register', [AuthController::class, 'register']);
 Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login']);
 Route::middleware('throttle:5,1')->post('/reset_password', [AuthController::class, "forgotPassword"]);
@@ -40,9 +42,8 @@ Route::middleware('throttle:10,1')->post('/contactanos', [ContactanosController:
 Route::middleware('throttle:10,1')->post('/reclamaciones', [ReclamacionesController::class, "create"]);
 Route::middleware('throttle:10,1')->post('/modales', [ModalesController::class, "create"]);
 
-// blogs públicos para ver los clientes
+// Blogs públicos
 Route::get('/cards_public', [CardController::class, "index_public"]);
-//Route::get('/cards', [CardController::class, "index"]);
 Route::get('/blogs/{id}', [BlogController::class, "show"]);
 Route::get('/blogs/links/{link}', [BlogController::class, 'showLink']);
 Route::middleware('throttle:60,1')->get('/blogs', [BlogController::class, "index"]);
@@ -50,38 +51,38 @@ Route::get('/blog_head/{id}', [BlogHeadController::class, "show"]);
 Route::get('/blog_footer/{id}', [BlogFooterController::class, "show"]);
 Route::get('/blog_body/{id}', [BlogBodyController::class, "show"]);
 
-// Rutas públicas para ver los pop-ups
+// Pop-ups públicos
 Route::get('/public/popup-configs/subservicio/{id_subservicio}', [PopupConfigController::class, 'showBySubservicioPublic']);
-
-//ModeloControlador
+Route::get('/public/popup-configs/servicio/{id_servicio}', [PopupConfigController::class, 'showByServicioPublic']);
 
 Route::get('/modales/send_wat/{id}', [ModalWatController::class, "sendWat"]);
 
-Route::middleware('ver-servicios')->get('/servicios', [ServiciosController::class, "get"]);
-
 // Plantillas - ACCESO CON API KEY (para whatsapp-service)
 Route::middleware('api.key')->group(function () {
-    Route::get('/plantillas/whatsapp/{id_servicio}/{numero_plantilla}',
-        [PlantillasWhatsappController::class, 'showByServicioNumero']);
-    Route::get('/plantillas/email/{id_servicio}/{numero_plantilla}',
-        [PlantillasEmailController::class, 'showByServicioNumero']);
+    Route::get('/plantillas/whatsapp/{id_servicio}/{numero_plantilla}', [PlantillasWhatsappController::class, 'showByServicioNumero']);
+    Route::get('/plantillas/email/{id_servicio}/{numero_plantilla}', [PlantillasEmailController::class, 'showByServicioNumero']);
 });
 
-// rutas autenticadas
+// ============================================================
+// RUTAS AUTENTICADAS (requieren token)
+// ============================================================
+
 Route::middleware('auth:sanctum')->group(function () {
-    // autenticación
+    
+    // Autenticación
     Route::middleware('permission:crear-empleados')->post('/register', [AuthController::class, 'register']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/empleados/verify-password', [EmpleadoController::class, 'verifyPassword']);
 
-    // imágenes de perfil (throttle para prevenir abuso de créditos de Cloudinary)
+    // Imágenes de perfil
     Route::middleware('throttle:20,1')->group(function () {
         Route::post('/empleados/{id}/upload-signature', [EmpleadoController::class, 'generateUploadSignature']);
         Route::post('/empleados/{id}/image', [EmpleadoController::class, 'updateProfileImage']);
         Route::delete('/empleados/{id}/image', [EmpleadoController::class, 'deleteProfileImage']);
     });
     
+    // Gets con permisos (administrativos)
     Route::middleware('permission:ver-blogs')->get('/cards', [CardController::class, "index"]);
     Route::middleware('permission:ver-contactos')->get('/contactanos', [ContactanosController::class, "get"]);
     Route::middleware('permission:ver-reclamaciones')->get('/reclamaciones', [ReclamacionesController::class, "get"]);
@@ -93,17 +94,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:ver-reclamaciones')->get('/reclamaciones/{id}', [ReclamacionesController::class, "getById"]);
     Route::middleware('permission:ver-modales')->get('/modales/{id}', [ModalesController::class, "getById"]);
 
-    //revisar emails y messages
+    // Emails y mensajes
     Route::middleware('permission:ver-modales')->get('/modales/modals_emails_wats/{id}', [ModalesController::class, "getSendModales"]);
-    //enviar emails y messages
-    Route::middleware('permission:enviar-mensajes', 'throttle:10,1')->get('/modales/send_mail/{id}',[ModalMailController::class, "sendMail"]);
+    Route::middleware('permission:enviar-mensajes', 'throttle:10,1')->get('/modales/send_mail/{id}', [ModalMailController::class, "sendMail"]);
     Route::middleware('permission:enviar-mensajes', 'throttle:10,1')->put('/modales/reportar_error/{id}', [ModalMailController::class, "reportarError"]);
     Route::middleware('permission:enviar-mensajes', 'throttle:10,1')->put('/modales/estado_wat/{id}', [ModalWatController::class, "cambiarEstado"]);
 
-    // rutas update
+    // Updates (administrativos)
     Route::middleware('permission:editar-contactos')->put('/contactanos/{id}', [ContactanosController::class, "update"]);
     Route::middleware('permission:editar-servicios')->put('/servicios/{id}', [ServiciosController::class, "update"]);
-    // Configuración de tiempos de envío
+    Route::middleware('permission:editar-reclamaciones')->put('/reclamaciones/{id}', [ReclamacionesController::class, "update"]);
+    Route::middleware('permission:editar-modales')->put('/modales/{id}', [ModalesController::class, "update"]);
+
+    // Configuración de tiempos de envío (marketing y admin)
     Route::middleware('role:marketing,administrador')->group(function () {
         Route::get('/servicios/{id_servicio}/tiempos', [ConfiguracionTiempoController::class, 'get']);
         Route::put('/servicios/{id_servicio}/tiempos', [ConfiguracionTiempoController::class, 'update']);
@@ -111,13 +114,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/servicios/{id_servicio}/tiempos/{tipo}/{numero_mensaje}', [ConfiguracionTiempoController::class, 'destroy']);
     });
 
-    Route::middleware('permission:editar-reclamaciones')->put('/reclamaciones/{id}', [ReclamacionesController::class, "update"]);
-    Route::middleware('permission:editar-modales')->put('/modales/{id}', [ModalesController::class, "update"]);
-
-    // rutas create
+    // Creates (administrativos)
     Route::middleware('permission:crear-servicios', 'throttle:60,1')->post('/servicios', [ServiciosController::class, "create"]);
-
-    //rutas create blog
     Route::middleware('permission:crear-blogs', 'throttle:60,1')->post('/card', [CardController::class, "create"]);
     Route::middleware('permission:crear-blogs', 'throttle:60,1')->post('/blog', [BlogController::class, "create"]);
     Route::middleware('permission:crear-blogs', 'throttle:60,1')->post('/blog_head', [BlogHeadController::class, "create"]);
@@ -129,7 +127,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/card/blog/images_body/{id}', [CardController::class, "imagesBody"]);
     Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/card/blog/images_footer/{id}', [CardController::class, "imagesFooter"]);
 
-    //rutas update blog
+    // Updates blog (administrativos)
     Route::middleware('permission:editar-blogs')->put('/card/{id}', [CardController::class, "update"]);
     Route::middleware('permission:editar-blogs')->put('/blog/{id}', [BlogController::class, "update"]);
     Route::middleware('permission:editar-blogs')->put('/blog_head/{id}', [BlogHeadController::class, "update"]);
@@ -138,7 +136,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:editar-blogs')->put('/commend_tarjeta/{id}', [CommendTarjetaController::class, "update"]);
     Route::middleware('permission:editar-blogs')->put('/tarjeta/{id}', [TarjetaController::class, "update"]);
 
-    //rutas delete blog
+    // Deletes blog (administrativos)
     Route::middleware('permission:eliminar-blogs')->delete('/cards/{id}', [CardController::class, "destroy"]);
     Route::middleware('permission:eliminar-blogs')->delete('/blogs/{id}', [BlogController::class, "destroy"]);
     Route::middleware('permission:eliminar-blogs')->delete('/blog_head/{id}', [BlogHeadController::class, "destroy"]);
@@ -146,16 +144,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:eliminar-blogs')->delete('/blog_footer/{id}', [BlogFooterController::class, "destroy"]);
     Route::middleware('permission:eliminar-tarjetas')->delete('/commend_tarjeta/{id}', [CommendTarjetaController::class, "destroy"]);
     Route::middleware('permission:eliminar-tarjetas')->delete('/tarjetas_delete/{id}', [TarjetaController::class, "destroyAll"]);
-
     Route::middleware('permission:editar-blogs')->delete('/delete_carpet/{id}', [CardController::class, "deleteCarpetaImages"]);
 
-
+    // Deletes generales (administrativos)
     Route::middleware('permission:eliminar-contactos')->delete('/contactanos/{id}', [ContactanosController::class, "delete"]);
     Route::middleware('permission:eliminar-reclamaciones')->delete('/reclamaciones/{id}', [ReclamacionesController::class, "delete"]);
     Route::middleware('permission:eliminar-modales')->delete('/modales/{id}', [ModalesController::class, "delete"]);
     Route::middleware('permission:eliminar-servicios')->delete('/servicios/{id}', [ServiciosController::class, "delete"]);
 
-
+    // Empleados (administrativos)
     Route::middleware('permission:ver-empleados', 'throttle:60,1')->get('/empleados', [EmpleadoController::class, "getAllByPage"]);
     Route::middleware('permission:ver-empleados')->get('/empleados/{id}', [EmpleadoController::class, "getById"]);
     Route::middleware('permission:crear-empleados', 'throttle:60,1')->post('/empleados', [EmpleadoController::class, "create"]);
@@ -163,7 +160,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:permisos-generales')->put('/empleados/pass/{id}', [EmpleadoController::class, "updatePass"]);
     Route::middleware('permission:eliminar-empleados')->delete('/empleados/{id}', [EmpleadoController::class, "delete"]);
 
-    // roles
+    // Roles y permisos (solo admin)
     Route::middleware('permission:ver-roles')->get('/roles', [RolController::class, "index"]);
     Route::middleware('permission:crear-roles')->post('/roles', [RolController::class, "store"]);
     Route::middleware('permission:ver-roles')->get('/roles/{id}', [RolController::class, "show"]);
@@ -172,38 +169,36 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:ver-permisos')->get('/roles/{id}/permisos', [RolController::class, "getPermisos"]);
     Route::middleware('permission:ver-permisos')->post('/roles/{id}/permisos', [RolController::class, "syncPermisos"]);
 
-    // permisos
+    // Permisos (solo admin)
     Route::middleware('permission:ver-permisos')->get('/permisos', [PermisoController::class, "index"]);
     Route::middleware('permission:ver-permisos')->get('/permisos/{id}', [PermisoController::class, "show"]);
     Route::middleware('permission:crear-permisos')->post('/permisos', [PermisoController::class, "store"]);
     Route::middleware('permission:editar-permisos')->put('/permisos/{id}', [PermisoController::class, "update"]);
     Route::middleware('permission:eliminar-permisos')->delete('/permisos/{id}', [PermisoController::class, "destroy"]);
 
-    // metricas
-    Route::middleware('permission:ver-blogs')->get('/metrics/count_blogs_by_month', [MetricasController::class, "countBlogsByMonth"]);//1.1 Cantidad de blogs creados en un mes específico
-    Route::middleware('permission:ver-blogs')->get('/metrics/list_blogs_by_months_12', [MetricasController::class, "listBlogsByMonths12"]);//1.2 Lista de cantidad de blogs creados en los últimos 12 meses
-    Route::middleware('permission:ver-blogs')->get('/metrics/top5_months_with_more_blogs', [MetricasController::class, "top5MothsWithMoreBlogs"]);//1.3 Top 5 meses con más blogs creados
-    Route::middleware('permission:ver-blogs')->get('/metrics/cards_by_plantilla', [MetricasController::class, "listOfCardsByPlantilla"]);//2.1 Lista de cards creadas por plantilla
-    Route::middleware('permission:ver-blogs')->get('/metrics/count_cards_by_plantilla', [MetricasController::class, "countListOfCardsByPlantilla"]);//2.2 Cantidad de cards creadas por plantilla
-    Route::middleware('permission:ver-blogs')->get('/metrics/count_total_cards', [MetricasController::class, "tableCardsByIdPlantilla"]);//2.3 Cantidad total de cards creadas por plantilla
-    Route::middleware('permission:ver-blogs')->get('/metrics/list_empleado_cards', [MetricasController::class, "listEmpleadoWithCards"]);//3.1 Lista de empleados con cantidad de cards creadas
-    Route::middleware('permission:ver-blogs')->get('/metrics/count_cards_by_empleado', [MetricasController::class, "countListOfCardsByEmpleado"]);//3.2 Cantidad de cards creadas por empleado
-    Route::middleware('permission:ver-blogs')->get('/metrics/count_total_cards_by_empleado', [MetricasController::class, "tableCardsByEmpleado"]);//3.3 Top 5 empleados con más cards creadas
-    Route::middleware('permission:ver-blogs')->get('/metrics/frecuencia_publicacion_cards_todos_empleados', [MetricasController::class, "frecuenciaPublicacionCardsTodosEmpleados"]);//4.1 Frecuencia de publicación de cards por empleado
-    Route::middleware('permission:ver-blogs')->get('/metrics/tiempo_creacion_edicion_publicacion_card', [MetricasController::class, "tiempoCreacionEdicionPublicacionCard"]);//4.2 Tiempo promedio de creación, edición y publicación de una card por empleado
+    // Métricas (requieren ver-blogs)
+    Route::middleware('permission:ver-blogs')->get('/metrics/count_blogs_by_month', [MetricasController::class, "countBlogsByMonth"]);
+    Route::middleware('permission:ver-blogs')->get('/metrics/list_blogs_by_months_12', [MetricasController::class, "listBlogsByMonths12"]);
+    Route::middleware('permission:ver-blogs')->get('/metrics/top5_months_with_more_blogs', [MetricasController::class, "top5MothsWithMoreBlogs"]);
+    Route::middleware('permission:ver-blogs')->get('/metrics/cards_by_plantilla', [MetricasController::class, "listOfCardsByPlantilla"]);
+    Route::middleware('permission:ver-blogs')->get('/metrics/count_cards_by_plantilla', [MetricasController::class, "countListOfCardsByPlantilla"]);
+    Route::middleware('permission:ver-blogs')->get('/metrics/count_total_cards', [MetricasController::class, "tableCardsByIdPlantilla"]);
+    Route::middleware('permission:ver-blogs')->get('/metrics/list_empleado_cards', [MetricasController::class, "listEmpleadoWithCards"]);
+    Route::middleware('permission:ver-blogs')->get('/metrics/count_cards_by_empleado', [MetricasController::class, "countListOfCardsByEmpleado"]);
+    Route::middleware('permission:ver-blogs')->get('/metrics/count_total_cards_by_empleado', [MetricasController::class, "tableCardsByEmpleado"]);
+    Route::middleware('permission:ver-blogs')->get('/metrics/frecuencia_publicacion_cards_todos_empleados', [MetricasController::class, "frecuenciaPublicacionCardsTodosEmpleados"]);
+    Route::middleware('permission:ver-blogs')->get('/metrics/tiempo_creacion_edicion_publicacion_card', [MetricasController::class, "tiempoCreacionEdicionPublicacionCard"]);
     
-    // Campañas de WhatsApp - PROTEGIDO (marketing o administrador)
+    // Campañas de WhatsApp (marketing y admin)
     Route::middleware('role:marketing,administrador')->group(function () {
-        // Separación de crear (borrador) vs iniciar (con FIFO)
         Route::get('/whatsapp/campaign/preview/{service}', [WhatsAppCampaignController::class, 'previewCampaign']);
         Route::post('/whatsapp/campaign/create', [WhatsAppCampaignController::class, 'createCampaign']);
         Route::post('/whatsapp/campaign/{id}/start', [WhatsAppCampaignController::class, 'startCampaign']);
-        
         Route::get('/whatsapp/campaign/{id}/status', [WhatsAppCampaignController::class, 'getCampaignStatus']);
         Route::get('/whatsapp/campaigns', [WhatsAppCampaignController::class, 'listCampaigns']);
     });
 
-    // Campañas - Sección dedicada (historial, monitoreo, trazabilidad por lead)
+    // Campañas - historial (marketing y admin)
     Route::middleware('role:marketing,administrador')->group(function () {
         Route::get('/campanias', [CampaniasController::class, 'index']);
         Route::get('/campanias/{id}', [CampaniasController::class, 'show']);
@@ -211,41 +206,30 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/campanias/{id}/leads/{wat_modal_id}/retry', [CampaniasController::class, 'retryLead']);
     });
 
-    // Plantillas - PROTEGIDO (marketing o administrador)
+    // Plantillas (marketing y admin)
     Route::middleware('role:marketing,administrador')->group(function () {
-        // WhatsApp
         Route::get('/plantillas/whatsapp', [PlantillasWhatsappController::class, 'index']);
         Route::get('/plantillas/whatsapp/{id}', [PlantillasWhatsappController::class, 'show']);
         Route::post('/plantillas/whatsapp/{id}/actualizar', [PlantillasWhatsappController::class, 'actualizar']);
-        
-        // Email
         Route::get('/plantillas/email', [PlantillasEmailController::class, 'index']);
         Route::get('/plantillas/email/{id}', [PlantillasEmailController::class, 'show']);
         Route::post('/plantillas/email/{id}/actualizar', [PlantillasEmailController::class, 'actualizar']);
     });
     
-    // Subservicios - combo de selección para pop-ups (dashboard)
-    Route::middleware('permission:ver-pop-ups')->group(function () {
+    // Servicios, Subservicios y Pop-Ups (marketing y admin)
+    Route::middleware('role:marketing,administrador')->group(function () {
+        // Servicios
+        Route::get('/servicios', [ServiciosController::class, 'get']);
+        // Subservicios
         Route::get('/subservicios', [SubservicioController::class, 'index']);
         Route::get('/subservicios/by-servicio/{id_servicio}', [SubservicioController::class, 'byServicio']);
-    });
-
-    // Pop-Ups - permisos dedicados por acción
-    Route::middleware('permission:ver-pop-ups')->group(function () {
+        // Pop-Ups
         Route::get('/popup-configs', [PopupConfigController::class, 'index']);
         Route::get('/popup-configs/{id}', [PopupConfigController::class, 'show']);
         Route::get('/popup-configs/subservicio/{id_subservicio}', [PopupConfigController::class, 'showBySubservicio']);
-    });
-    Route::middleware('permission:crear-pop-ups')->post('/popup-configs', [PopupConfigController::class, 'store']);
-    Route::middleware('permission:editar-pop-ups')->post('/popup-configs/{id}/actualizar', [PopupConfigController::class, 'update']);
-    Route::middleware('permission:eliminar-pop-ups')->delete('/popup-configs/{id}', [PopupConfigController::class, 'destroy']);
-    
-    // Campañas - Sección dedicada
-    Route::middleware('role:marketing,administrador')->group(function () {
-        Route::get('/campanias', [CampaniasController::class, 'index']);
-        Route::get('/campanias/{id}', [CampaniasController::class, 'show']);
-        Route::get('/campanias/{id}/leads', [CampaniasController::class, 'leads']);
-        Route::post('/campanias/{id}/leads/{wat_modal_id}/retry', [CampaniasController::class, 'retryLead']);
+        Route::post('/popup-configs', [PopupConfigController::class, 'store']);
+        Route::post('/popup-configs/{id}/actualizar', [PopupConfigController::class, 'update']);
+        Route::delete('/popup-configs/{id}', [PopupConfigController::class, 'destroy']);
     });
 
     // fixes
