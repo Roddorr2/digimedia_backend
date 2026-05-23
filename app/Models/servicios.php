@@ -25,7 +25,13 @@ class servicios extends Model
         return $this->hasMany(modalservicios::class, 'id_servicio', 'id_servicio');
     }
 
-    public function reclamacion(){
+    public function reclamacion()
+    {
         return $this->belongsTo(libroreclamacion::class, 'id_servicio');
+    }
+
+    public function popupConfig()
+    {
+        return $this->morphOne(PopupConfig::class, 'popupable');
     }
 }
