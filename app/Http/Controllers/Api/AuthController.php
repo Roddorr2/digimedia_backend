@@ -78,26 +78,25 @@ class AuthController extends Controller
     public function login(LoginRequest $request)
     {
         try {
-            // LINE 1-6: Validación y normalización
             $validated = $request->validated();
             $email = $validated['email'];
             $normalizedEmail = strtolower($email);
             $backoffKey = 'login_backoff:' . $normalizedEmail;
             $attemptsKey = 'login_attempts:' . $normalizedEmail;
 
-            // LINE 7-17: Turnstile CAPTCHA verification
+            // Turnstile CAPTCHA verification
             if (!$this->verifyTurnstile($validated['captcha_token'], $request->ip())) {
                 Log::warning('Turnstile verification failed', [
                     'email' => $email,
-                    'ip'    => $request->ip(),
+                    'ip' => $request->ip(),
                 ]);
                 return response()->json([
-                    'status'  => 'error',
+                    'status' => 'error',
                     'message' => 'Verificación de seguridad fallida. Recarga la página e intenta de nuevo.',
                 ], 422);
             }
 
-            // LINE 18-27: Backoff/block check
+            // Backoff/block check
             $activeBackoffSeconds = $this->obtenerEsperaBackoffSegundos($backoffKey);
             if ($activeBackoffSeconds > 0) {
                 $attemptResult = $this->registrarIntentoFallido(
@@ -112,85 +111,67 @@ class AuthController extends Controller
                 );
             }
 
-            // LINE 28-30: Find user
+            // Find user
             $user = User::where('email', $email)->first();
 
-            // LINE 31-44: User not found handler
-            if (!$user) {
+            // User not found OR password incorrect - MISMO MENSAJE
+            if (!$user || !Hash::check($validated['password'], $user->password)) {
                 $attemptResult = $this->registrarIntentoFallido(
                     $attemptsKey,
                     $backoffKey,
                     $request,
-                    'user_not_found'
+                    !$user ? 'user_not_found' : 'wrong_password'
                 );
                 if ($attemptResult['wait_seconds'] > 0) {
                     return $this->responderBloqueoBackoff($request, $attemptResult['wait_seconds']);
                 }
                 return response()->json([
-                    'status'  => 'error',
-                    'message' => 'Esta cuenta no está registrada en Digimedia.',
-                ], 404);
-            }
-
-            // LINE 45-58: Password check
-            if (!Hash::check($validated['password'], $user->password)) {
-                $attemptResult = $this->registrarIntentoFallido(
-                    $attemptsKey,
-                    $backoffKey,
-                    $request,
-                    'wrong_password'
-                );
-                if ($attemptResult['wait_seconds'] > 0) {
-                    return $this->responderBloqueoBackoff($request, $attemptResult['wait_seconds']);
-                }
-                return response()->json([
-                    'status'  => 'error',
+                    'status' => 'error',
                     'message' => 'El email o la contraseña son incorrectos.',
                 ], 401);
             }
 
-            // LINE 59-61: Successful login - reset counters
+            // Successful login - reset counters
             Cache::forget($backoffKey);
             Cache::forget($attemptsKey);
 
-            // LINE 63-68: Employee and role check
+            // Employee and role check
             $empleado = $user->empleado;
             if (!$empleado || !$empleado->rol) {
                 return response()->json([
-                    'status'  => 'error',
+                    'status' => 'error',
                     'message' => 'El usuario no tiene un rol asignado'
                 ], 403);
             }
 
-            // LINE 70-72: Load relationships
+            // Load relationships
             $empleado->load(['rol', 'subtipoAdmin']);
             $rol = $empleado->rol;
             $abilities = [$rol->nombre];
             $permisos = $rol->permisos->pluck('slug')->toArray();
 
-            // LINE 74-76: Delete old tokens
+            // Delete old tokens
             $user->tokens()->delete();
 
-            // LINE 78-80: Create new token
+            // Create new token
             $token = $user->createToken('auth_token', $abilities)->plainTextToken;
             $user->unsetRelation('empleado');
 
-            // LINE 82-91: Success response
+            // Success response
             return response()->json([
-                'status'   => 'success',
-                'user'     => $user,
+                'status' => 'success',
+                'user' => $user,
                 'empleado' => new EmpleadoResource($empleado),
-                'rol'      => $rol->nombre,
+                'rol' => $rol->nombre,
                 'permisos' => $permisos,
-                'token'    => $token,
+                'token' => $token,
             ]);
 
         } catch (\Exception $e) {
-            // LINE 92-98: Error handler
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => 'Ocurrió un error en el servidor',
-                'error'   => config('app.debug') ? $e->getMessage() : null,
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
