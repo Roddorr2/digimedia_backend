@@ -436,7 +436,7 @@ class PopupConfigController extends Controller
             preg_match('/upload\/(?:v\d+\/)?(.+)\.\w+$/', $imageUrl, $matches);
 
             if (isset($matches[1])) {
-                Cloudinary::destroy($matches[1]);
+                Cloudinary::uploadApi()->destroy($matches[1]);
             }
         } catch (\Exception $e) {
             Log::warning("No se pudo eliminar imagen de Cloudinary: {$imageUrl}", [
