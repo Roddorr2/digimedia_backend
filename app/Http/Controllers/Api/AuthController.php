@@ -75,14 +75,12 @@ class AuthController extends Controller
             ], 500);
         }
     }
-
-
     public function login(LoginRequest $request)
     {
         try {
+            // LINE 1-6: Validación y normalización
             $validated = $request->validated();
             $email = $validated['email'];
-
             $normalizedEmail = strtolower($email);
             $backoffKey = 'login_backoff:' . $normalizedEmail;
             $attemptsKey = 'login_attempts:' . $normalizedEmail;
@@ -98,6 +96,7 @@ class AuthController extends Controller
                 ], 422);
             }
 
+            // LINE 18-27: Backoff/block check
             $activeBackoffSeconds = $this->obtenerEsperaBackoffSegundos($backoffKey);
             if ($activeBackoffSeconds > 0) {
                 $attemptResult = $this->registrarIntentoFallido(
@@ -106,7 +105,6 @@ class AuthController extends Controller
                     $request,
                     'blocked_by_backoff'
                 );
-
                 return $this->responderBloqueoBackoff(
                     $request,
                     max($activeBackoffSeconds, $attemptResult['wait_seconds'])
@@ -124,23 +122,21 @@ class AuthController extends Controller
                     $request,
                     $reason
                 );
-
                 if ($attemptResult['wait_seconds'] > 0) {
                     return $this->responderBloqueoBackoff($request, $attemptResult['wait_seconds']);
                 }
-
                 return response()->json([
                     'status'  => 'error',
                     'message' => 'El email o la contraseña son incorrectos.',
                 ], 401);
             }
 
-            // login exitoso → resetear contadores
+            // LINE 59-61: Successful login - reset counters
             Cache::forget($backoffKey);
             Cache::forget($attemptsKey);
 
+            // LINE 63-68: Employee and role check
             $empleado = $user->empleado;
-
             if (!$empleado || !$empleado->rol) {
                 return response()->json([
                     'status'  => 'error',
@@ -148,21 +144,20 @@ class AuthController extends Controller
                 ], 403);
             }
 
+            // LINE 70-72: Load relationships
             $empleado->load(['rol', 'subtipoAdmin']);
-
-            $rol      = $empleado->rol;
+            $rol = $empleado->rol;
             $abilities = [$rol->nombre];
             $permisos  = $rol->permisos->pluck('slug')->toArray();
 
-            // eliminar tokens anteriores
+            // LINE 74-76: Delete old tokens
             $user->tokens()->delete();
 
-            // crear nuevo token
+            // LINE 78-80: Create new token
             $token = $user->createToken('auth_token', $abilities)->plainTextToken;
-
-            // evitar serialización innecesaria
             $user->unsetRelation('empleado');
 
+            // LINE 82-91: Success response
             return response()->json([
                 'status'   => 'success',
                 'user'     => $user,
@@ -173,6 +168,7 @@ class AuthController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            // LINE 92-98: Error handler
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Ocurrió un error en el servidor',
