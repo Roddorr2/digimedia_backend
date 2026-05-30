@@ -346,6 +346,28 @@ class PopupConfigController extends Controller
                 $popup->mobile_image_url = $this->uploadCloudinaryImage($request->file('mobile_image'));
             }
 
+            // Eliminar imágenes individuales sin reemplazar
+            if ($request->input('remove_left_image') === '1' && !$request->hasFile('left_image')) {
+                if ($popup->left_image_url && str_contains($popup->left_image_url, 'cloudinary')) {
+                    $this->deleteCloudinaryImage($popup->left_image_url);
+                }
+                $popup->left_image_url = null;
+            }
+
+            if ($request->input('remove_right_image') === '1' && !$request->hasFile('right_image')) {
+                if ($popup->right_image_url && str_contains($popup->right_image_url, 'cloudinary')) {
+                    $this->deleteCloudinaryImage($popup->right_image_url);
+                }
+                $popup->right_image_url = null;
+            }
+
+            if ($request->input('remove_mobile_image') === '1' && !$request->hasFile('mobile_image')) {
+                if ($popup->mobile_image_url && str_contains($popup->mobile_image_url, 'cloudinary')) {
+                    $this->deleteCloudinaryImage($popup->mobile_image_url);
+                }
+                $popup->mobile_image_url = null;
+            }
+
             $popup->updated_by = $request->user()->id;
             $popup->save();
 

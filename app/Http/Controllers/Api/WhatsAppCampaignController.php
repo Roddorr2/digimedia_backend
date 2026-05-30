@@ -414,20 +414,19 @@ class WhatsAppCampaignController extends Controller
 
             if ($response->successful()) {
                 $data = $response->json();
-                
-                // Verificar si el servicio reporta que está conectado
-                // El servicio puede responder {"status":"OK"} pero no estar conectado a WhatsApp
-                // Intentamos verificar con un endpoint de estado más específico
+
+                $isConnected = ($data['connected'] ?? false) === true;
+
                 return [
-                    'connected' => true,
-                    'message' => 'Servicio WhatsApp disponible',
+                    'connected' => $isConnected,
+                    'message' => $isConnected ? 'WhatsApp conectado' : 'El servicio WhatsApp está disponible pero no conectado a WhatsApp',
                     'status' => $data
                 ];
             }
 
             return [
                 'connected' => false,
-                'message' => 'Servicio WhatsApp no responde correctamente',
+                'message' => 'Servicio WhatsApp no responde correctamente (HTTP ' . $response->status() . ')',
                 'status_code' => $response->status()
             ];
 

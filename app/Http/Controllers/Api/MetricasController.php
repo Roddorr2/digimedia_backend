@@ -19,17 +19,17 @@ class MetricasController extends Controller
      */
     private function resolveMonthYear(Request $request)
     {
-        // Limites razonables: mes 1..12, año entre 1970 y (año actual + 1)
         $currentYear = (int) Carbon::now()->year;
         $validated = $request->validate([
             'month' => ['nullable', 'integer', 'min:1', 'max:12'],
             'year'  => ['nullable', 'integer', 'min:2000', 'max:' . ($currentYear + 1)],
         ]);
 
-        $month = $validated['month'] ?? Carbon::now()->month;
-        $year  = $validated['year'] ?? $currentYear;
+        $isYearly = !isset($validated['month']) || $validated['month'] === null;
+        $year     = (int) ($validated['year'] ?? $currentYear);
+        $month    = $isYearly ? (int) Carbon::now()->month : (int) $validated['month'];
 
-        return [$month, $year];
+        return [$month, $year, $isYearly];
     }
     /* ============================================================
      * 1. METRICAS BLOGS
@@ -38,10 +38,15 @@ class MetricasController extends Controller
     // 1.1 Cantidad de blogs creados por mes y año
     public function countBlogsByMonth(Request $request)
     {
-        [$month, $year] = $this->resolveMonthYear($request);
+        [$month, $year, $isYearly] = $this->resolveMonthYear($request);
 
-        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+        if ($isYearly) {
+            $startDate = Carbon::createFromDate($year, 1, 1)->startOfYear();
+            $endDate   = Carbon::createFromDate($year, 12, 31)->endOfYear();
+        } else {
+            $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+            $endDate   = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+        }
 
         $count = BlogAuditoria::where('accion', 'CREAR')
             ->whereBetween('fecha_hora', [$startDate, $endDate])
@@ -50,8 +55,8 @@ class MetricasController extends Controller
         return response()->json([
             "status" => 200,
             "data" => [
-                "month" => $month,
-                "year" => $year,
+                "month" => $isYearly ? null : $month,
+                "year"  => $year,
                 "total_blogs" => $count
             ]
         ]);
@@ -160,16 +165,21 @@ class MetricasController extends Controller
     // 2.2 Cantidad de cards por plantilla
     public function countListOfCardsByPlantilla(Request $request)
     {
-        [$month, $year] = $this->resolveMonthYear($request);
+        [$month, $year, $isYearly] = $this->resolveMonthYear($request);
 
         $validated = $request->validate([
             'id_plantilla' => ['required', 'integer', 'min:1'],
-            // Rule::exists('plantillas', 'id_plantilla')
         ]);
 
         $plantilla = $validated['id_plantilla'];
-        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
+        if ($isYearly) {
+            $startDate = Carbon::createFromDate($year, 1, 1)->startOfYear();
+            $endDate   = Carbon::createFromDate($year, 12, 31)->endOfYear();
+        } else {
+            $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+            $endDate   = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+        }
 
         $count = Card::join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
             ->where('cards.id_plantilla', $plantilla)
@@ -285,9 +295,15 @@ class MetricasController extends Controller
     // 3.3 Tabla cards por empleado
     public function tableCardsByEmpleado(Request $request)
     {
-        [$month, $year] = $this->resolveMonthYear($request);
-        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+        [$month, $year, $isYearly] = $this->resolveMonthYear($request);
+
+        if ($isYearly) {
+            $startDate = Carbon::createFromDate($year, 1, 1)->startOfYear();
+            $endDate   = Carbon::createFromDate($year, 12, 31)->endOfYear();
+        } else {
+            $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+            $endDate   = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+        }
 
         $data = Empleado::query()
             ->selectRaw('empleados.id_empleado, empleados.nombre as nombre_empleado, COUNT(DISTINCT CASE WHEN ba.id_blog IS NOT NULL THEN cards.id_card END) as count_cards')
@@ -313,26 +329,42 @@ class MetricasController extends Controller
     // 4.1 TIEMPO CREACIÓN → EDICIÓN
     public function tiempoCreacionEdicionPublicacionCard(Request $request)
     {
-        [$month, $year] = $this->resolveMonthYear($request);
-        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+        [$month, $year, $isYearly] = $this->resolveMonthYear($request);
 
-        $data = BlogAuditoria::whereIn('accion', ['CREAR', 'ACTUALIZAR'])
+        if ($isYearly) {
+            $startDate = Carbon::createFromDate($year, 1, 1)->startOfYear();
+            $endDate   = Carbon::createFromDate($year, 12, 31)->endOfYear();
+        } else {
+            $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+            $endDate   = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+        }
+
+        // Paso 1: blogs CREADOS en el período
+        $blogIds = BlogAuditoria::where('accion', 'CREAR')
             ->whereBetween('fecha_hora', [$startDate, $endDate])
+            ->pluck('id_blog');
+
+        if ($blogIds->isEmpty()) {
+            return response()->json(["status" => 200, "data" => [], "total" => 0]);
+        }
+
+        // Paso 2: para esos blogs, buscar CREAR + primer ACTUALIZAR (sin filtro de fecha)
+        $data = BlogAuditoria::whereIn('id_blog', $blogIds)
+            ->whereIn('accion', ['CREAR', 'ACTUALIZAR'])
             ->orderBy('id_blog')
+            ->orderBy('fecha_hora')
             ->get()
             ->groupBy('id_blog')
             ->map(function ($items, $id_blog) {
-                $crear = $items->firstWhere('accion', 'CREAR');
+                $crear  = $items->firstWhere('accion', 'CREAR');
                 $editar = $items->firstWhere('accion', 'ACTUALIZAR');
 
                 if (!$crear || !$editar) return null;
 
                 return [
-                    "id_blog" => $id_blog,
-                    "tiempo_minutos" =>
-                    Carbon::parse($crear->fecha_hora)
-                        ->diffInMinutes(Carbon::parse($editar->fecha_hora))
+                    "id_blog"        => $id_blog,
+                    "tiempo_minutos" => Carbon::parse($crear->fecha_hora)
+                        ->diffInMinutes(Carbon::parse($editar->fecha_hora)),
                 ];
             })
             ->filter()
@@ -340,7 +372,9 @@ class MetricasController extends Controller
 
         return response()->json([
             "status" => 200,
-            "data" => $data
+            "data"   => $data,
+            "total_blogs_periodo" => $blogIds->count(),
+            "blogs_con_edicion"   => $data->count(),
         ]);
     }
 
