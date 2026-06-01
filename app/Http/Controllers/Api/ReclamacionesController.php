@@ -3,30 +3,38 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\libroreclamacion;
+use App\Services\ReclamacionService;
+use App\DTOs\Reclamacion\CreateReclamacionDTO;
+use App\DTOs\Reclamacion\UpdateReclamacionDTO;
 use App\Http\Resources\ReclamacionResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ReclamacionesController extends Controller
 {
+    public function __construct(
+        private ReclamacionService $reclamacionService
+    ) {}
+
     public function get(Request $request)
     {
-        $reclamaciones = libroReclamacion::orderBy('id_reclamacion', 'asc')->paginate(4);
+        $reclamaciones = $this->reclamacionService->getReclamaciones(4);
         return ReclamacionResource::collection($reclamaciones);
     }
 
-    public function getById($id){
-        $reclamacion = libroreclamacion::find($id);
+    public function getById($id)
+    {
+        try {
+            $reclamacion = $this->reclamacionService->getReclamacionById((int)$id);
 
-        if (!$reclamacion) {
+            return response()->json([
+                'status' => 'success',
+                'data' => $reclamacion
+            ], 200);
+        } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Contacto no encontrado'], 404);
         }
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $reclamacion
-        ], 200);
     }
 
     /* Guardar una reclamación */
@@ -51,12 +59,12 @@ class ReclamacionesController extends Controller
             'fechaIncidente' => 'required|date',
         ]);
 
-        if($validated->fails()){
+        if ($validated->fails()) {
             return response()->json(['errors' => $validated->errors()], 400);
         }
 
-        // Crear una nueva reclamación
-        $reclamacion = libroReclamacion::create($request->all());
+        $dto = CreateReclamacionDTO::fromRequest($request);
+        $reclamacion = $this->reclamacionService->createReclamacion($dto);
 
         return response()->json([
             'message' => 'Reclamación guardada exitosamente',
@@ -64,37 +72,33 @@ class ReclamacionesController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, $id){
-        $reclamacion = libroreclamacion::find($id);
+    public function update(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'estado' => 'required|in:PENDIENTE,ATENDIDO',
+            ]);
 
-        if (!$reclamacion) {
+            $dto = UpdateReclamacionDTO::fromRequest($request);
+            $reclamacion = $this->reclamacionService->updateEstado((int)$id, $dto);
+
+            return response()->json([
+                'message' => 'Estado actualizado exitosamente',
+                'data' => $reclamacion,
+            ], 200);
+        } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Reclamo no encontrado'], 404);
         }
-
-        $validated = $request->validate([
-            'estado' => 'required|in:PENDIENTE,ATENDIDO',
-        ]);
-
-        $reclamacion->update([
-            'estadoReclamo' => $request->estado,
-        ]);
-
-        return response()->json([
-            'message' => 'Estado actualizado exitosamente',
-            'data' => $reclamacion,
-        ], 200);
     }
 
     public function delete($id)
     {
-        $reclamacion = libroReclamacion::find($id);
+        try {
+            $this->reclamacionService->deleteReclamacion((int)$id);
 
-        if (!$reclamacion) {
+            return response()->json(['message' => 'Reclamación eliminada exitosamente'], 200);
+        } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Reclamación no encontrada'], 404);
         }
-
-        $reclamacion->delete();
-
-        return response()->json(['message' => 'Reclamación eliminada exitosamente'], 200);
     }
 }

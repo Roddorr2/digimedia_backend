@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\CommendTarjeta;
 
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 class UpdateCommendTarjetaRequest extends FormRequest
@@ -24,10 +24,10 @@ class UpdateCommendTarjetaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'titulo' => 'required|string|max:255',
-            'texto1' => 'required|string|max:255',
-            'texto2' => 'required|string|max:255',
-            'texto3' => 'required|string|max:255',
+            'titulo' => 'nullable|string|max:255',
+            'texto1' => 'nullable|string|max:255',
+            'texto2' => 'nullable|string|max:255',
+            'texto3' => 'nullable|string|max:255',
             'texto4' => 'nullable|string|max:255',
             'texto5' => 'nullable|string|max:255',
         ];

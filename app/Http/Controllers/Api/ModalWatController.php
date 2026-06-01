@@ -3,79 +3,61 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\modalservicios;
-use App\Models\WatModal;
-use App\Mail\MailService;
-use Exception;
-use Illuminate\Support\Facades\Mail;
+use App\Http\Requests\ModalWat\ChangeWatEstadoRequest;
+use App\Http\Resources\WatModalResource;
+use App\Services\ModalWhatsAppService;
+use App\DTOs\ModalWat\ChangeWatEstadoDTO;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ModalWatController extends Controller
 {
-    public function sendWat(int $id)
+    public function __construct(
+        private ModalWhatsAppService $modalWhatsAppService
+    ) {}
+
+    /**
+     * Redirects to wa.me with prefilled message.
+     *
+     * @param mixed $id
+     * @return \Illuminate\Http\RedirectResponse|JsonResponse
+     */
+    public function sendWat($id)
     {
-        $data = [
-            [
-                '👋 ¡Hola! Nos comunicamos contigo para informarte que hemos recibido tu mensaje sobre nuestro Servicio de Diseño y Desarrollo Web. ✅ En breve uno de nuestros especialistas se pondrá en contacto contigo. - Atentamente, el equipo de DigiMedia.',
-                '🚀 Gracias por confiar en DigiMedia. Tu solicitud sobre Diseño y Desarrollo Web fue recibida con éxito. 💡 ¡Nos encantará ayudarte a impulsar tus ideas!'
-            ],
-
-            [
-                '👋 ¡Hola! Hemos recibido tu consulta sobre nuestro Servicio de Gestión de Redes Sociales. ✅ Nuestro equipo la está revisando y se pondrá en contacto contigo pronto. - El equipo de DigiMedia.',
-                '💡 Recibimos tu mensaje sobre Gestión de Redes Sociales. Estamos ansiosos por ayudarte a mejorar tu presencia digital. 📢 ¡Nos comunicaremos contigo enseguida!'
-            ],
-
-            [
-                '👋 ¡Hola! Confirmamos que recibimos tu mensaje sobre nuestro Servicio de Marketing y Gestión Digital. ✅ En breve un asesor te contactará. - Atentamente, DigiMedia.',
-                '🎯 Tu solicitud sobre Marketing y Gestión Digital ya está en nuestro sistema. Gracias por preferirnos, pronto te brindaremos más información. 🚀'
-            ],
-
-            [
-                '👋 ¡Hola! Tu mensaje sobre nuestro Servicio de Branding y Diseño Gráfico fue recibido correctamente. ✅ Pronto uno de nuestros diseñadores te contactará. - DigiMedia.',
-                '🎨 Gracias por escribirnos acerca de Branding y Diseño Gráfico. 💡 Estamos listos para ayudarte a construir una marca memorable. ¡Hablamos pronto! 🚀'
-            ]
-        ];
-
-        $modal_wat = WatModal::find($id);
-
-        if (!$modal_wat) {
+        try {
+            $url = $this->modalWhatsAppService->generateWhatsAppUrl((int)$id);
+            return redirect()->away($url);
+        } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Mensaje no encontrado'], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al generar la redirección',
+                'details' => $e->getMessage()
+            ], 500);
         }
-
-        $modal = modalservicios::find($modal_wat->id_modalservicio);
-
-        $telefono = $modal->telefono;
-
-        $mensaje = urlencode($data[$modal->id_servicio - 1][$modal_wat->number_message - 1]);
-
-        $url = "https://wa.me/51$telefono?text=$mensaje";
-
-        return redirect()->away($url);
     }
 
-    public function cambiarEstado(Request $request, $id)
+    /**
+     * Updates the WhatsApp state.
+     *
+     * @param ChangeWatEstadoRequest $request
+     * @param mixed $id
+     * @return JsonResponse
+     */
+    public function cambiarEstado(ChangeWatEstadoRequest $request, $id): JsonResponse
     {
-        $modal_wat = WatModal::find($id);
+        try {
+            $dto = ChangeWatEstadoDTO::fromRequest($request);
+            $modalWat = $this->modalWhatsAppService->cambiarEstado((int)$id, $dto);
 
-        if (!$modal_wat) {
+            return response()->json(new WatModalResource($modalWat), 200);
+        } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Mensaje no encontrado'], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al actualizar el estado',
+                'details' => $e->getMessage()
+            ], 500);
         }
-
-        if($request->estado == 1){
-            $modal_wat->update([
-                'estado' => 1,
-                'fecha' => now(),
-            ]);
-        }
-        else{
-            $modal_wat->update([
-                'estado' => 0,
-                'error' => $request->error,
-                'fecha' => now(),
-            ]);
-        }
-
-        return response()->json($modal_wat, 200);
-
     }
 }

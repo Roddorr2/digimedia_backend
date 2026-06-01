@@ -3,32 +3,37 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Contactanos;
+use App\Services\ContactanosService;
+use App\DTOs\Contactanos\CreateContactanosDTO;
+use App\DTOs\Contactanos\UpdateContactanosDTO;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ContactanosController extends Controller
 {
+    public function __construct(
+        private ContactanosService $contactanosService
+    ) {}
+
     public function get(Request $request)
     {
-        $contactos = Contactanos::paginate(4);
+        $contactos = $this->contactanosService->getContactos(4);
         return response()->json($contactos, 200);
     }
 
     public function getById($id)
     {
-        $contacto = Contactanos::find($id);
+        try {
+            $contacto = $this->contactanosService->getContactoById((int)$id);
 
-        if (!$contacto) {
+            return response()->json([
+                'status' => 'success',
+                'data' => $contacto
+            ], 200);
+        } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Contacto no encontrado'], 404);
         }
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $contacto
-        ], 200);
     }
 
     public function create(Request $request)
@@ -40,11 +45,12 @@ class ContactanosController extends Controller
             'mensaje' => 'required|string|max:1050',
         ]);
 
-        if($validated->fails()){
+        if ($validated->fails()) {
             return response()->json(['errors' => $validated->errors()], 400);
         }
 
-        Contactanos::create($request->all());
+        $dto = CreateContactanosDTO::fromRequest($request);
+        $this->contactanosService->createContacto($dto);
 
         return response()->json([
             'status' => 201,
@@ -54,38 +60,33 @@ class ContactanosController extends Controller
 
     public function update(Request $request, $id)
     {
-        $contacto = Contactanos::find($id);
+        try {
+            $request->validate([
+                'estado' => 'required|boolean',
+            ]);
 
-        if (!$contacto) {
+            $dto = UpdateContactanosDTO::fromRequest($request);
+            $contacto = $this->contactanosService->updateContacto((int)$id, $dto);
+
+            return response()->json([
+                'message' => 'Estado actualizado exitosamente',
+                'data' => $contacto,
+            ], 200);
+        } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Contacto no encontrado'], 404);
         }
-
-        $validated = $request->validate([
-            'estado' => 'required|boolean',
-        ]);
-
-        $contacto->update([
-            'estado' => $request->estado,
-        ]);
-
-        return response()->json([
-            'message' => 'Estado actualizado exitosamente',
-            'data' => $contacto,
-        ], 200);
     }
 
     public function delete($id)
     {
-        $contacto = Contactanos::find($id);
+        try {
+            $this->contactanosService->deleteContacto((int)$id);
 
-        if (!$contacto) {
+            return response()->json([
+                'message' => 'Contacto eliminado exitosamente'
+            ], 200);
+        } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Contacto no encontrado'], 404);
         }
-
-        $contacto->delete();
-
-        return response()->json([
-            'message' => 'Contacto eliminado exitosamente'
-        ], 200);
     }
 }
