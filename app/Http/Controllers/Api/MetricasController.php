@@ -19,11 +19,6 @@ class MetricasController extends Controller
         private MetricasService $metricasService
     ) {}
 
-    /* ============================================================
-     * 1. METRICAS BLOGS
-     * ============================================================
-     */
-
     // 1.1 Cantidad de blogs creados por mes y año
     public function countBlogsByMonth(MonthYearRequest $request): JsonResponse
     {
@@ -57,11 +52,6 @@ class MetricasController extends Controller
             "data" => $data
         ]);
     }
-
-    /* ============================================================
-     * 2. METRICAS POR PLANTILLA
-     * ============================================================
-     */
 
     // 2.1 Listar cards por plantilla
     public function listOfCardsByPlantilla(ListCardsByPlantillaRequest $request): JsonResponse
@@ -101,11 +91,6 @@ class MetricasController extends Controller
         ]);
     }
 
-    /* ============================================================
-     * 3. METRICAS POR EMPLEADO
-     * ============================================================
-     */
-
     // 3.1 Cards por empleado
     public function listEmpleadoWithCards(ListCardsByEmpleadoRequest $request): JsonResponse
     {
@@ -142,24 +127,22 @@ class MetricasController extends Controller
         ]);
     }
 
-    /* ============================================================
-     * 4. TIEMPO CREACIÓN → EDICIÓN
-     * ============================================================
-     */
-
     // 4.1 TIEMPO CREACIÓN → EDICIÓN
     public function tiempoCreacionEdicionPublicacionCard(MonthYearRequest $request): JsonResponse
     {
         $dto = MonthYearDTO::fromRequest($request);
         $data = $this->metricasService->getTiempoCreacionEdicion($dto);
 
+        $total = is_array($data) && isset($data['total']) ? $data['total'] : (is_countable($data) ? count($data) : 0);
+
         return response()->json([
             "status" => 200,
-            "data" => $data
+            "data"   => $data,
+            "total_blogs_periodo" => $total,
+            "blogs_con_edicion"   => is_countable($data) ? count($data) : 0,
         ]);
     }
 
-    // 4.2 Frecuencia de publicación de cards todos los empleados
     public function frecuenciaPublicacionCardsTodosEmpleados(): JsonResponse
     {
         try {
