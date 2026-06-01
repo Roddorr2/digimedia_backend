@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Requests\CommendTarjeta;
+namespace App\Http\Requests\PlantillaWhatsapp;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class UpdateCommendTarjetaRequest extends FormRequest
+class UpdatePlantillaWhatsappRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,19 +24,19 @@ class UpdateCommendTarjetaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'titulo' => 'nullable|string|max:255',
-            'texto1' => 'nullable|string|max:255',
-            'texto2' => 'nullable|string|max:255',
-            'texto3' => 'nullable|string|max:255',
-            'texto4' => 'nullable|string|max:255',
-            'texto5' => 'nullable|string|max:255',
+            'mensaje' => 'required|string|max:5000',
+            'imagen' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120' // 5MB
         ];
     }
 
     protected function failedValidation(Validator $validator): void
     {
         throw new HttpResponseException(
-            response()->json(['errors' => $validator->errors()], 400)
+            response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $validator->errors()
+            ], 422)
         );
     }
 }
