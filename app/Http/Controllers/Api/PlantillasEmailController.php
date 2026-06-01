@@ -3,27 +3,32 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\PlantillaEmail;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use App\Services\PlantillaEmailService;
+use App\Http\Requests\PlantillaEmail\UpdatePlantillaEmailRequest;
+use App\Http\Resources\PlantillaEmailResource;
+use App\DTOs\PlantillaEmail\UpdatePlantillaEmailDTO;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PlantillasEmailController extends Controller
 {
+    public function __construct(
+        private PlantillaEmailService $service
+    ) {}
+
     /**
      * Listar todas las plantillas Email con sus servicios
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index()
+    public function index(): JsonResponse
     {
         try {
-            $plantillas = PlantillaEmail::with('servicio')->orderBy('id_servicio')->orderBy('numero_plantilla')->get();
+            $plantillas = $this->service->getPlantillas();
 
             return response()->json([
                 'success' => true,
-                'data' => $plantillas
+                'data' => PlantillaEmailResource::collection($plantillas)
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -40,22 +45,20 @@ class PlantillasEmailController extends Controller
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function show($id)
+    public function show($id): JsonResponse
     {
         try {
-            $plantilla = PlantillaEmail::with('servicio')->find($id);
-
-            if (!$plantilla) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Plantilla no encontrada'
-                ], 404);
-            }
+            $plantilla = $this->service->getPlantillaById((int)$id);
 
             return response()->json([
                 'success' => true,
-                'data' => $plantilla
+                'data' => new PlantillaEmailResource($plantilla)
             ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Plantilla no encontrada'
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -73,25 +76,20 @@ class PlantillasEmailController extends Controller
      * @param int $numero_plantilla
      * @return \Illuminate\Http\JsonResponse
      */
-    public function showByServicioNumero($id_servicio, $numero_plantilla)
+    public function showByServicioNumero($id_servicio, $numero_plantilla): JsonResponse
     {
         try {
-            $plantilla = PlantillaEmail::where('id_servicio', $id_servicio)
-                ->where('numero_plantilla', $numero_plantilla)
-                ->with('servicio')
-                ->first();
-
-            if (!$plantilla) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Plantilla no encontrada para servicio {$id_servicio} y número {$numero_plantilla}"
-                ], 404);
-            }
+            $plantilla = $this->service->getPlantillaByServicioNumero((int)$id_servicio, (int)$numero_plantilla);
 
             return response()->json([
                 'success' => true,
-                'data' => $plantilla
+                'data' => new PlantillaEmailResource($plantilla)
             ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -105,72 +103,15 @@ class PlantillasEmailController extends Controller
      * Actualizar plantilla Email (todos los campos)
      * Solo para admin y marketing desde dashboard
      *
-     * @param \Illuminate\Http\Request $request
+     * @param \App\Http\Requests\PlantillaEmail\UpdatePlantillaEmailRequest $request
      * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function actualizar(Request $request, $id)
+    public function actualizar(UpdatePlantillaEmailRequest $request, $id): JsonResponse
     {
         try {
-            $plantilla = PlantillaEmail::findOrFail($id);
-
-            // Validar datos
-            $validator = Validator::make($request->all(), [
-                'asunto' => 'required|string|max:255',
-                'encabezado' => 'required|string|max:500',
-                'mensaje' => 'required|string|max:10000',
-                'imagen' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', // 5MB
-                'mensaje_boton' => 'nullable|string|max:100',
-                'url_boton' => 'nullable|url|max:500',
-                'footer' => 'nullable|string|max:500',
-                'red_facebook' => 'nullable|url|max:255',
-                'red_tiktok' => 'nullable|url|max:255',
-                'red_instagram' => 'nullable|url|max:255',
-                'red_linkedin' => 'nullable|url|max:255'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error de validación',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            // Actualizar todos los campos de texto
-            $plantilla->asunto = $request->asunto;
-            $plantilla->encabezado = $request->encabezado;
-            $plantilla->mensaje = $request->mensaje;
-            $plantilla->mensaje_boton = $request->mensaje_boton;
-            $plantilla->url_boton = $request->url_boton;
-            $plantilla->footer = $request->footer;
-            $plantilla->red_facebook = $request->red_facebook;
-            $plantilla->red_tiktok = $request->red_tiktok;
-            $plantilla->red_instagram = $request->red_instagram;
-            $plantilla->red_linkedin = $request->red_linkedin;
-
-            // Si hay nueva imagen, subir a Cloudinary
-            if ($request->hasFile('imagen')) {
-                // Eliminar imagen anterior de Cloudinary si existe
-                if ($plantilla->imagen_url && str_contains($plantilla->imagen_url, 'cloudinary')) {
-                    $this->deleteCloudinaryImage($plantilla->imagen_url);
-                }
-
-                // Subir nueva imagen
-                $uploadedFile = Cloudinary::uploadApi()->upload(
-                    $request->file('imagen')->getRealPath(),
-                    [
-                        'folder' => 'plantillas_email',
-                        'resource_type' => 'image'
-                    ]
-                );
-
-                $plantilla->imagen_url = $uploadedFile['secure_url'];
-            }
-
-            // Registrar quién actualizó
-            $plantilla->updated_by = $request->user()->id;
-            $plantilla->save();
+            $dto = UpdatePlantillaEmailDTO::fromRequest($request);
+            $plantilla = $this->service->updatePlantilla((int)$id, $dto, $request->user()->id);
 
             return response()->json([
                 'success' => true,
@@ -188,42 +129,17 @@ class PlantillasEmailController extends Controller
                     'updated_at' => $plantilla->updated_at
                 ]
             ]);
-        } catch (\Exception $e) {
-            $statusCode = $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException ? 404 : 500;
-            $message = $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException
-                ? 'Plantilla no encontrada'
-                : 'Error al actualizar plantilla';
-
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => $message,
-                'error' => $e->getMessage()
-            ], $statusCode);
-        }
-    }
-
-    /**
-     * Eliminar imagen de Cloudinary extrayendo public_id de la URL
-     *
-     * @param string $imageUrl
-     * @return void
-     */
-    private function deleteCloudinaryImage($imageUrl)
-    {
-        try {
-            // Extraer public_id de la URL de Cloudinary
-            // Ejemplo: https://res.cloudinary.com/cloud_name/image/upload/v1234567890/plantillas_email/abc123.jpg
-            // public_id: plantillas_email/abc123
-            
-            preg_match('/upload\/(?:v\d+\/)?(.+)\.\w+$/', $imageUrl, $matches);
-            
-            if (isset($matches[1])) {
-                $publicId = $matches[1];
-                Cloudinary::destroy($publicId);
-            }
+                'message' => 'Plantilla no encontrada'
+            ], 404);
         } catch (\Exception $e) {
-            // Log pero no fallar si no se puede eliminar imagen antigua
-            Log::warning("No se pudo eliminar imagen de Cloudinary: {$imageUrl}", ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar plantilla',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

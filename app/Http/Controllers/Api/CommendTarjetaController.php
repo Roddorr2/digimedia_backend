@@ -4,129 +4,75 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CommendTarjeta\StoreCommendTarjetaRequest;
+use App\Http\Requests\CommendTarjeta\UpdateCommendTarjetaRequest;
 use App\Http\Resources\CommendTarjetaResource;
-use Illuminate\Http\Request;
-use App\Models\CommendTarjeta;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
+use App\Services\CommendTarjetaService;
+use App\DTOs\CommendTarjeta\CreateCommendTarjetaDTO;
+use App\DTOs\CommendTarjeta\UpdateCommendTarjetaDTO;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class CommendTarjetaController extends Controller
 {
-    public function create(StoreCommendTarjetaRequest $request)
+    public function __construct(
+        private CommendTarjetaService $commendTarjetaService
+    ) {}
+
+    public function create(StoreCommendTarjetaRequest $request): JsonResponse
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'titulo' => 'nullable|string|max:255',
-                'texto1' => 'nullable|string|max:255',
-                'texto2' => 'nullable|string|max:255',
-                'texto3' => 'nullable|string|max:255',
-                'texto4' => 'nullable|string|max:255',
-                'texto5' => 'nullable|string|max:255',
-            ]);
+            $dto = CreateCommendTarjetaDTO::fromRequest($request);
+            $commendTarjeta = $this->commendTarjetaService->createTarjeta($dto);
 
-            if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()], 400);
-            }
-
-            DB::beginTransaction();
-
-            //$commendTarjeta = CommendTarjeta::create($request->all());
-
-            $commendTarjeta = CommendTarjeta::create(
-                $request->only([
-                    'titulo',
-                    'texto1',
-                    'texto2',
-                    'texto3',
-                    'texto4',
-                    'texto5',
-                ])
-            );
-
-            DB::commit();
-
-            /*
-            return response()->json([
-                "status" => 200,
-                "message" => "CommendTarjeta creada correctamente",
-                "id" => $commendTarjeta->id_commend_tarjeta
-            ],200);
-            */
             return response()->json([
                 "status" => 200,
                 "message" => "CommendTarjeta creada correctamente",
                 "data" => new CommendTarjetaResource($commendTarjeta)
             ], 200);
         } catch (\Exception $e) {
-            DB::rollback();
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-    public function update(Request $request, int $id)
+    public function update(UpdateCommendTarjetaRequest $request, int $id): JsonResponse
     {
         try {
+            $dto = UpdateCommendTarjetaDTO::fromRequest($request);
+            $tarjeta = $this->commendTarjetaService->updateTarjeta($id, $dto);
 
-            $tarjeta = CommendTarjeta::find($id);
-
-            if (!$tarjeta) {
-                return response()->json(
-                    [
-                        'status' => 404,
-                        'message' => 'Tarjeta no encontrada'
-                    ],
-                    200
-                );
-            }
-
-            DB::beginTransaction();
-
-            $tarjeta->update($request->all());
-
-            DB::commit();
-
-            /*
-            return response()->json([
-                'status' => 200,
-                'message' => 'Tarjeta actualizada',
-                'id' => $tarjeta->id_commend_tarjeta
-            ], 200);
-            */
             return response()->json([
                 'status' => 200,
                 'message' => 'Tarjeta actualizada',
                 'data' => new CommendTarjetaResource($tarjeta)
             ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Tarjeta no encontrada'
+            ], 200);
         } catch (\Exception $e) {
-            DB::rollback();
-            return response()->json(
-                [
-                    'status' => 400,
-                    'message' => 'Error interno del servidor',
-                    'error' => $e->getMessage()
-                ],
-                200
-            );
+            return response()->json([
+                'status' => 400,
+                'message' => 'Error interno del servidor',
+                'error' => $e->getMessage()
+            ], 200);
         }
     }
 
-    public function destroy($id)
+    public function destroy($id): JsonResponse
     {
         try {
+            $this->commendTarjetaService->deleteTarjeta((int)$id);
 
-            $commendTarjeta = CommendTarjeta::find($id);
-
-            if (!$commendTarjeta) {
-                return response()->json([
-                    "status" => 404,
-                    "message" => "CommendTarjeta no encontrada"
-                ], 404);
-            }
-            $commendTarjeta->delete();
             return response()->json([
                 "status" => 200,
                 "message" => "CommendTarjeta eliminada correctamente"
             ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                "status" => 404,
+                "message" => "CommendTarjeta no encontrada"
+            ], 404);
         } catch (\Exception $ex) {
             return response()->json([
                 "status" => 500,

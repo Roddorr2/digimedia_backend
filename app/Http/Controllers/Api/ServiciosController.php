@@ -3,27 +3,29 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\servicios;
+use App\Services\ServicioService;
+use App\DTOs\Servicio\ServicioFiltersDTO;
+use App\DTOs\Servicio\CreateServicioDTO;
+use App\DTOs\Servicio\UpdateServicioDTO;
 use App\Http\Resources\ServicioResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ServiciosController extends Controller
 {
-    public function get()
+    public function __construct(
+        private ServicioService $servicioService
+    ) {}
+
+    public function get(Request $request)
     {
         try {
-            $servicios = Servicios::orderBy('id_servicio', 'desc')->paginate(20);
+            $filters = ServicioFiltersDTO::fromRequest($request);
+            $servicios = $this->servicioService->getServicios($filters);
             
-            return response()->json([
-                'success' => true,
-                'data' => ServicioResource::collection($servicios),
-                'links' => $servicios->links(),
-                'meta' => [
-                    'current_page' => $servicios->currentPage(),
-                    'last_page' => $servicios->lastPage(),
-                    'total' => $servicios->total(),
-                ]
+            return ServicioResource::collection($servicios)->additional([
+                'success' => true
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -33,8 +35,9 @@ class ServiciosController extends Controller
         }
     }
     
-    public function create(Request $request){
-        $validator = Validator::make($request->all(),[
+    public function create(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
             'nombre' => 'required|string|max:100',
             'descripcion' => 'required|string|max:200'
         ]);
@@ -43,7 +46,8 @@ class ServiciosController extends Controller
             return response()->json(['errors' => $validator->errors()], 400);
         }
 
-        $servicio = Servicios::create($request->all());
+        $dto = CreateServicioDTO::fromRequest($request);
+        $this->servicioService->createServicio($dto);
 
         return response()->json([
             'message' => 'Servicio creado exitosamente'
@@ -53,7 +57,6 @@ class ServiciosController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            // Validar datos
             $validator = Validator::make($request->all(), [
                 'nombre' => 'required|string|max:100',
                 'descripcion' => 'required|string|max:200'
@@ -67,21 +70,8 @@ class ServiciosController extends Controller
                 ], 422);
             }
 
-            // Buscar servicio
-            $servicio = Servicios::findOrFail($id);
-
-            if (!$servicio) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Servicio no encontrado'
-                ], 404);
-            }
-
-            // Actualizar campos
-            $servicio->nombre = $request->nombre;
-
-            // Guardar cambios
-            $servicio->save();
+            $dto = UpdateServicioDTO::fromRequest($request);
+            $servicio = $this->servicioService->updateServicio((int)$id, $dto);
 
             return response()->json([
                 'status' => true,
@@ -89,6 +79,11 @@ class ServiciosController extends Controller
                 'data' => $servicio
             ], 200);
 
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Servicio no encontrado'
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -98,17 +93,23 @@ class ServiciosController extends Controller
         }
     }
 
-    public function delete($id){
-        $servicio = Servicios::find($id);
-        if(!$servicio) {
+    public function delete($id)
+    {
+        try {
+            $this->servicioService->deleteServicio((int)$id);
+            
+            return response()->json([
+                'message' => 'Servicio eliminado exitosamente'
+            ]);
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Servicio no encontrado'
             ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al eliminar el servicio',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $servicio->delete();
-        return response()->json([
-            'message' => 'Servicio eliminado exitosamente'
-        ]);
     }
 }

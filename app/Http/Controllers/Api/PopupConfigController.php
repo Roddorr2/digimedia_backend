@@ -3,40 +3,26 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\PopupConfig;
-use App\Models\servicios;
+use App\Services\PopupConfigService;
+use App\DTOs\PopupConfig\CreatePopupConfigDTO;
+use App\DTOs\PopupConfig\UpdatePopupConfigDTO;
 use App\Models\Subservicio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PopupConfigController extends Controller
 {
+    public function __construct(
+        private PopupConfigService $popupConfigService
+    ) {}
+
     // ENDPOINT PUBLICO UNIFICADO
     public function showByOwnerPublic(string $type, int $id): JsonResponse
     {
         try {
-            if ($type === 'servicio') {
-                $owner = servicios::with('popupConfig')->findOrFail($id);
-            } elseif ($type === 'subservicio') {
-                $owner = Subservicio::with('popupConfig')->findOrFail($id);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Tipo invalido. Use servicio o subservicio'
-                ], 400);
-            }
-
-            $popup = $owner->popupConfig;
-
-            if (!$popup) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Pop-up no encontrado para este {$type}"
-                ], 404);
-            }
+            $popup = $this->popupConfigService->getPopupByOwner($type, $id);
 
             return response()->json([
                 'success' => true,
@@ -66,16 +52,21 @@ class PopupConfigController extends Controller
                         : $popup->popupable_id
                 ]
             ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (\InvalidArgumentException $e) {
             return response()->json([
                 'success' => false,
-                'message' => "{$type} no encontrado"
+                'message' => $e->getMessage()
+            ], 400);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener pop-up',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
@@ -95,7 +86,7 @@ class PopupConfigController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $popups = PopupConfig::with(['popupable', 'createdBy:id,name', 'updatedBy:id,name'])->get();
+            $popups = $this->popupConfigService->getPopups();
 
             return response()->json([
                 'success' => true,
@@ -105,7 +96,7 @@ class PopupConfigController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener pop-ups',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
@@ -114,13 +105,13 @@ class PopupConfigController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $popup = PopupConfig::with(['popupable', 'createdBy:id,name', 'updatedBy:id,name'])->findOrFail($id);
+            $popup = $this->popupConfigService->getPopupById($id);
 
             return response()->json([
                 'success' => true,
                 'data' => $popup
             ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Pop-up no encontrado'
@@ -129,7 +120,7 @@ class PopupConfigController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener pop-up',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
@@ -138,16 +129,13 @@ class PopupConfigController extends Controller
     public function showBySubservicio(int $id_subservicio): JsonResponse
     {
         try {
-            $popup = PopupConfig::where('popupable_type', Subservicio::class)
-                ->where('popupable_id', $id_subservicio)
-                ->with(['popupable', 'createdBy:id,name', 'updatedBy:id,name'])
-                ->firstOrFail();
+            $popup = $this->popupConfigService->getPopupByOwner('subservicio', $id_subservicio);
 
             return response()->json([
                 'success' => true,
                 'data' => $popup
             ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
                 'message' => "Pop-up no encontrado para subservicio {$id_subservicio}"
@@ -156,7 +144,7 @@ class PopupConfigController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener pop-up',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
@@ -197,77 +185,37 @@ class PopupConfigController extends Controller
                 ], 422);
             }
 
-            // Determinar el owner
-            if ($request->has('id_servicio')) {
-                $owner = servicios::findOrFail($request->id_servicio);
-                $popupableType = servicios::class;
-                $popupableId = $request->id_servicio;
-            } else {
-                $owner = Subservicio::findOrFail($request->id_subservicio);
-                $popupableType = Subservicio::class;
-                $popupableId = $request->id_subservicio;
-            }
-
-            // Verificar si ya existe un popup para este owner
-            $existing = PopupConfig::where('popupable_type', $popupableType)
-                ->where('popupable_id', $popupableId)
-                ->first();
-
-            if ($existing) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ya existe un pop-up configurado para este elemento'
-                ], 422);
-            }
-
-            $data = [
-                'popupable_type' => $popupableType,
-                'popupable_id' => $popupableId,
-                'button_text'    => $request->button_text,
-                'button_color'   => $request->button_color ?? '#7C3FD9',
-                'service_color'  => $request->service_color,
-                'service_color_2'=> $request->service_color_2 ?? null,
-                'gradient_direction' => $request->gradient_direction ?? 'to bottom',
-                'trigger_time'   => $request->trigger_time,
-                'trigger_type'   => $request->trigger_type ?? 'time',
-                'layout'         => $request->layout ?? 'left-image',
-                'show_logo'      => filter_var($request->show_logo, FILTER_VALIDATE_BOOLEAN) ?? true,
-                'left_text'      => $request->left_text ?? '',
-                'left_opacity'   => $request->left_opacity ?? 100,
-                'left_alt'       => $request->left_alt ?? '',
-                'right_opacity'  => $request->right_opacity ?? 100,
-                'right_alt'      => $request->right_alt ?? '',
-                'mobile_opacity' => $request->mobile_opacity ?? 100,
-                'mobile_alt'     => $request->mobile_alt ?? '',
-                'created_by'     => $request->user()->id,
-                'updated_by'     => $request->user()->id,
-            ];
-
-            // Subir imagenes
+            $files = [];
             if ($request->hasFile('left_image')) {
-                $data['left_image_url'] = $this->uploadCloudinaryImage($request->file('left_image'));
+                $files['left_image'] = $request->file('left_image');
             }
             if ($request->hasFile('right_image')) {
-                $data['right_image_url'] = $this->uploadCloudinaryImage($request->file('right_image'));
+                $files['right_image'] = $request->file('right_image');
             }
             if ($request->hasFile('mobile_image')) {
-                $data['mobile_image_url'] = $this->uploadCloudinaryImage($request->file('mobile_image'));
+                $files['mobile_image'] = $request->file('mobile_image');
             }
 
-            $popup = PopupConfig::create($data);
+            $dto = CreatePopupConfigDTO::fromRequest($request);
+            $popup = $this->popupConfigService->createPopup($dto, $files);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Pop-up creado exitosamente',
                 'data'    => $popup->load('popupable', 'createdBy:id,name', 'updatedBy:id,name')
             ], 201);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Owner no encontrado'
+            ], 404);
         } catch (\Exception $e) {
-            Log::error('Error creating popup: ' . $e->getMessage());
+            $status = $e->getCode() === 422 ? 422 : 500;
             return response()->json([
                 'success' => false,
                 'message' => 'Error al crear pop-up',
-                'error'   => $e->getMessage()
-            ], 500);
+                'error'   => config('app.debug') ? $e->getMessage() : null
+            ], $status);
         }
     }
 
@@ -275,8 +223,6 @@ class PopupConfigController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         try {
-            $popup = PopupConfig::findOrFail($id);
-
             $validator = Validator::make($request->all(), [
                 'button_text'         => 'nullable|string|min:2|max:25',
                 'button_color'        => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
@@ -307,64 +253,35 @@ class PopupConfigController extends Controller
                 ], 422);
             }
 
-            $textFields = [
-                'button_text', 'button_color', 'service_color', 'service_color_2', 
-                'gradient_direction', 'trigger_time', 'trigger_type', 'layout', 
-                'left_text', 'left_opacity', 'right_opacity', 'mobile_opacity',
-                'left_alt', 'right_alt', 'mobile_alt'
-            ];
-            
-            foreach ($textFields as $field) {
-                if ($request->has($field)) {
-                    $popup->$field = $request->$field;
-                }
-            }
-
-            if ($request->has('show_logo')) {
-                $popup->show_logo = filter_var($request->show_logo, FILTER_VALIDATE_BOOLEAN);
-            }
-
-            // Reemplazar imagenes
+            $files = [];
             if ($request->hasFile('left_image')) {
-                if ($popup->left_image_url && str_contains($popup->left_image_url, 'cloudinary')) {
-                    $this->deleteCloudinaryImage($popup->left_image_url);
-                }
-                $popup->left_image_url = $this->uploadCloudinaryImage($request->file('left_image'));
+                $files['left_image'] = $request->file('left_image');
             }
-
             if ($request->hasFile('right_image')) {
-                if ($popup->right_image_url && str_contains($popup->right_image_url, 'cloudinary')) {
-                    $this->deleteCloudinaryImage($popup->right_image_url);
-                }
-                $popup->right_image_url = $this->uploadCloudinaryImage($request->file('right_image'));
+                $files['right_image'] = $request->file('right_image');
             }
-
             if ($request->hasFile('mobile_image')) {
-                if ($popup->mobile_image_url && str_contains($popup->mobile_image_url, 'cloudinary')) {
-                    $this->deleteCloudinaryImage($popup->mobile_image_url);
-                }
-                $popup->mobile_image_url = $this->uploadCloudinaryImage($request->file('mobile_image'));
+                $files['mobile_image'] = $request->file('mobile_image');
             }
 
-            $popup->updated_by = $request->user()->id;
-            $popup->save();
+            $dto = UpdatePopupConfigDTO::fromRequest($request);
+            $popup = $this->popupConfigService->updatePopup($id, $dto, $files);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Pop-up actualizado exitosamente',
                 'data'    => $popup->load('popupable', 'createdBy:id,name', 'updatedBy:id,name')
             ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Pop-up no encontrado'
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error updating popup: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar pop-up',
-                'error'   => $e->getMessage()
+                'error'   => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
@@ -373,75 +290,23 @@ class PopupConfigController extends Controller
     public function destroy(int $id): JsonResponse
     {
         try {
-            $popup = PopupConfig::findOrFail($id);
-
-            if ($popup->left_image_url && str_contains($popup->left_image_url, 'cloudinary')) {
-                $this->deleteCloudinaryImage($popup->left_image_url);
-            }
-            if ($popup->right_image_url && str_contains($popup->right_image_url, 'cloudinary')) {
-                $this->deleteCloudinaryImage($popup->right_image_url);
-            }
-            if ($popup->mobile_image_url && str_contains($popup->mobile_image_url, 'cloudinary')) {
-                $this->deleteCloudinaryImage($popup->mobile_image_url);
-            }
-
-            $popup->delete();
+            $this->popupConfigService->deletePopup($id);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Pop-up eliminado exitosamente'
             ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Pop-up no encontrado'
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error deleting popup: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error al eliminar pop-up',
-                'error'   => $e->getMessage()
+                'error'   => config('app.debug') ? $e->getMessage() : null
             ], 500);
-        }
-    }
-
-    private function uploadCloudinaryImage($file): string
-    {
-        $uploaded = Cloudinary::uploadApi()->upload(
-            $file->getRealPath(),
-            [
-                'folder'        => 'popup_configs',
-                'resource_type' => 'image',
-                'curl_options'  => [
-                    CURLOPT_SSL_VERIFYPEER => false,
-                    CURLOPT_SSL_VERIFYHOST => false,
-                ]
-            ]
-        );
-
-        return $uploaded['secure_url'];
-    }
-
-    /**
-     * Eliminar imagen de Cloudinary extrayendo public_id de la URL
-     * Patrón idéntico a PlantillasWhatsappController
-     *
-     * @param string $imageUrl
-     * @return void
-     */
-    private function deleteCloudinaryImage($imageUrl)
-    {
-        try {
-            preg_match('/upload\/(?:v\d+\/)?(.+)\.\w+$/', $imageUrl, $matches);
-
-            if (isset($matches[1])) {
-                Cloudinary::uploadApi()->destroy($matches[1]);
-            }
-        } catch (\Exception $e) {
-            Log::warning("No se pudo eliminar imagen de Cloudinary: {$imageUrl}", [
-                'error' => $e->getMessage()
-            ]);
         }
     }
 }

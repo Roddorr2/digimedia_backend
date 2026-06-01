@@ -6,122 +6,104 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\BlogFooter\StoreBlogFooterRequest;
 use App\Http\Requests\BlogFooter\UpdateBlogFooterRequest;
 use App\Http\Resources\BlogFooterResource;
-use App\Models\BlogFooter;
-use Illuminate\Support\Facades\DB;
+use App\Services\BlogFooterService;
+use App\DTOs\BlogFooter\CreateBlogFooterDTO;
+use App\DTOs\BlogFooter\UpdateBlogFooterDTO;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class BlogFooterController extends Controller
 {
+    public function __construct(
+        private BlogFooterService $blogFooterService
+    ) {}
+
     public function create(StoreBlogFooterRequest $request)
     {
-        try{
-            $validatedData = $request->validated();
-
-            DB::beginTransaction();
-
-            $blogFooter = BlogFooter::create($validatedData);
-
-            DB::commit();
+        try {
+            $dto = CreateBlogFooterDTO::fromRequest($request);
+            $blogFooter = $this->blogFooterService->create($dto);
 
             return response()->json([
                 "status" => 200,
                 "message" => "BlogFooter creado correctamente",
                 "id" => $blogFooter->id_blog_footer
             ], 200);
-
-        }catch(\Exception $ex){
-            DB::rollback();
+        } catch (\Exception $e) {
             return response()->json([
                 "status" => 500,
                 "message" => "Error interno del servidor",
-                "error" => $ex->getMessage()
-                ], 500);
+                "error" => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
     }
 
     public function update(UpdateBlogFooterRequest $request, int $id)
     {
-        try{
-            $validatedData = $request->validated();
+        try {
+            $dto = UpdateBlogFooterDTO::fromRequest($request);
+            $blogFooter = $this->blogFooterService->update($id, $dto);
 
-            $blogFooter = BlogFooter::find($id);
-
-            if (!$blogFooter){
-                return response()->json([
-                    'status'=> 404,
-                    'message'=> 'BlogFooter no encontrado'
-                ], 404);
-            }
-
-            DB::beginTransaction();
-
-            $blogFooter->update($validatedData);
-
-            DB::commit();
             return response()->json([
-                'status'=> 200,
-                'message'=> 'BlogFooter actualizado',
-                'id'=> $blogFooter->id_blog_footer,
-            ],200);
-
-        }catch(\Exception $ex){
-            DB::rollback();
+                'status' => 200,
+                'message' => 'BlogFooter actualizado',
+                'id' => $blogFooter->id_blog_footer
+            ], 200);
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'status'=> 500,
-                'message'=> $ex->getMessage()
+                'status' => 404,
+                'message' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => config('app.debug') ? $e->getMessage() : 'Error interno del servidor'
             ], 500);
         }
     }
 
-    public function show(int $id){
-        try{
-
-            $blogFooter = BlogFooter::find($id);
-            if (!$blogFooter) {
-                return response()->json([
-                    "status" => 404,
-                    "message" => "BlogFooter no encontrado"
-                ],404);
-            }
+    public function show(int $id)
+    {
+        try {
+            $blogFooter = $this->blogFooterService->findById($id);
 
             return response()->json([
                 "status" => 200,
-                //"data" => $blogFooter
                 "data" => new BlogFooterResource($blogFooter)
-                ], 200);
-
-        }catch(\Exception $ex){
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                "status" => 404,
+                "message" => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
             return response()->json([
                 "status" => 500,
                 "message" => "Error interno del servidor",
-                "error" => $ex->getMessage()
-                ], 500);
+                "error" => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
     }
 
-    public function destroy($id)
+    public function destroy(int $id)
     {
-        try{
+        try {
+            $this->blogFooterService->delete($id);
 
-            $blogFooter = BlogFooter::find($id);
-
-            if (!$blogFooter) {
-                return response()->json([
-                    "status" => 404,
-                    "message" => "BlogFooter no encontrado"
-                ]);
-            }
-            $blogFooter->delete();
             return response()->json([
                 "status" => 200,
                 "message" => "BlogFooter eliminado correctamente"
-                ], 200);
-
-        }catch(\Exception $ex){
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                "status" => 404,
+                "message" => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
             return response()->json([
                 "status" => 500,
                 "message" => "Error al eliminar el blogFooter",
-                "error" => $ex->getMessage()
-                ], 500);
+                "error" => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
     }
 }
