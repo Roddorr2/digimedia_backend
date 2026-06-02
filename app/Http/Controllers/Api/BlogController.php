@@ -79,11 +79,11 @@ class BlogController extends Controller
     {
         try {
             $blog = $this->blogService->getBlogById($id);
-            
+
             return response()->json([
                 'status' => 200,
                 'data' => new BlogResource($blog)
-            ]);
+            ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'status' => 404,
@@ -93,20 +93,20 @@ class BlogController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-      
+
     public function showLink(string $link)
     {
         try {
             $blog = $this->blogService->getBlogByLink($link);
-            
+
             return response()->json([
-                "status" => 200,
+                'status' => 200,
                 'data' => new BlogResource($blog)
             ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json([
-                "status" => 404,
-                "message" => "Blog no encontrado"
+                'status' => 404,
+                'message' => 'Blog no encontrado'
             ], 404);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

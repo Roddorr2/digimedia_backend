@@ -24,9 +24,9 @@ class BlogService
         private BlogStorageService $storageService
     ) {}
 
-    public function getAllBlogs(): array
+    public function getAllBlogs(): Collection
     {
-        return $this->blogRepository->getAll()->toArray();
+        return $this->blogRepository->getAll();
     }
 
     public function getBlogsByFilters(FiltrosBlogDTO $filters): Collection
@@ -54,6 +54,11 @@ class BlogService
         }
         
         return $blog;
+    }
+
+    public function getBlogsByLink(string $link): Blog
+    {
+        return $this->getBlogByLink($link);
     }
 
     public function createBlog(array $data): Blog
