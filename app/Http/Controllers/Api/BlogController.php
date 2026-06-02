@@ -93,7 +93,7 @@ class BlogController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-
+      
     public function showLink(string $link)
     {
         try {
