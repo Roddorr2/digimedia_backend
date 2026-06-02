@@ -172,12 +172,10 @@ class BlogController extends Controller
                     'status' => 404,
                     'message' => 'Blog no encontrado'
                 ], 404);
-            }
+            } 
+             //SE CORRIGIO COMO DEVUELVE EL BACKEND LOS DATOS AL FRONT
+            return new BlogResource($blog);
 
-            return response()->json([
-                'status' => 200,
-                'data' => new BlogResource($blog)
-            ]);
         } catch (\Exception $e) {
 
             return response()->json([
@@ -197,14 +195,16 @@ class BlogController extends Controller
                 return response()->json([
                     "status" => 404,
                     "message" => "Blog no encontrada"
-                ], 400);
+                ], 404); //CORECCION DE 400 A 404
             }
-
+            /*se encontraba error en esta parte 
             return response()->json([
-                "status" => 200,
-                //'data' => $blog,
-                'data' => new BlogResource($blog)
-            ], 200);
+                    "status" => 200,
+                    'data' => new BlogResource($blog) 
+                ], 200);
+            donde envolvia otra vez 
+            */
+            return new BlogResource($blog);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
