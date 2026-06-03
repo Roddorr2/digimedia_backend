@@ -243,7 +243,7 @@ class PopupConfigController extends Controller
                 'updated_by'     => $request->user()->id,
             ];
 
-            // Subir imagenes
+            // Subir solo las imágenes que vienen en el request
             if ($request->hasFile('left_image')) {
                 $data['left_image_url'] = $this->uploadCloudinaryImage($request->file('left_image'));
             }
@@ -324,26 +324,35 @@ class PopupConfigController extends Controller
                 $popup->show_logo = filter_var($request->show_logo, FILTER_VALIDATE_BOOLEAN);
             }
 
-            // Reemplazar imagenes
+            // Subir nueva imagen primero; borrar la antigua después de enviar la respuesta
+            $urlsToDelete = [];
+
             if ($request->hasFile('left_image')) {
                 if ($popup->left_image_url && str_contains($popup->left_image_url, 'cloudinary')) {
-                    $this->deleteCloudinaryImage($popup->left_image_url);
+                    $urlsToDelete[] = $popup->left_image_url;
                 }
                 $popup->left_image_url = $this->uploadCloudinaryImage($request->file('left_image'));
             }
-
             if ($request->hasFile('right_image')) {
                 if ($popup->right_image_url && str_contains($popup->right_image_url, 'cloudinary')) {
-                    $this->deleteCloudinaryImage($popup->right_image_url);
+                    $urlsToDelete[] = $popup->right_image_url;
                 }
                 $popup->right_image_url = $this->uploadCloudinaryImage($request->file('right_image'));
             }
-
             if ($request->hasFile('mobile_image')) {
                 if ($popup->mobile_image_url && str_contains($popup->mobile_image_url, 'cloudinary')) {
-                    $this->deleteCloudinaryImage($popup->mobile_image_url);
+                    $urlsToDelete[] = $popup->mobile_image_url;
                 }
                 $popup->mobile_image_url = $this->uploadCloudinaryImage($request->file('mobile_image'));
+            }
+
+            // Las deletes se ejecutan después de que la respuesta ya fue enviada al cliente
+            if (!empty($urlsToDelete)) {
+                app()->terminating(function () use ($urlsToDelete) {
+                    foreach ($urlsToDelete as $url) {
+                        $this->deleteCloudinaryImage($url);
+                    }
+                });
             }
 
             // Eliminar imágenes individuales sin reemplazar
@@ -397,17 +406,22 @@ class PopupConfigController extends Controller
         try {
             $popup = PopupConfig::findOrFail($id);
 
-            if ($popup->left_image_url && str_contains($popup->left_image_url, 'cloudinary')) {
-                $this->deleteCloudinaryImage($popup->left_image_url);
-            }
-            if ($popup->right_image_url && str_contains($popup->right_image_url, 'cloudinary')) {
-                $this->deleteCloudinaryImage($popup->right_image_url);
-            }
-            if ($popup->mobile_image_url && str_contains($popup->mobile_image_url, 'cloudinary')) {
-                $this->deleteCloudinaryImage($popup->mobile_image_url);
-            }
+            $urlsToDelete = array_filter([
+                $popup->left_image_url,
+                $popup->right_image_url,
+                $popup->mobile_image_url,
+            ], fn($url) => $url && str_contains($url, 'cloudinary'));
 
             $popup->delete();
+
+            // Borrar imágenes de Cloudinary después de enviar la respuesta
+            if (!empty($urlsToDelete)) {
+                app()->terminating(function () use ($urlsToDelete) {
+                    foreach ($urlsToDelete as $url) {
+                        $this->deleteCloudinaryImage($url);
+                    }
+                });
+            }
 
             return response()->json([
                 'success' => true,
@@ -444,6 +458,7 @@ class PopupConfigController extends Controller
 
         return $uploaded['secure_url'];
     }
+
 
     /**
      * Eliminar imagen de Cloudinary extrayendo public_id de la URL
