@@ -120,6 +120,7 @@ class PopupConfigService
         
         $data = $dto->data;
         
+        // Manejar subida de imagenes
         if (isset($files['left_image'])) {
             if ($popup->left_image_url && str_contains($popup->left_image_url, 'cloudinary')) {
                 $this->deleteCloudinaryImage($popup->left_image_url);
@@ -139,6 +140,23 @@ class PopupConfigService
                 $this->deleteCloudinaryImage($popup->mobile_image_url);
             }
             $data['mobile_image_url'] = $this->uploadCloudinaryImage($files['mobile_image']);
+        }
+
+        // Manejar eliminación de imagenes individuales (si no se subió una nueva)
+        $imageFields = [
+            'remove_left_image' => ['column' => 'left_image_url', 'file_key' => 'left_image'],
+            'remove_right_image' => ['column' => 'right_image_url', 'file_key' => 'right_image'],
+            'remove_mobile_image' => ['column' => 'mobile_image_url', 'file_key' => 'mobile_image'],
+        ];
+
+        foreach ($imageFields as $flag => $config) {
+            if (isset($data[$flag]) && $data[$flag] == '1' && !isset($files[$config['file_key']])) {
+                if ($popup->{$config['column']} && str_contains($popup->{$config['column']}, 'cloudinary')) {
+                    $this->deleteCloudinaryImage($popup->{$config['column']});
+                }
+                $data[$config['column']] = null;
+            }
+            unset($data[$flag]);
         }
         
         $data['updated_by'] = $dto->userId;
