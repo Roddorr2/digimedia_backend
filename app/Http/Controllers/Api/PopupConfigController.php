@@ -243,6 +243,9 @@ class PopupConfigController extends Controller
                 'mobile_image'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
                 'mobile_opacity'      => 'nullable|integer|min:0|max:100',
                 'mobile_alt'          => 'nullable|string|max:255',
+                'remove_left_image'   => 'nullable|in:0,1',
+                'remove_right_image'  => 'nullable|in:0,1',
+                'remove_mobile_image' => 'nullable|in:0,1',
             ]);
 
             if ($validator->fails()) {
