@@ -5,73 +5,44 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Blog\StoreBlogRequest;
 use App\Http\Requests\Blog\UpdateBlogRequest;
-use App\Models\Blog;
-use App\Models\BlogBody;
-use App\Models\BlogHead;
 use App\Http\Resources\BlogResource;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
-use App\Services\AuditoriaService;
+use App\Services\Blog\BlogService;
+use App\DTOs\Blog\FiltrosBlogDTO;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 
 class BlogController extends Controller
 {
+    public function __construct(
+        private BlogService $blogService
+    ) {}
+
     public function index()
     {
-        /*
-        $blogs = Blog::with('card')->get();
-        return BlogResource::collection($blogs);
-        */
-        $blogs = Blog::completo()->reciente()->get();
-        return BlogResource::collection($blogs);
+        try {
+            $blogs = $this->blogService->getAllBlogs();
+            return BlogResource::collection($blogs);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
-    //nuevos features
     public function blogByMonthYear(Request $request)
     {
-        $blogs = Blog::with(['card', 'body', 'head']);
-        if ($request->has('month') && $request->input('month') != '') {
-            $month = $request->input('month');
-            $blogs->array_filter('fecha', $month);
+        try {
+            $filters = FiltrosBlogDTO::fromRequest($request);
+            $blogs = $this->blogService->getBlogsByFilters($filters);
+            return response()->json($blogs, 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-        return response()->json($blogs->get(), 200);
     }
-    //nuevos features
 
     public function create(StoreBlogRequest $request)
     {
-        $validatedData = $request->validated();
-        $id_empleado = $validatedData['id_empleado'];
-
-        DB::beginTransaction();
-
         try {
-            $blogHead = BlogHead::findOrFail($validatedData['id_blog_head']);
-            $titulo = $blogHead->titulo ?? 'blog';
-
-            // Generar slug único para el campo 'link'
-            $originalSlug = Str::slug($titulo);
-            $link = $originalSlug;
-            $counter = 1;
-
-            while (Blog::where('link', $link)->exists()) {
-                $link = $originalSlug . '-' . $counter++;
-            }
-
-            $data = $validatedData;
-            $data['link'] = $link;
-
-            $blog = Blog::create($data);
-            DB::commit();
-            // Registrar en la tabla de auditoría
-            AuditoriaService::registrar(
-                $blog->id_blog,
-                $id_empleado,
-                'CREAR',
-                (BlogHead::findOrFail($validatedData['id_blog_head']))->titulo,
-            );
-
+            $blog = $this->blogService->createBlog($request->validated());
+            
             return response()->json([
                 "status" => 200,
                 "message" => "Blog creado correctamente",
@@ -79,205 +50,83 @@ class BlogController extends Controller
                 "link" => $blog->link,
             ], 200);
         } catch (\Exception $e) {
-            DB::rollback();
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-    public function update(UpdateBlogRequest $request, $id){
-        try{
-            $validatedData = $request->validated();
-            $descripcion = $validatedData['descripcion'] ?? null;
-
-            $blog = Blog::find($id);
-
-            if (!$blog) {
-                return response()->json([
-                    'status' => 404,
-                    'message' => 'Blog no encontrado'
-                ], 404);
-            }
-
-            DB::beginTransaction();
-
-            // Get the blog head to generate link from title
-            $blogHead = BlogHead::findOrFail($validatedData['id_blog_head']);
-            $titulo = $blogHead->titulo ?? 'blog';
-
-            // Generate unique slug for the 'link' field, excluding current blog
-            $originalSlug = Str::slug($titulo);
-            $link = $originalSlug;
-            $counter = 1;
-
-            while (Blog::where('link', $link)->where('id_blog', '!=', $id)->exists()) {
-                $link = $originalSlug . '-' . $counter++;
-            }
-
-            $data = $validatedData;
-            $data['link'] = $link;
-
-            $blog->update($data);
-
-            AuditoriaService::registrar(
-                $blog->id_blog,
-                $validatedData['id_empleado'],
-                'ACTUALIZAR',
-                (\App\Models\BlogHead::findOrFail($validatedData['id_blog_head']))->titulo,
-                $descripcion,
-            );
-
-            DB::commit();
-
+    public function update(UpdateBlogRequest $request, int $id)
+    {
+        try {
+            $blog = $this->blogService->updateBlog($id, $request->validated());
+            
             return response()->json([
                 'status' => 200,
                 'message' => 'Blog actualizado',
                 'id' => $blog->id_blog,
                 'link' => $blog->link,
             ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Blog no encontrado'
+            ], 404);
         } catch (\Exception $e) {
-            DB::rollback();
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
     public function show(int $id)
     {
-        /*
-        try{
-
-            $blog = Blog::with('card')->find($id);
-
-            if (!$blog) {
-                return response()->json([
-                    "status" => 404,
-                    "message" => "Blog no encontrada"
-                ],400);
-            }
-
-            return response()->json([
-                "status" => 200,
-                'data' => $blog
-            ],200);
-
-        }catch(\Exception $e){
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-        */
         try {
-
-            $blog = Blog::completo()->find($id);
-
-            if (!$blog) {
-                return response()->json([
-                    'status' => 404,
-                    'message' => 'Blog no encontrado'
-                ], 404);
-            }
-
+            $blog = $this->blogService->getBlogById($id);
+            
             return response()->json([
                 'status' => 200,
                 'data' => new BlogResource($blog)
             ]);
-        } catch (\Exception $e) {
-
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function showLink(string $link)
-    {
-        try {
-
-            //$blog = Blog::with(['card', 'body', 'head'])->where('link', $link)->first();
-            $blog=Blog::completo()->where('link', $link)->first();
-
-            if (!$blog) {
-                return response()->json([
-                    "status" => 404,
-                    "message" => "Blog no encontrada"
-                ], 400);
-            }
-
-            return response()->json([
-                "status" => 200,
-                //'data' => $blog,
-                'data' => new BlogResource($blog)
-            ], 200);
+                'status' => 404,
+                'message' => 'Blog no encontrado'
+            ], 404);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+      
+    public function showLink(string $link)
+    {
+        try {
+            $blog = $this->blogService->getBlogByLink($link);
+            
+            return response()->json([
+                "status" => 200,
+                'data' => new BlogResource($blog)
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                "status" => 404,
+                "message" => "Blog no encontrado"
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     public function destroy(int $id)
     {
         try {
-
-            $blog = Blog::with(['card', 'head'])->find($id);
-            $id_empleado = $blog->card->id_empleado ?? null;
-
-            if (!$blog) {
-                return response()->json([
-                    'status' => 404,
-                    'message' => 'Blog no encontrado'
-                ], 404);
-            }
-
-            $id_header_blog = $blog->id_blog_head;
-
-            $id_body_blog = $blog->id_blog_body;
-
-            $id_footer_blog = $blog->id_blog_footer;
-
-            $relativePath = "images/templates/plantilla{$blog->card->id_plantilla}/"
-                //  . Str::slug($blog->head->titulo)
-                . $blog->id_blog;
-
-            //eliminarla pero ver si existe asi que normal obvia la anterior
-            if (Storage::disk('public')->exists($relativePath)) {
-                Storage::disk('public')->deleteDirectory($relativePath);
-            }
-            //Registrar blog_auditoria
-            AuditoriaService::registrar(
-                $id,
-                $id_empleado,
-                'ELIMINAR',
-                //(BlogHead::findOrFail((Blog::findOrFail($id))->id_blog_head))->titulo,
-                $titulo = $blog->head->titulo ?? 'blog', //CAMBIAR SI FUNCA
-            );
-
-            //primero card
-            $card_object = new CardController();
-
-            $card_object->destroy($blog->card->id_card);
-
-            //segundo blog
-            $blog->delete();
-
-            //tecero blog_head
-            $blog_head = new BlogHeadController();
-            $blog_head->destroy($id_header_blog);
-
-            //cuarto blog_footer
-            $blog_footer = new BlogFooterController();
-            $blog_footer->destroy($id_footer_blog);
-
-            //quinto tarjetas
-            $tarjeta = new TarjetaController();
-            $tarjeta->destroyAll($id_body_blog);
-
-            //sexto commend_tarjeta
-            $blog_body_model = BlogBody::find($id_body_blog);
-            $commend_tarjeta = new CommendTarjetaController();
-            $commend_tarjeta->destroy($blog_body_model->id_commend_tarjeta);
-
-            //por ultimo blog_body
-            $blog_body_model->delete();
-
+            $this->blogService->deleteBlog($id);
+            
             return response()->json([
                 "status" => 200,
                 "message" => "Blog eliminado correctamente"
             ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Blog no encontrado'
+            ], 404);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }

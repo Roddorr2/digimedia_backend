@@ -4,44 +4,45 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\BlogAuditoriaResource;
-use App\Models\BlogAuditoria;
+use App\Services\BlogAuditoriaService;
+use App\DTOs\BlogAuditoria\FiltrosAuditoriaDTO;
 use Illuminate\Http\Request;
 
 class BlogAuditoriaController extends Controller
 {
-    /**
-     * Mostrar las auditorías de un blog específico.
-     */
-    public function show()
+    public function __construct(
+        private BlogAuditoriaService $auditoriaService
+    ) {}
+
+    public function show(Request $request)
     {
         try {
-            $auditorias = BlogAuditoria::with([
-                'empleado:id_empleado,nombre,apellido',
-                'blog.card:id_card,titulo,descripcion,public_image,url_image,id_blog', //card asociada al blog
-            ])
-                ->orderBy('fecha_hora', 'desc')
-                ->paginate(20);
+            $filtros = FiltrosAuditoriaDTO::fromRequest($request);
+            $resultado = $this->auditoriaService->obtenerAuditorias($filtros);
 
-            if ($auditorias->count() === 0) {
+            if (!$resultado['has_results']) {
                 return response()->json([
                     'status' => 404,
-                    'message' => 'No se encontraron registros de auditoría para este blog'
+                    'message' => 'No se encontraron registros de auditoría'
                 ], 404);
             }
 
             return response()->json([
                 'status' => 200,
-                'data' => BlogAuditoriaResource::collection($auditorias)
+                'data' => BlogAuditoriaResource::collection($resultado['auditorias']),
+                'meta' => [
+                    'current_page' => $resultado['auditorias']->currentPage(),
+                    'per_page' => $resultado['auditorias']->perPage(),
+                    'total' => $resultado['auditorias']->total(),
+                    'last_page' => $resultado['auditorias']->lastPage(),
+                ]
             ], 200);
-
-        } catch (\Exception $ex) {
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => 500,
                 'message' => 'Error interno del servidor',
-                'error' => $ex->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
 }
-
-

@@ -2,93 +2,39 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\Metricas\CardMetricDTO;
+use App\DTOs\Metricas\EmpleadoMetricDTO;
+use App\DTOs\Metricas\MonthYearDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Metricas\ListCardsByEmpleadoRequest;
+use App\Http\Requests\Metricas\ListCardsByPlantillaRequest;
+use App\Http\Requests\Metricas\MonthYearRequest;
 use App\Http\Resources\CardResource;
-use Illuminate\Http\Request;
-use App\Models\Blog;
-use App\Models\Card;
-use App\Models\Empleado;
-use App\Models\BlogAuditoria;
-use Illuminate\Support\Carbon;
-use Illuminate\Validation\Rule;
+use App\Services\MetricasService;
+use Illuminate\Http\JsonResponse;
 
 class MetricasController extends Controller
 {
-    /**
-     * Helper para resolver mes y año con validación estricta
-     */
-    private function resolveMonthYear(Request $request)
-    {
-        $currentYear = (int) Carbon::now()->year;
-        $validated = $request->validate([
-            'month' => ['nullable', 'integer', 'min:1', 'max:12'],
-            'year'  => ['nullable', 'integer', 'min:2000', 'max:' . ($currentYear + 1)],
-        ]);
+    public function __construct(
+        private MetricasService $metricasService
+    ) {}
 
-        $isYearly = !isset($validated['month']) || $validated['month'] === null;
-        $year     = (int) ($validated['year'] ?? $currentYear);
-        $month    = $isYearly ? (int) Carbon::now()->month : (int) $validated['month'];
-
-        return [$month, $year, $isYearly];
-    }
-    /* ============================================================
-     * 1. METRICAS BLOGS
-     * ============================================================
-     */
     // 1.1 Cantidad de blogs creados por mes y año
-    public function countBlogsByMonth(Request $request)
+    public function countBlogsByMonth(MonthYearRequest $request): JsonResponse
     {
-        [$month, $year, $isYearly] = $this->resolveMonthYear($request);
-
-        if ($isYearly) {
-            $startDate = Carbon::createFromDate($year, 1, 1)->startOfYear();
-            $endDate   = Carbon::createFromDate($year, 12, 31)->endOfYear();
-        } else {
-            $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-            $endDate   = Carbon::createFromDate($year, $month, 1)->endOfMonth();
-        }
-
-        $count = BlogAuditoria::where('accion', 'CREAR')
-            ->whereBetween('fecha_hora', [$startDate, $endDate])
-            ->count();
+        $dto = MonthYearDTO::fromRequest($request);
+        $data = $this->metricasService->getBlogsCountByMonth($dto);
 
         return response()->json([
             "status" => 200,
-            "data" => [
-                "month" => $isYearly ? null : $month,
-                "year"  => $year,
-                "total_blogs" => $count
-            ]
+            "data" => $data
         ]);
     }
 
     // 1.2 Blogs creados últimos 12 meses
-    public function listBlogsByMonths12()
+    public function listBlogsByMonths12(): JsonResponse
     {
-        $endDate   = Carbon::now()->endOfMonth();
-        $startDate = Carbon::now()->subMonths(11)->startOfMonth();
-
-        $raw = BlogAuditoria::where('accion', 'CREAR')
-            ->whereBetween('fecha_hora', [$startDate, $endDate])
-            ->get()
-            ->groupBy(fn($i) => Carbon::parse($i->fecha_hora)->format('Y-m'))
-            ->map(fn($group) => [
-                'y' => (int) $group->first()->fecha_hora->format('Y'),
-                'm' => (int) $group->first()->fecha_hora->format('m'),
-                'total' => $group->count()
-            ])
-            ->keyBy(fn($i) => $i['y'] . '-' . str_pad($i['m'], 2, '0', STR_PAD_LEFT));
-
-        $data = [];
-        for ($i = 0; $i < 12; $i++) {
-            $date = $startDate->copy()->addMonths($i);
-            $key  = $date->format('Y-m');
-
-            $data[] = [
-                "month" => $date->format('F Y'),
-                "total_blogs" => isset($raw[$key]) ? $raw[$key]['total'] : 0
-            ];
-        }
+        $data = $this->metricasService->getBlogsLast12Months();
 
         return response()->json([
             "status" => 200,
@@ -97,64 +43,23 @@ class MetricasController extends Controller
     }
 
     // 1.3 Top 5 meses con más blogs
-    public function top5MothsWithMoreBlogs()
+    public function top5MothsWithMoreBlogs(): JsonResponse
     {
-        $data = BlogAuditoria::where('accion', 'CREAR')
-            ->get()
-            ->groupBy(fn($i) => Carbon::parse($i->fecha_hora)->format('Y-m'))
-            ->map(fn($group) => [
-                'y' => (int) $group->first()->fecha_hora->format('Y'),
-                'm' => (int) $group->first()->fecha_hora->format('m'),
-                'total' => $group->count()
-            ])
-            ->sortByDesc('total')
-            ->take(5)
-            ->map(fn($i) => [
-                "month" => Carbon::create($i['y'], $i['m'])->format('F Y'),
-                "total_blogs" => $i['total']
-            ])
-            ->values();
+        $data = $this->metricasService->getTop5MonthsWithMoreBlogs();
 
         return response()->json([
             "status" => 200,
             "data" => $data
         ]);
     }
-    /* ============================================================
-     * 2. METRICAS POR PLANTILLA
-     * ============================================================
-     */
+
     // 2.1 Listar cards por plantilla
-    public function listOfCardsByPlantilla(Request $request)
+    public function listOfCardsByPlantilla(ListCardsByPlantillaRequest $request): JsonResponse
     {
-        [$month, $year] = $this->resolveMonthYear($request);
+        $dto = CardMetricDTO::fromRequest($request);
+        $hasDateFilter = $request->has(['month', 'year']);
 
-        $validated = $request->validate([
-            'id_plantilla' => ['required', 'integer', 'min:1'],
-        ]);
-
-        $plantilla = $validated['id_plantilla'];
-
-        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
-
-        $query = Card::with(['blog.head', 'empleado'])
-            ->leftJoin('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
-            ->where('cards.id_plantilla', $plantilla)
-            ->select('cards.*');
-
-        // Filtrar por acción (solo si existe auditoría)
-        $query->where(function ($q) {
-            $q->where('ba.accion', 'CREAR')
-                ->orWhereNull('ba.accion'); // evita que desaparezcan registros sin auditoría
-        });
-
-        // Aplicar filtro de fechas SOLO si vienen explícitamente
-        if ($request->has(['month', 'year'])) {
-            $query->whereBetween('ba.fecha_hora', [$startDate, $endDate]);
-        }
-
-        $cards = $query->get();
+        $cards = $this->metricasService->getCardsByPlantilla($dto, $hasDateFilter);
 
         return response()->json([
             "status" => 200,
@@ -163,29 +68,10 @@ class MetricasController extends Controller
     }
 
     // 2.2 Cantidad de cards por plantilla
-    public function countListOfCardsByPlantilla(Request $request)
+    public function countListOfCardsByPlantilla(ListCardsByPlantillaRequest $request): JsonResponse
     {
-        [$month, $year, $isYearly] = $this->resolveMonthYear($request);
-
-        $validated = $request->validate([
-            'id_plantilla' => ['required', 'integer', 'min:1'],
-        ]);
-
-        $plantilla = $validated['id_plantilla'];
-
-        if ($isYearly) {
-            $startDate = Carbon::createFromDate($year, 1, 1)->startOfYear();
-            $endDate   = Carbon::createFromDate($year, 12, 31)->endOfYear();
-        } else {
-            $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-            $endDate   = Carbon::createFromDate($year, $month, 1)->endOfMonth();
-        }
-
-        $count = Card::join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
-            ->where('cards.id_plantilla', $plantilla)
-            ->where('ba.accion', 'CREAR')
-            ->whereBetween('ba.fecha_hora', [$startDate, $endDate])
-            ->count();
+        $dto = CardMetricDTO::fromRequest($request);
+        $count = $this->metricasService->countCardsByPlantilla($dto);
 
         return response()->json([
             "status" => 200,
@@ -194,67 +80,22 @@ class MetricasController extends Controller
     }
 
     // 2.3 Tabla cards por plantilla
-    public function tableCardsByIdPlantilla(Request $request)
+    public function tableCardsByIdPlantilla(MonthYearRequest $request): JsonResponse
     {
-        [$month, $year] = $this->resolveMonthYear($request);
-        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
-
-        $data = Card::query()
-            ->selectRaw('cards.id_plantilla, COUNT(cards.id_card) as count_cards')
-            ->join('blog_auditoria as ba', function ($join) use ($startDate, $endDate) {
-                $join->on('ba.id_blog', '=', 'cards.id_blog')
-                    ->where('ba.accion', '=', 'CREAR')
-                    ->whereBetween('ba.fecha_hora', [$startDate, $endDate]);
-            })
-            ->groupBy('cards.id_plantilla')
-            ->orderBy('cards.id_plantilla')
-            ->get();
+        $dto = MonthYearDTO::fromRequest($request);
+        $data = $this->metricasService->getTableCardsByIdPlantilla($dto);
 
         return response()->json([
             "status" => 200,
             "data" => $data
         ]);
     }
-    /* ============================================================
-     * 3. METRICAS POR EMPLEADO
-     * ============================================================
-     */
+
     // 3.1 Cards por empleado
-    public function listEmpleadoWithCards(Request $request)
+    public function listEmpleadoWithCards(ListCardsByEmpleadoRequest $request): JsonResponse
     {
-        [$month, $year] = $this->resolveMonthYear($request);
-
-        $validated = $request->validate([
-            'id_empleado' => [
-                'required',
-                'integer',
-                'min:1',
-                // Si el campo clave en tabla empleados es id_empleado:
-                // Rule::exists('empleados', 'id_empleado')
-            ],
-        ]);
-
-        $id = $validated['id_empleado'];
-        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
-
-        /*
-        $cards = Card::join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
-            ->where('cards.id_empleado', $id)
-            ->where('ba.accion', 'CREAR')
-            ->whereBetween('ba.fecha_hora', [$startDate, $endDate])
-            ->select('cards.*')
-            ->get();
-        */
-
-        $cards = Card::with(['blog.head', 'empleado'])
-            ->join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
-            ->where('cards.id_empleado', $id)
-            ->where('ba.accion', 'CREAR')
-            ->whereBetween('ba.fecha_hora', [$startDate, $endDate])
-            ->select('cards.*')
-            ->get();
+        $dto = EmpleadoMetricDTO::fromRequest($request);
+        $cards = $this->metricasService->getEmpleadoCards($dto);
 
         return response()->json([
             "status" => 200,
@@ -263,28 +104,10 @@ class MetricasController extends Controller
     }
 
     // 3.2 Cantidad cards por empleado
-    public function countListOfCardsByEmpleado(Request $request)
+    public function countListOfCardsByEmpleado(ListCardsByEmpleadoRequest $request): JsonResponse
     {
-        [$month, $year] = $this->resolveMonthYear($request);
-
-        $validated = $request->validate([
-            'id_empleado' => [
-                'required',
-                'integer',
-                'min:1',
-                // Rule::exists('empleados', 'id_empleado')
-            ],
-        ]);
-
-        $id = $validated['id_empleado'];
-        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
-
-        $count = Card::join('blog_auditoria as ba', 'ba.id_blog', '=', 'cards.id_blog')
-            ->where('cards.id_empleado', $id)
-            ->where('ba.accion', 'CREAR')
-            ->whereBetween('ba.fecha_hora', [$startDate, $endDate])
-            ->count();
+        $dto = EmpleadoMetricDTO::fromRequest($request);
+        $count = $this->metricasService->countEmpleadoCards($dto);
 
         return response()->json([
             "status" => 200,
@@ -293,115 +116,37 @@ class MetricasController extends Controller
     }
 
     // 3.3 Tabla cards por empleado
-    public function tableCardsByEmpleado(Request $request)
+    public function tableCardsByEmpleado(MonthYearRequest $request): JsonResponse
     {
-        [$month, $year, $isYearly] = $this->resolveMonthYear($request);
-
-        if ($isYearly) {
-            $startDate = Carbon::createFromDate($year, 1, 1)->startOfYear();
-            $endDate   = Carbon::createFromDate($year, 12, 31)->endOfYear();
-        } else {
-            $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-            $endDate   = Carbon::createFromDate($year, $month, 1)->endOfMonth();
-        }
-
-        $data = Empleado::query()
-            ->selectRaw('empleados.id_empleado, empleados.nombre as nombre_empleado, COUNT(DISTINCT CASE WHEN ba.id_blog IS NOT NULL THEN cards.id_card END) as count_cards')
-            ->leftJoin('cards', 'cards.id_empleado', '=', 'empleados.id_empleado')
-            ->leftJoin('blog_auditoria as ba', function ($join) use ($startDate, $endDate) {
-                $join->on('ba.id_blog', '=', 'cards.id_blog')
-                    ->where('ba.accion', '=', 'CREAR')
-                    ->whereBetween('ba.fecha_hora', [$startDate, $endDate]);
-            })
-            ->where('empleados.id_rol', 1)
-            ->groupBy('empleados.id_empleado', 'empleados.nombre')
-            ->get();
+        $dto = MonthYearDTO::fromRequest($request);
+        $data = $this->metricasService->getTableCardsByEmpleado($dto);
 
         return response()->json([
             "status" => 200,
             "data" => $data
         ]);
     }
-    /* ============================================================
-     * 4. TIEMPO CREACIÓN → EDICIÓN
-     * ============================================================
-     */
+
     // 4.1 TIEMPO CREACIÓN → EDICIÓN
-    public function tiempoCreacionEdicionPublicacionCard(Request $request)
+    public function tiempoCreacionEdicionPublicacionCard(MonthYearRequest $request): JsonResponse
     {
-        [$month, $year, $isYearly] = $this->resolveMonthYear($request);
+        $dto = MonthYearDTO::fromRequest($request);
+        $data = $this->metricasService->getTiempoCreacionEdicion($dto);
 
-        if ($isYearly) {
-            $startDate = Carbon::createFromDate($year, 1, 1)->startOfYear();
-            $endDate   = Carbon::createFromDate($year, 12, 31)->endOfYear();
-        } else {
-            $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-            $endDate   = Carbon::createFromDate($year, $month, 1)->endOfMonth();
-        }
-
-        // Paso 1: blogs CREADOS en el período
-        $blogIds = BlogAuditoria::where('accion', 'CREAR')
-            ->whereBetween('fecha_hora', [$startDate, $endDate])
-            ->pluck('id_blog');
-
-        if ($blogIds->isEmpty()) {
-            return response()->json(["status" => 200, "data" => [], "total" => 0]);
-        }
-
-        // Paso 2: para esos blogs, buscar CREAR + primer ACTUALIZAR (sin filtro de fecha)
-        $data = BlogAuditoria::whereIn('id_blog', $blogIds)
-            ->whereIn('accion', ['CREAR', 'ACTUALIZAR'])
-            ->orderBy('id_blog')
-            ->orderBy('fecha_hora')
-            ->get()
-            ->groupBy('id_blog')
-            ->map(function ($items, $id_blog) {
-                $crear  = $items->firstWhere('accion', 'CREAR');
-                $editar = $items->firstWhere('accion', 'ACTUALIZAR');
-
-                if (!$crear || !$editar) return null;
-
-                return [
-                    "id_blog"        => $id_blog,
-                    "tiempo_minutos" => Carbon::parse($crear->fecha_hora)
-                        ->diffInMinutes(Carbon::parse($editar->fecha_hora)),
-                ];
-            })
-            ->filter()
-            ->values();
+        $total = is_array($data) && isset($data['total']) ? $data['total'] : (is_countable($data) ? count($data) : 0);
 
         return response()->json([
             "status" => 200,
             "data"   => $data,
-            "total_blogs_periodo" => $blogIds->count(),
-            "blogs_con_edicion"   => $data->count(),
+            "total_blogs_periodo" => $total,
+            "blogs_con_edicion"   => is_countable($data) ? count($data) : 0,
         ]);
     }
 
-    // 4.2 Frecuencia de publicación de cards todos los empleados
-    // Devuelve la frecuencia de publicación de cards por empleado al mes.
-    public function frecuenciaPublicacionCardsTodosEmpleados()
+    public function frecuenciaPublicacionCardsTodosEmpleados(): JsonResponse
     {
         try {
-            $now = now();
-
-            $data = Empleado::where('id_rol', 1)
-                ->withCount('cards')
-                ->get()
-                ->map(function ($empleado) use ($now) {
-
-                    // Protección si created_at es null
-                    $mesesTrabajados = $empleado->created_at
-                        ? $empleado->created_at->diffInMonths($now) + 1
-                        : 1;
-
-                    return [
-                        'id_empleado' => $empleado->id_empleado,
-                        'nombre_empleado' => $empleado->nombre,
-                        'frecuencia_publicacion_mensual' =>
-                        round($empleado->cards_count / $mesesTrabajados, 2),
-                    ];
-                });
+            $data = $this->metricasService->getFrecuenciaPublicacionTodosEmpleados();
 
             return response()->json([
                 "status" => 200,

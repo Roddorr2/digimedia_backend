@@ -3,28 +3,30 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Subservicio;
-use Illuminate\Http\Request;
+use App\Services\SubservicioService;
+use App\Http\Resources\SubservicioResource;
+use Illuminate\Http\JsonResponse;
 
 class SubservicioController extends Controller
 {
+    public function __construct(
+        private SubservicioService $subservicioService
+    ) {}
+
     /**
      * Listar todos los subservicios con su servicio anidado
      * Usado por el dashboard para poblar selectores de servicio/subservicio
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index()
+    public function index(): JsonResponse
     {
         try {
-            $subservicios = Subservicio::with('servicio')
-                ->orderBy('id_servicio')
-                ->orderBy('id_subservicio')
-                ->get();
+            $subservicios = $this->subservicioService->getSubservicios();
 
             return response()->json([
                 'success' => true,
-                'data'    => $subservicios
+                'data'    => SubservicioResource::collection($subservicios)
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -42,13 +44,10 @@ class SubservicioController extends Controller
      * @param int $id_servicio
      * @return \Illuminate\Http\JsonResponse
      */
-    public function byServicio($id_servicio)
+    public function byServicio($id_servicio): JsonResponse
     {
         try {
-            $subservicios = Subservicio::with('servicio')
-                ->byServicio($id_servicio)
-                ->orderBy('id_subservicio')
-                ->get();
+            $subservicios = $this->subservicioService->getSubserviciosByServicio((int)$id_servicio);
 
             if ($subservicios->isEmpty()) {
                 return response()->json([
@@ -59,7 +58,7 @@ class SubservicioController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data'    => $subservicios
+                'data'    => SubservicioResource::collection($subservicios)
             ]);
         } catch (\Exception $e) {
             return response()->json([

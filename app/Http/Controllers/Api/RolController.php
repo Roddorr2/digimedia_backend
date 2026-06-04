@@ -3,57 +3,62 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Rol;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use App\Models\Permiso;
+use App\Http\Requests\Rol\StoreRolRequest;
+use App\Http\Requests\Rol\UpdateRolRequest;
+use App\Http\Requests\Rol\SyncPermisosRequest;
+use App\Http\Resources\RolResource;
+use App\Http\Resources\PermisoResource;
+use App\Services\RolService;
+use App\DTOs\Rol\StoreRolDTO;
+use App\DTOs\Rol\UpdateRolDTO;
+use App\DTOs\Rol\SyncPermisosDTO;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class RolController extends Controller
 {
+    public function __construct(
+        private RolService $rolService
+    ) {}
+
     /**
      * Display a listing of the resource.
+     *
+     * @return JsonResponse
      */
-    public function index()
+    public function index(): JsonResponse
     {
         try {
-            $roles = Rol::select('id_rol', 'nombre')->get();
+            $roles = $this->rolService->getRoles();
             return response()->json([
                 'status' => 200,
-                'data' => $roles,
+                'data' => RolResource::collection($roles),
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 500,
                 'error' => 'Error al obtener roles',
+                'message' => $e->getMessage()
             ], 500);
         }
     }
 
     /**
      * Store a newly created resource in storage.
+     *
+     * @param StoreRolRequest $request
+     * @return JsonResponse
      */
-    public function store(Request $request)
+    public function store(StoreRolRequest $request): JsonResponse
     {
         try {
-            $validatedData = $request->validate([
-                'nombre' => 'required|string|max:255|unique:roles',
-                'permisos' => 'nullable|array',
-                'permisos.*' => 'exists:permisos,id_permiso',
-            ]);
-
-            $rol = Rol::create([
-                'nombre' => $validatedData['nombre'],
-            ]);
-
-            if (!empty($validatedData['permisos'])) {
-                $rol->permisos()->attach($validatedData['permisos']);
-            }
+            $dto = StoreRolDTO::fromRequest($request);
+            $rol = $this->rolService->createRol($dto);
 
             return response()->json([
                 'status' => 201,
                 'message' => 'Rol creado correctamente',
-                'data' => $rol,
+                'data' => new RolResource($rol),
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -66,14 +71,17 @@ class RolController extends Controller
 
     /**
      * Display the specified resource.
+     *
+     * @param mixed $id
+     * @return JsonResponse
      */
-    public function show($id)
+    public function show($id): JsonResponse
     {
         try {
-            $rol = Rol::with('permisos')->findOrFail($id);
+            $rol = $this->rolService->getRolById((int)$id, ['permisos']);
             return response()->json([
                 'status' => 200,
-                'data' => $rol,
+                'data' => new RolResource($rol),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -85,87 +93,85 @@ class RolController extends Controller
 
     /**
      * Update the specified resource in storage.
+     *
+     * @param UpdateRolRequest $request
+     * @param mixed $id
+     * @return JsonResponse
      */
-    public function update(Request $request, $id)
+    public function update(UpdateRolRequest $request, $id): JsonResponse
     {
         try {
-            $rol = Rol::findOrFail($id);
-            
-            $validatedData = $request->validate([
-                'nombre' => [
-                    'required',
-                    'string',
-                    'max:255',
-                    Rule::unique('roles')->ignore($id, 'id_rol'),
-                ],
-                'permisos' => 'nullable|array',
-                'permisos.*' => 'exists:permisos,id_permiso',
-            ]);
-
-            $rol->update([
-                'nombre' => $validatedData['nombre'],
-            ]);
-
-            if (isset($validatedData['permisos'])) {
-                $rol->permisos()->sync($validatedData['permisos']);
-            }
+            $dto = UpdateRolDTO::fromRequest($request);
+            $rol = $this->rolService->updateRol((int)$id, $dto);
 
             return response()->json([
                 'status' => 200,
                 'message' => 'Rol actualizado correctamente',
-                'data' => $rol,
+                'data' => new RolResource($rol),
             ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'error' => 'Rol no encontrado',
+                'message' => $e->getMessage()
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => $e instanceof ModelNotFoundException ? 404 : 500,
-                'error' => $e instanceof ModelNotFoundException ? 'Rol no encontrado' : 'Error al actualizar rol',
+                'status' => 500,
+                'error' => 'Error al actualizar rol',
                 'message' => $e->getMessage()
-            ], $e instanceof ModelNotFoundException ? 404 : 500);
+            ], 500);
         }
     }
 
     /**
      * Remove the specified resource from storage.
+     *
+     * @param mixed $id
+     * @return JsonResponse
      */
-    public function destroy($id)
+    public function destroy($id): JsonResponse
     {
         try {
-            $rol = Rol::findOrFail($id);
-            
-            // verificar si hay empleados con este rol
-            if ($rol->empleados()->count() > 0) {
-                return response()->json([
-                    'status' => 400,
-                    'error' => 'No se puede eliminar el rol porque tiene empleados asociados',
-                ], 400);
-            }
-            
-            // eliminar la relación con permisos
-            $rol->permisos()->detach();
-            $rol->delete();
+            $this->rolService->deleteRol((int)$id);
 
             return response()->json([
                 'status' => 200,
                 'message' => 'Rol eliminado correctamente',
             ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'error' => 'Rol no encontrado',
+            ], 404);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'status' => 400,
+                'error' => $e->getMessage(),
+            ], 400);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException ? 404 : 500,
-                'error' => $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException ? 'Rol no encontrado' : 'Error al eliminar rol',
+                'status' => 500,
+                'error' => 'Error al eliminar rol',
                 'message' => $e->getMessage()
-            ], $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException ? 404 : 500);
+            ], 500);
         }
     }
 
-    public function getPermisos($id)
+    /**
+     * Display permissions of the specified role.
+     *
+     * @param mixed $id
+     * @return JsonResponse
+     */
+    public function getPermisos($id): JsonResponse
     {
         try {
-            $rol = Rol::findOrFail($id);
-            $permisos = $rol->permisos;
+            $permisos = $this->rolService->getPermisosDeRol((int)$id);
             
             return response()->json([
                 'status' => 200,
-                'data' => $permisos,
+                'data' => PermisoResource::collection($permisos),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -175,29 +181,36 @@ class RolController extends Controller
         }
     }
 
-    public function syncPermisos(Request $request, $id)
+    /**
+     * Synchronize permissions of the specified role.
+     *
+     * @param SyncPermisosRequest $request
+     * @param mixed $id
+     * @return JsonResponse
+     */
+    public function syncPermisos(SyncPermisosRequest $request, $id): JsonResponse
     {
         try {
-            $rol = Rol::findOrFail($id);
-            
-            $validatedData = $request->validate([
-                'permisos' => 'required|array',
-                'permisos.*' => 'exists:permisos,id_permiso',
-            ]);
-
-            $rol->permisos()->sync($validatedData['permisos']);
+            $dto = SyncPermisosDTO::fromRequest($request);
+            $permisos = $this->rolService->syncPermisosDeRol((int)$id, $dto);
 
             return response()->json([
                 'status' => 200,
                 'message' => 'Permisos actualizados correctamente',
-                'data' => $rol->permisos,
+                'data' => PermisoResource::collection($permisos),
             ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'error' => 'Rol no encontrado',
+                'message' => $e->getMessage()
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => $e instanceof ModelNotFoundException ? 404 : 500,
-                'error' => $e instanceof ModelNotFoundException ? 'Rol no encontrado' : 'Error al actualizar permisos',
+                'status' => 500,
+                'error' => 'Error al actualizar permisos',
                 'message' => $e->getMessage()
-            ], $e instanceof ModelNotFoundException ? 404 : 500);
+            ], 500);
         }
     }
 }

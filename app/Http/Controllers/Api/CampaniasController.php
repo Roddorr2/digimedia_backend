@@ -2,380 +2,120 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\CampaniaWhatsApp;
-use App\Models\WatModal;
-use App\Models\modalservicios;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\DB;
+use App\Services\CampaniaService;
+use App\Services\CampaniaLeadService;
+use App\Http\Requests\Campania\CampaniaFiltersRequest;
+use App\Http\Requests\Campania\LeadsFiltersRequest;
+use App\Http\Resources\CampaniaWhatsAppResource;
+use App\Http\Resources\CampaniaWhatsAppDetailsResource;
+use App\Http\Resources\CampaniaLeadResource;
+use App\DTOs\Campania\CampaniaFiltersDTO;
+use App\DTOs\Campania\LeadsFiltersDTO;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class CampaniasController extends Controller
 {
-    // GET /api/campanias
-    public function index(Request $request)
+    public function __construct(
+        private CampaniaService $campaniaService,
+        private CampaniaLeadService $campaniaLeadService
+    ) {}
+
+    public function index(CampaniaFiltersRequest $request): JsonResponse
     {
         try {
+            $filters = CampaniaFiltersDTO::fromRequest($request);
+            $result = $this->campaniaService->getCampaniasList($filters);
 
-            $query = CampaniaWhatsApp::with('servicio');
-
-            if ($request->filled('estado')) {
-                $query->where('estado', $request->estado);
-            }
-            $campanias = $query
-                ->orderBy('created_at', 'desc')
-                ->paginate(10);
-
-            // transformar SOLO items, NO romper estructura paginator
+            $campanias = $result['campanias'];
             $campanias->getCollection()->transform(function ($campania) {
-
-                return [
-                    'id_campania' => $campania->id_campania,
-                   'servicio' => optional($campania->servicio)->nombre,
-                    'estado' => $campania->estado,
-                    'total_destinatarios' => $campania->total_destinatarios,
-                    'envios_exitosos' => $campania->envios_exitosos,
-                    'envios_fallidos' => $campania->envios_fallidos,
-                    'envios_pendientes' => $campania->envios_pendientes,
-                    'porcentaje' => $campania->getProgressPercentage(),
-                    'fecha_inicio' => $campania->fecha_inicio,
-                    'fecha_fin' => $campania->fecha_fin,
-                    'created_at' => $campania->created_at,
-                ];
+                return (new CampaniaWhatsAppResource($campania))->toArray(request());
             });
-
-            $activeCampaign = CampaniaWhatsApp::getActiveCampaign();
 
             return response()->json([
                 'success' => true,
-                'data' => $campanias, // 👈 AQUÍ está la clave
-                'active_campaign' => $activeCampaign
+                'data' => $campanias,
+                'active_campaign' => $result['active_campaign']
             ]);
-
         } catch (\Exception $e) {
-
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener campañas',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
-    
-    // GET /api/campanias/{id}
-    public function show($id){
+
+    public function show(int $id): JsonResponse
+    {
         try {
-
-            $campania = CampaniaWhatsApp::with([
-                'servicio',
-                'usuario',
-                'mensajesWhatsApp'
-            ])->find($id);
-
-            // No encontrada
-            if (!$campania) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Campaña no encontrada'
-                ], 404);
-            }
+            $campania = $this->campaniaService->getCampaniaDetails($id);
 
             return response()->json([
                 'success' => true,
-
-                'data' => [
-
-                    'id_campania' => $campania->id_campania,
-
-                    // Servicio
-                    'servicio' => [
-                        'id_servicio' => $campania->servicio->id_servicio ?? null,
-                        'nombre' => $campania->servicio->nombre ?? null,
-                    ],
-
-                    // Usuario
-                    'usuario' => [
-                        'id' => $campania->usuario->id ?? null,
-                        'name' => $campania->usuario->name ?? null,
-                    ],
-
-                    // Datos generales
-                    'estado' => $campania->estado,
-                    'parrafo' => $campania->parrafo,
-                    'imagen_url' => $campania->imagen_url,
-
-                    // Métricas
-                    'total_destinatarios' => $campania->total_destinatarios,
-                    'envios_exitosos' => $campania->envios_exitosos,
-                    'envios_fallidos' => $campania->envios_fallidos,
-                    'envios_pendientes' => $campania->envios_pendientes,
-                    'envios_hoy' => $campania->envios_hoy,
-
-                    // Progreso
-                    'porcentaje_progreso' => $campania->getProgressPercentage(),
-
-                    // Fechas
-                    'fecha_inicio' => $campania->fecha_inicio,
-                    'fecha_fin' => $campania->fecha_fin,
-                    'fecha_ultimo_envio' => $campania->fecha_ultimo_envio,
-                    'created_at' => $campania->created_at,
-
-                    // Estados calculados
-                    'is_completed' => $campania->isCompleted(),
-                    'is_in_progress' => $campania->isInProgress(),
-                    'is_draft' => $campania->isDraft(),
-                    'is_paused_until_tomorrow' => $campania->isPausedUntilTomorrow(),
-                    'is_paused_outside_hours' => $campania->isPausedOutsideHours(),
-
-                    // Cuota diaria
-                    'remaining_daily_quota' => $campania->getRemainingDailyQuota(),
-                    'has_reached_daily_limit' => $campania->hasReachedDailyLimit(),
-
-                    // Retry stats
-                    'retry_stats' => $campania->getRetryStats(),
-
-                    // Reintentos
-                    'has_failed_messages_to_retry' => $campania->hasFailedMessagesToRetry(),
-
-                    // Total mensajes asociados
-                    'total_mensajes' => $campania->mensajesWhatsApp->count(),
-
-                    // Auto resume
-                    'can_auto_resume' => $campania->canAutoResume(),
-                ]
+                'data' => new CampaniaWhatsAppDetailsResource($campania)
             ]);
-
         } catch (\Exception $e) {
-
+            $status = $e->getCode() === 404 ? 404 : 500;
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener campaña',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => $e->getMessage(),
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], $status);
         }
-    }    
-
-    // GET /api/campanias/{id}/leads
-    public function leads(Request $request, $id)
-    {
-        $campania = CampaniaWhatsApp::findOrFail($id);
-
-        // Leads válidos para la campaña:
-        // - mismo servicio
-        // - existentes antes de iniciar campaña
-        // - solo activos
-        // - teléfono válido
-        // - SIN teléfonos duplicados (mismo criterio usado al crear campaña)
-        $telefonosValidos = modalservicios::query()
-
-            ->where('id_servicio', $campania->id_servicio)
-
-            ->where('estado', 1)
-
-            ->whereNotNull('telefono')
-
-            ->where('telefono', '!=', '')
-
-            ->where(
-                'modalservicios.fecha',
-                '<=',
-                \Carbon\Carbon::parse($campania->fecha_inicio)
-                    ->setTimezone('America/Lima')
-                    ->format('Y-m-d H:i:s')
-            )
-
-            ->orderBy('id_modalservicio')
-
-            ->get()
-
-            ->unique('telefono')
-
-            ->pluck('id_modalservicio');
-
-        $query = modalservicios::query()
-
-            ->whereIn('modalservicios.id_modalservicio', $telefonosValidos)
-
-            ->leftJoin('modal_wats', function ($join) use ($id) {
-
-                $join->on(
-                    'modalservicios.id_modalservicio',
-                    '=',
-                    'modal_wats.id_modalservicio'
-                )
-
-                ->where('modal_wats.campania_id', $id);
-            })
-
-            ->select([
-                'modalservicios.id_modalservicio',
-                'modalservicios.nombre',
-                'modalservicios.telefono',
-
-                'modal_wats.id_modal_wat',
-                'modal_wats.estado',
-                'modal_wats.intentos',
-                'modal_wats.puede_reintentar',
-                'modal_wats.error',
-                'modal_wats.fecha',
-            ]);
-
-        // 🔹 FILTRO ESTADO
-        if ($request->filled('estado')) {
-
-            if ($request->estado === 'pendiente') {
-
-                $query->whereNull('modal_wats.id_modal_wat');
-            }
-
-            if ($request->estado === 'enviado') {
-
-                $query->where('modal_wats.estado', 1);
-            }
-
-            if ($request->estado === 'fallido') {
-
-                $query->where('modal_wats.estado', 0);
-            }
-        }
-
-        // 🔹 FILTRO SEARCH
-        if ($request->filled('search')) {
-
-            $search = $request->search;
-
-            $query->where(function ($q) use ($search) {
-
-                $q->where('modalservicios.nombre', 'like', "%{$search}%")
-                    ->orWhere('modalservicios.telefono', 'like', "%{$search}%");
-            });
-        }
-
-        $leads = $query
-
-            // pendientes primero
-            ->orderByRaw('modal_wats.id_modal_wat IS NULL DESC')
-
-            // luego más recientes
-            ->orderBy('modal_wats.fecha', 'desc')
-
-            ->paginate($request->get('per_page', 15));
-
-        $data = $leads->getCollection()->map(function ($lead) {
-
-            return [
-
-                'id_modalservicio' => $lead->id_modalservicio,
-
-                'id_modal_wat' => $lead->id_modal_wat,
-
-                'nombre' => $lead->nombre,
-
-                'telefono' => $lead->telefono,
-
-                'estado' => is_null($lead->id_modal_wat)
-                    ? 'pendiente'
-                    : ($lead->estado ? 'enviado' : 'fallido'),
-
-                'intentos' => $lead->intentos ?? 0,
-
-                'puede_reintentar' => (bool) ($lead->puede_reintentar ?? false),
-
-                'error' => $lead->error,
-
-                'fecha' => $lead->fecha
-                    ? \Carbon\Carbon::parse($lead->fecha)
-                        ->format('Y-m-d\TH:i:s')
-                    : null,
-            ];
-        });
-
-        return response()->json([
-            'success' => true,
-
-            'data' => [
-                'data' => $data,
-                'current_page' => $leads->currentPage(),
-                'last_page' => $leads->lastPage(),
-                'total' => $leads->total(),
-            ]
-        ]);
     }
 
-    // POST /api/campanias/{id}/leads/{wat_modal_id}/retry
-    public function retryLead(Request $request, $id, $wat_modal_id) 
+    public function leads(LeadsFiltersRequest $request, int $id): JsonResponse
     {
-        // 1. Obtener campaña y verificar que existe
-        $campania = CampaniaWhatsApp::findOrFail($id);
-
-        // 2. Obtener el registro WatModal
-        $watModal = WatModal::where('id_modal_wat', $wat_modal_id)
-            ->where('campania_id', $id)
-            ->firstOrFail();
-
-        // 3. Verificar que el lead puede reintentarse
-        if (!$watModal->canRetry()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Este lead no puede reintentarse (máximo 3 intentos o ya fue enviado)'
-            ], 400);
-        }
-
-        // 4. Verificar horario permitido (8am–11pm Lima)
-        if (!CampaniaWhatsApp::isWithinAllowedHours()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Fuera del horario permitido (8am–11pm hora Lima)'
-            ], 400);
-        }
-        
-        if ($campania->hasReachedDailyLimit()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'La campaña alcanzó el límite diario de envíos'
-            ], 400);
-        }
-
-        // 5. Obtener datos del lead desde modalservicios
-        $modalServicio = modalservicios::findOrFail($watModal->id_modalservicio);
-
-        // 6. Llamar al whatsapp-service con imagen + párrafo de la campaña
-        $response = Http::timeout(60)
-            ->withHeaders(['X-API-Key' => env('WHATSAPP_SERVICE_API_KEY')])
-            ->post(env('WHATSAPP_API_URL') . '/api/whatsapp/send-message', [
-                'telefono'   => formatearTelefonoWhatsApp($modalServicio->telefono),
-                'mensaje'    => $campania->parrafo,
-                'imagen_url' => $campania->imagen_url,
+        try {
+            $filters = LeadsFiltersDTO::fromRequest($request);
+            $result = $this->campaniaLeadService->getLeadsList($id, [
+                'estado' => $filters->estado,
+                'search' => $filters->search,
+                'perPage' => $filters->perPage
             ]);
 
-        // 7. Actualizar WatModal y contadores de la campaña
-        if ($response->successful() && $response->json('success')) {
-            $watModal->update([
-                'estado'          => 1,
-                'error'           => null,
-                'intentos'        => $watModal->intentos + 1,
-                'puede_reintentar'=> false,
-                'fecha'           => now(),
+            $leads = $result['leads'];
+            $data = $leads->getCollection()->map(function ($lead) {
+                return (new CampaniaLeadResource($lead))->toArray(request());
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'data' => $data,
+                    'current_page' => $leads->currentPage(),
+                    'last_page' => $leads->lastPage(),
+                    'total' => $leads->total(),
+                ]
             ]);
-            $campania->increment('envios_exitosos');
-            $campania->increment('envios_hoy');
-            $campania->decrement('envios_fallidos');
-
-            return response()->json(['success' => true, 'message' => 'Mensaje reenviado correctamente']);
+        } catch (\Exception $e) {
+            $status = $e->getCode() === 404 ? 404 : 500;
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], $status);
         }
+    }
 
-        // 8. Si falló, incrementar intentos
-        $newIntentos = $watModal->intentos + 1;
-        $watModal->update([
-            'estado'           => 0,
-            'intentos'         => $newIntentos,
-            'error'            => $response->json('error') ?? 'Error en reintento manual',
-            'puede_reintentar' => $newIntentos < 3,
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'No se pudo reenviar el mensaje'
-        ], 500);
+    public function retryLead(Request $request, int $id, int $wat_modal_id): JsonResponse
+    {
+        try {
+            $result = $this->campaniaLeadService->retryLead($id, $wat_modal_id);
+            
+            return response()->json($result);
+        } catch (\Exception $e) {
+            $status = match ($e->getCode()) {
+                400, 404 => $e->getCode(),
+                default => 500
+            };
+            
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], $status);
+        }
     }
 }

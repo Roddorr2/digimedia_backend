@@ -1,23 +1,35 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-use App\Http\Controllers\Controller;
 
-use App\Models\Permiso;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Permiso\StorePermisoRequest;
+use App\Http\Requests\Permiso\UpdatePermisoRequest;
+use App\Http\Resources\PermisoResource;
+use App\Services\PermisoService;
+use App\DTOs\Permiso\StorePermisoDTO;
+use App\DTOs\Permiso\UpdatePermisoDTO;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PermisoController extends Controller
 {
-    public function index()
+    public function __construct(
+        private PermisoService $permisoService
+    ) {}
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return JsonResponse
+     */
+    public function index(): JsonResponse
     {
         try {
-            $permisos = Permiso::all();
+            $permisos = $this->permisoService->getPermisos();
             return response()->json([
                 'status' => 200,
-                'data' => $permisos,
+                'data' => PermisoResource::collection($permisos),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -28,22 +40,22 @@ class PermisoController extends Controller
         }
     }
 
-    public function store(Request $request)
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param StorePermisoRequest $request
+     * @return JsonResponse
+     */
+    public function store(StorePermisoRequest $request): JsonResponse
     {
         try {
-            $validatedData = $request->validate([
-                'nombre' => 'required|string|max:255|unique:permisos',
-                'descripcion' => 'nullable|string',
-            ]);
-
-            $validatedData['slug'] = Str::slug($validatedData['nombre']);
-
-            $permiso = Permiso::create($validatedData);
+            $dto = StorePermisoDTO::fromRequest($request);
+            $permiso = $this->permisoService->createPermiso($dto);
 
             return response()->json([
                 'status' => 201,
                 'message' => 'Permiso creado correctamente',
-                'data' => $permiso,
+                'data' => new PermisoResource($permiso),
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -54,13 +66,19 @@ class PermisoController extends Controller
         }
     }
 
-    public function show($id)
+    /**
+     * Display the specified resource.
+     *
+     * @param mixed $id
+     * @return JsonResponse
+     */
+    public function show($id): JsonResponse
     {
         try {
-            $permiso = Permiso::findOrFail($id);
+            $permiso = $this->permisoService->getPermisoById((int)$id);
             return response()->json([
                 'status' => 200,
-                'data' => $permiso,
+                'data' => new PermisoResource($permiso),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -70,58 +88,66 @@ class PermisoController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param UpdatePermisoRequest $request
+     * @param mixed $id
+     * @return JsonResponse
+     */
+    public function update(UpdatePermisoRequest $request, $id): JsonResponse
     {
         try {
-            $permiso = Permiso::findOrFail($id);
-            
-            $validatedData = $request->validate([
-                'nombre' => [
-                    'required',
-                    'string',
-                    'max:255',
-                    Rule::unique('permisos')->ignore($id, 'id_permiso'),
-                ],
-                'descripcion' => 'nullable|string',
-            ]);
-
-            if ($request->nombre !== $permiso->nombre) {
-                $validatedData['slug'] = Str::slug($validatedData['nombre']);
-            }
-
-            $permiso->update($validatedData);
+            $dto = UpdatePermisoDTO::fromRequest($request);
+            $permiso = $this->permisoService->updatePermiso((int)$id, $dto);
 
             return response()->json([
                 'status' => 200,
                 'message' => 'Permiso actualizado correctamente',
-                'data' => $permiso,
+                'data' => new PermisoResource($permiso),
             ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'error' => 'Permiso no encontrado',
+                'message' => $e->getMessage()
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => $e instanceof ModelNotFoundException ? 404 : 500,
-                'error' => $e instanceof ModelNotFoundException ? 'Permiso no encontrado' : 'Error al actualizar permiso',
+                'status' => 500,
+                'error' => 'Error al actualizar permiso',
                 'message' => $e->getMessage()
-            ], $e instanceof ModelNotFoundException ? 404 : 500);
+            ], 500);
         }
     }
 
-    public function destroy($id)
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param mixed $id
+     * @return JsonResponse
+     */
+    public function destroy($id): JsonResponse
     {
         try {
-            $permiso = Permiso::findOrFail($id);
-            $permiso->delete();
+            $this->permisoService->deletePermiso((int)$id);
 
             return response()->json([
                 'status' => 200,
                 'message' => 'Permiso eliminado correctamente',
             ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'error' => 'Permiso no encontrado',
+                'message' => $e->getMessage()
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => $e instanceof ModelNotFoundException ? 404 : 500,
-                'error' => $e instanceof ModelNotFoundException ? 'Permiso no encontrado' : 'Error al eliminar permiso',
+                'status' => 500,
+                'error' => 'Error al eliminar permiso',
                 'message' => $e->getMessage()
-            ], $e instanceof ModelNotFoundException ? 404 : 500);
+            ], 500);
         }
     }
-
 }
