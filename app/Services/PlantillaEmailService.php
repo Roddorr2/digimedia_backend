@@ -90,6 +90,7 @@ class PlantillaEmailService
                 'nombre'            => $base?->nombre,
                 'asunto'            => $base?->asunto ?? 'Información para ti',
                 'encabezado'        => $base?->encabezado ?? 'Hola {nombre}',
+                'color'             => $base?->color ?? '#8a2be2',
                 'imagen_url'        => $base?->imagen_url ?? '',
                 'mensaje'           => $base?->mensaje ?? 'Hola {nombre}, te contactamos desde Digimedia.',
                 'mensaje_boton'     => $base?->mensaje_boton,
