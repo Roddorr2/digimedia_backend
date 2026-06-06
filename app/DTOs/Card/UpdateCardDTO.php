@@ -13,6 +13,8 @@ class UpdateCardDTO
         public readonly string $titulo,
         public readonly string $descripcion,
         public readonly bool $estado_publicacion,
+        public readonly string $public_image,
+        public readonly ?string $url_image,
         public readonly ?string $logo,
         public readonly ?string $url_logo
     ) {}
@@ -27,6 +29,8 @@ class UpdateCardDTO
             titulo: $data['titulo'],
             descripcion: $data['descripcion'],
             estado_publicacion: $data['estado_publicacion'] ?? false,
+            public_image: $data['public_image'],
+            url_image: $data['url_image'] ?? null,
             logo: $data['logo'] ?? null,
             url_logo: $data['url_logo'] ?? null
         );
@@ -41,6 +45,8 @@ class UpdateCardDTO
             'titulo' => $this->titulo,
             'descripcion' => $this->descripcion,
             'estado_publicacion' => $this->estado_publicacion,
+            'public_image' => $this->public_image,
+            'url_image' => $this->url_image,
             'logo' => $this->logo,
             'url_logo' => $this->url_logo,
         ];

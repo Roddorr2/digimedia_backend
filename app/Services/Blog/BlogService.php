@@ -69,8 +69,7 @@ class BlogService
             id_blog_head: $data['id_blog_head'],
             id_blog_body: $data['id_blog_body'],
             id_blog_footer: $data['id_blog_footer'],
-            id_card: $data['id_card'],
-            id_empleado: $data['id_empleado'],
+            fecha: $data['fecha'],
             link: $slug
         );
         
@@ -79,7 +78,7 @@ class BlogService
         // Registrar auditoría
         AuditoriaService::registrar(
             $blog->id_blog,
-            $dto->id_empleado,
+            $data['id_empleado'],
             'CREAR',
             $blogHead->titulo ?? 'blog'
         );
@@ -91,19 +90,26 @@ class BlogService
     {
         $blog = $this->getBlogById($id);
         
-        $blogHead = $this->blogHeadRepository->findById($data['id_blog_head']);
+        $idBlogHead = $data['id_blog_head'] ?? $blog->id_blog_head;
+        $idBlogBody = $data['id_blog_body'] ?? $blog->id_blog_body;
+        $idBlogFooter = $data['id_blog_footer'] ?? $blog->id_blog_footer;
+        $fecha = $data['fecha'] ?? $blog->fecha;
+        
+        $blogHead = $this->blogHeadRepository->findById($idBlogHead);
         if (!$blogHead) {
             throw new ModelNotFoundException('BlogHead no encontrado');
         }
         
-        $slug = $this->slugService->generateUniqueSlug($blogHead->titulo ?? 'blog', $id);
+        $slug = $blog->link;
+        if ($idBlogHead !== $blog->id_blog_head) {
+            $slug = $this->slugService->generateUniqueSlug($blogHead->titulo ?? 'blog', $id);
+        }
         
         $dto = new UpdateBlogDTO(
-            id_blog_head: $data['id_blog_head'],
-            id_blog_body: $data['id_blog_body'],
-            id_blog_footer: $data['id_blog_footer'],
-            id_card: $data['id_card'],
-            id_empleado: $data['id_empleado'],
+            id_blog_head: $idBlogHead,
+            id_blog_body: $idBlogBody,
+            id_blog_footer: $idBlogFooter,
+            fecha: $fecha,
             link: $slug,
             descripcion: $data['descripcion'] ?? null
         );
@@ -113,7 +119,7 @@ class BlogService
         // Registrar auditoría
         AuditoriaService::registrar(
             $blog->id_blog,
-            $dto->id_empleado,
+            $data['id_empleado'] ?? null,
             'ACTUALIZAR',
             $blogHead->titulo ?? 'blog',
             $dto->descripcion
