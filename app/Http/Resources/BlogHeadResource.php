@@ -35,6 +35,10 @@ class BlogHeadResource extends JsonResource
                 'meta_title' => $this->meta_title,
                 'meta_descripcion' => $this->meta_descripcion,
             ],
+
+            'bg_color' => $this->bg_color,
+            'bg_type' => $this->bg_type,
+            'bg_colors' => $this->bg_colors,
         ];
     }
 }

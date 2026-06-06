@@ -12,11 +12,9 @@ class UpdateCardDTO
         public readonly int $id_empleado,
         public readonly string $titulo,
         public readonly string $descripcion,
-        public readonly bool $estado_publicacion,
-        public readonly string $public_image,
-        public readonly ?string $url_image,
-        public readonly ?string $logo,
-        public readonly ?string $url_logo
+        public readonly ?bool $estado_publicacion,
+        public readonly ?string $public_image,
+        public readonly ?string $url_image
     ) {}
 
     public static function fromRequest(UpdateCardRequest $request): self
@@ -28,27 +26,34 @@ class UpdateCardDTO
             id_empleado: $data['id_empleado'],
             titulo: $data['titulo'],
             descripcion: $data['descripcion'],
-            estado_publicacion: $data['estado_publicacion'] ?? false,
-            public_image: $data['public_image'],
-            url_image: $data['url_image'] ?? null,
-            logo: $data['logo'] ?? null,
-            url_logo: $data['url_logo'] ?? null
+            estado_publicacion: $data['estado_publicacion'] ?? null,
+            public_image: $data['public_image'] ?? null,
+            url_image: $data['url_image'] ?? null
         );
     }
 
     public function toArray(): array
     {
-        return [
+        $data = [
             'id_plantilla' => $this->id_plantilla,
             'id_blog' => $this->id_blog,
             'id_empleado' => $this->id_empleado,
             'titulo' => $this->titulo,
             'descripcion' => $this->descripcion,
-            'estado_publicacion' => $this->estado_publicacion,
-            'public_image' => $this->public_image,
-            'url_image' => $this->url_image,
-            'logo' => $this->logo,
-            'url_logo' => $this->url_logo,
         ];
+        
+        if ($this->estado_publicacion !== null) {
+            $data['estado_publicacion'] = $this->estado_publicacion;
+        }
+        
+        if ($this->public_image !== null) {
+            $data['public_image'] = $this->public_image;
+        }
+        
+        if ($this->url_image !== null) {
+            $data['url_image'] = $this->url_image;
+        }
+        
+        return $data;
     }
 }

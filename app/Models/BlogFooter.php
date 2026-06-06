@@ -30,7 +30,10 @@ class BlogFooter extends Model
         'title_image3',
         'estado',
         'palabra',
-        'enlace'
+        'enlace',
+        'bg_color',
+        'bg_type',
+        'bg_colors'
     ];
 
     public function blog(){

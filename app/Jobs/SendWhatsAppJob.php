@@ -15,18 +15,14 @@ class SendWhatsAppJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $watModal;
-    public $data;
-    public $id_servicio;
+    public function __construct(
+        public WatModal $watModal,
+        public array $data,
+        public int $id_servicio,
+        public ?int $id_subservicio = null,
+    ) {}
 
-    public function __construct(WatModal $watModal, array $data, int $id_servicio)
-    {
-        $this->watModal = $watModal;
-        $this->data = $data;
-        $this->id_servicio = $id_servicio;
-    }
-
-    public function handle()
+    public function handle(): void
     {
         try {
             if (!$this->watModal) {
@@ -36,31 +32,27 @@ class SendWhatsAppJob implements ShouldQueue
 
             $endpoint = rtrim(config('services.whatsapp.url'), '/') . '/api/whatsapp/send-message';
 
-            Log::info('Enviando WhatsApp', [
-                'url' => $endpoint,
-                'payload' => [
-                    'telefono' => '51' . $this->data['telefono'],
-                    'nombre' => $this->data['nombre'],
-                    'templateOption' => (int) $this->watModal->number_message,
-                    'id_servicio' => (int) $this->id_servicio,
-                ]
-            ]);
+            $payload = [
+                'telefono'       => '51' . $this->data['telefono'],
+                'nombre'         => $this->data['nombre'],
+                'templateOption' => (int) $this->watModal->number_message,
+                'id_servicio'    => (int) $this->id_servicio,
+            ];
 
+            if ($this->id_subservicio) {
+                $payload['id_subservicio'] = (int) $this->id_subservicio;
+            }
+
+            Log::info('Enviando WhatsApp', ['url' => $endpoint, 'payload' => $payload]);
 
             $response = Http::withHeaders([
                 'X-API-Key' => env('WHATSAPP_SERVICE_API_KEY'),
-            ])->post($endpoint, [
-                'telefono' => '51' . $this->data['telefono'],
-                'nombre' => $this->data['nombre'],
-                'templateOption' => (int) $this->watModal->number_message,
-                'id_servicio' => (int) $this->id_servicio,
-            ]);
+            ])->post($endpoint, $payload);
 
             Log::info('Respuesta WhatsApp', [
                 'status' => $response->status(),
-                'body' => $response->body(),
+                'body'   => $response->body(),
             ]);
-
 
             if ($response->failed()) {
                 throw new \Exception($response->body());
@@ -68,19 +60,19 @@ class SendWhatsAppJob implements ShouldQueue
 
             $this->watModal->update([
                 'estado' => 1,
-                'fecha' => now(),
+                'fecha'  => now(),
             ]);
 
         } catch (\Exception $e) {
             $this->watModal->update([
                 'estado' => 1,
-                'error' => $e->getMessage(),
-                'fecha' => now(),
+                'error'  => $e->getMessage(),
+                'fecha'  => now(),
             ]);
 
             Log::error('Error WhatsApp', [
                 'id_modal_wat' => $this->watModal->id_modal_wat,
-                'error' => $e->getMessage()
+                'error'        => $e->getMessage(),
             ]);
         }
     }

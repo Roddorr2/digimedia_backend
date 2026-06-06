@@ -28,7 +28,7 @@ class StoreBlogRequest extends FormRequest
             'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
             'id_blog_footer' => 'required|integer|exists:blog_footers,id_blog_footer',
             'fecha' => 'required|date',
-            'id_empleado' => 'required|integer|exists:empleados,id_empleado',
+            'id_empleado' => 'required|integer|exists:empleados,id_empleado', // Used for card creation and auditoria
         ];
     }
 

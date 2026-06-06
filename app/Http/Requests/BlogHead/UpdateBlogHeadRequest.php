@@ -74,10 +74,13 @@ class UpdateBlogHeadRequest extends FormRequest
             'texto_descripcion' => 'required|string|max:240',
             'public_image' => 'required|string',
             'url_image' => 'nullable|string',
-            'alt' => 'nullable|string|min:60|max:240',
-            'title' => 'nullable|string|min:50|max:140',
-            'meta_title' => 'nullable|string|min:50|max:120',
-            'meta_descripcion' => 'nullable|string|min:150|max:255',
+            'alt' => 'nullable|string|max:240',
+            'title' => 'nullable|string|max:140',
+            'meta_title' => 'nullable|string|max:120',
+            'meta_descripcion' => 'nullable|string|max:255',
+            'bg_color' => 'nullable|string|max:7',
+            'bg_type' => 'nullable|string|in:solid,gradient|max:20',
+            'bg_colors' => 'nullable|string|max:50',
         ];
     }
 

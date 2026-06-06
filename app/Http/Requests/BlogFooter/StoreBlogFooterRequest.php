@@ -84,6 +84,9 @@ class StoreBlogFooterRequest extends FormRequest
             'alt_image3' => 'nullable|string|min:60|max:240',
             'title_image3' => 'nullable|string|min:50|max:140',
             'estado' => 'nullable|boolean',
+            'bg_color' => 'nullable|string|max:7',
+            'bg_type' => 'nullable|string|in:solid,gradient|max:20',
+            'bg_colors' => 'nullable|string|max:50',
         ];
     }
 
