@@ -22,7 +22,7 @@
             overflow: hidden;
         }
         .header {
-            background-color: #8a2be2;
+            background-color: {{ $color ?? '#8a2be2' }};
             padding: 24px 0;
             text-align: center;
         }
@@ -39,9 +39,7 @@
         .featured-image {
             width: 100%;
             height: auto;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: block;
         }
         .message-title {
             font-size: 22px;
@@ -85,7 +83,7 @@
         }
         .cta-button {
             display: inline-block;
-            background-color: #8a2be2;
+            background-color: {{ $color ?? '#8a2be2' }};
             color: #fefefe;
             text-decoration: none;
             padding: 22px 50px;
@@ -134,17 +132,21 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <div class="header" style="background-color: {{ $color ?? '#8a2be2' }};">
             @if(isset($title))
             <h1 class="header-title">{!! $title !!}</h1>
             @endif
         </div>
 
-        <div class="content">
-            @if(isset($image))
-            <img src="{{ $image }}" alt="DigiMedia Marketing" class="featured-image">
-            @endif
+        @if(isset($image))
+        <div style="line-height:0; font-size:0;">
+            <img src="{{ $image }}" alt="DigiMedia Marketing"
+                 style="width:100%; max-width:100%; height:auto; display:block; border:0;"
+                 class="featured-image">
+        </div>
+        @endif
 
+        <div class="content">
             @if(isset($send_message))
             <div class="message-content">
                 {!! $send_message !!}
@@ -153,7 +155,7 @@
 
             <div class="cta-container">
                 <a href="{{ $url_boton ?? 'https://wa.me/51983027828?text=Hola%2C%20me%20gustar%C3%ADa%20obtener%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20servicios.' }}"
-                    class="cta-button" style="color:white;">{{ $mensaje_boton ?? '¡CONTÁCTANOS!' }}</a>
+                    class="cta-button" style="color:white; background-color:{{ $color ?? '#8a2be2' }};">{{ $mensaje_boton ?? '¡CONTÁCTANOS!' }}</a>
             </div>
         </div>
 

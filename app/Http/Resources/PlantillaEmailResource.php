@@ -21,6 +21,7 @@ class PlantillaEmailResource extends JsonResource
             'nombre'                 => $this->nombre,
             'asunto'                 => $this->asunto,
             'encabezado'             => $this->encabezado,
+            'color'                  => $this->color ?? '#8a2be2',
             'mensaje'                => $this->mensaje,
             'imagen_url'             => $this->imagen_url,
             'mensaje_boton'          => $this->mensaje_boton,

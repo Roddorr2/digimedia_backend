@@ -73,6 +73,7 @@ class MailService extends Mailable
                 'data'          => $this->data,
                 'send_message'  => $mensaje,
                 'title'         => $plantilla->encabezado,
+                'color'         => $plantilla->color ?? '#8a2be2',
                 'image'         => $imagen,
                 'mensaje_boton' => $plantilla->mensaje_boton ?? '¡CONTÁCTANOS!',
                 'url_boton'     => $plantilla->url_boton ?? 'https://wa.me/51983027828',
