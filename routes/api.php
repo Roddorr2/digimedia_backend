@@ -59,8 +59,6 @@ Route::get('/modales/send_wat/{id}', [ModalWatController::class, "sendWat"]);
 
 // Plantillas - ACCESO CON API KEY (para whatsapp-service)
 Route::middleware('api.key')->group(function () {
-    // Subservicio PRIMERO para evitar colisión con {id_servicio}
-    Route::get('/plantillas/whatsapp/subservicio/{id_subservicio}/{numero_plantilla}', [PlantillasWhatsappController::class, 'showBySubservicioNumero']);
     Route::get('/plantillas/whatsapp/{id_servicio}/{numero_plantilla}', [PlantillasWhatsappController::class, 'showByServicioNumero']);
     Route::get('/plantillas/email/{id_servicio}/{numero_plantilla}', [PlantillasEmailController::class, 'showByServicioNumero']);
 });
@@ -211,14 +209,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Plantillas (marketing y admin)
     Route::middleware('role:marketing,administrador')->group(function () {
         Route::get('/plantillas/whatsapp', [PlantillasWhatsappController::class, 'index']);
-        // by-owner debe ir ANTES que {id} para evitar colisión de rutas
-        Route::get('/plantillas/whatsapp/by-owner/{type}/{id}', [PlantillasWhatsappController::class, 'showByOwner']);
-        Route::post('/plantillas/whatsapp/by-owner/{type}/{id}/init', [PlantillasWhatsappController::class, 'inicializar']);
         Route::get('/plantillas/whatsapp/{id}', [PlantillasWhatsappController::class, 'show']);
         Route::post('/plantillas/whatsapp/{id}/actualizar', [PlantillasWhatsappController::class, 'actualizar']);
         Route::get('/plantillas/email', [PlantillasEmailController::class, 'index']);
-        Route::get('/plantillas/email/by-owner/{type}/{id}', [PlantillasEmailController::class, 'showByOwner']);
-        Route::post('/plantillas/email/by-owner/{type}/{id}/init', [PlantillasEmailController::class, 'inicializar']);
         Route::get('/plantillas/email/{id}', [PlantillasEmailController::class, 'show']);
         Route::post('/plantillas/email/{id}/actualizar', [PlantillasEmailController::class, 'actualizar']);
     });
@@ -232,8 +225,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/subservicios/by-servicio/{id_servicio}', [SubservicioController::class, 'byServicio']);
         // Pop-Ups
         Route::get('/popup-configs', [PopupConfigController::class, 'index']);
-        Route::get('/popup-configs/{id}', [PopupConfigController::class, 'show']);
         Route::get('/popup-configs/subservicio/{id_subservicio}', [PopupConfigController::class, 'showBySubservicio']);
+        Route::get('/popup-configs/{id}', [PopupConfigController::class, 'show']);
         Route::post('/popup-configs', [PopupConfigController::class, 'store']);
         Route::post('/popup-configs/{id}/actualizar', [PopupConfigController::class, 'update']);
         Route::delete('/popup-configs/{id}', [PopupConfigController::class, 'destroy']);
