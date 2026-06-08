@@ -54,11 +54,8 @@ class MailService extends Mailable
 
         $mensaje = str_replace('{nombre}', $this->data['nombre'], $plantilla->mensaje);
 
-        // Solo Cloudinary o URLs absolutas llegan a Gmail — localhost no es accesible
-        $imagen = $plantilla->imagen_url;
-        if (!empty($imagen) && !preg_match('/^https?:\/\//i', $imagen)) {
-            $imagen = null; // descarta rutas locales para no romper el layout
-        }
+        // Normalizar la URL de la imagen para que sea accesible y no apunte a localhost en producción
+        $imagen = $this->normalizarImagenUrl($plantilla->imagen_url);
 
         $redes = array_filter([
             'facebook'  => $plantilla->red_facebook,
@@ -104,5 +101,42 @@ class MailService extends Mailable
             ->where('plantillable_id', $this->id_service)
             ->where('numero_plantilla', $this->number_message)
             ->first();
+    }
+
+    /**
+     * Normaliza la URL de la imagen reemplazando hosts locales (localhost/127.0.0.1)
+     * por el APP_URL configurado si este último no es local, o anteponiéndolo a rutas relativas.
+     */
+    private function normalizarImagenUrl(?string $url): ?string
+    {
+        if (empty($url)) {
+            return null;
+        }
+
+        // Si es una ruta relativa (por ejemplo, "assets/images/..."), anteponer el APP_URL
+        if (!preg_match('/^https?:\/\//i', $url)) {
+            return rtrim(config('app.url'), '/') . '/' . ltrim($url, '/');
+        }
+
+        // Si contiene localhost o 127.0.0.1, y el config('app.url') no es localhost, reemplazarlo
+        $parsedUrl = parse_url($url);
+        $host = $parsedUrl['host'] ?? '';
+        
+        if ($host === 'localhost' || $host === '127.0.0.1') {
+            $appUrl = config('app.url');
+            $parsedApp = parse_url($appUrl);
+            $appHost = $parsedApp['host'] ?? '';
+            
+            if ($appHost && $appHost !== 'localhost' && $appHost !== '127.0.0.1') {
+                $scheme = $parsedApp['scheme'] ?? 'http';
+                $port = isset($parsedApp['port']) ? ':' . $parsedApp['port'] : '';
+                $path = $parsedUrl['path'] ?? '';
+                $query = isset($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '';
+                
+                return "{$scheme}://{$appHost}{$port}{$path}{$query}";
+            }
+        }
+
+        return $url;
     }
 }

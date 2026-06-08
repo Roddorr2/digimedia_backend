@@ -14,10 +14,10 @@ class BlogHeadResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        // 🔥 Solo devolvemos la ruta, sin dominio
-        $imagePath = $this->url_image
-            ? $this->url_image
-            : ($this->public_image ?? null);
+        // Priorizar URL absoluta (public_image) para que Next.js cargue desde el backend
+        $imagePath = $this->public_image
+            ? $this->public_image
+            : ($this->url_image ?? null);
 
         return [
             'id_blog_head' => $this->id_blog_head,

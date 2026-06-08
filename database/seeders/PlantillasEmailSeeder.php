@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\PlantillaEmail;
+use App\Models\servicios;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -20,7 +21,11 @@ class PlantillasEmailSeeder extends Seeder
     {
         foreach ($this->buildAll() as $plantilla) {
             PlantillaEmail::updateOrCreate(
-                ['id_servicio' => $plantilla['id_servicio'], 'numero_plantilla' => $plantilla['numero_plantilla']],
+                [
+                    'plantillable_type' => $plantilla['plantillable_type'],
+                    'plantillable_id' => $plantilla['plantillable_id'],
+                    'numero_plantilla' => $plantilla['numero_plantilla'],
+                ],
                 $plantilla
             );
         }
@@ -99,7 +104,8 @@ class PlantillasEmailSeeder extends Seeder
         [$asunto, $encabezado, $mensaje, $cta] = $map[$key];
 
         return [
-            'id_servicio' => $s,
+            'plantillable_type' => servicios::class,
+            'plantillable_id' => $s,
             'numero_plantilla' => $n,
             'nombre' => $srvNames[$s] . " - Email {$n}",
             'asunto' => $asunto,

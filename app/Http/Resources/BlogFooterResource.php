@@ -52,6 +52,20 @@ class BlogFooterResource extends JsonResource
                     'title' => $this->title_image3,
                 ],
             ],
+
+            // Campos planos para compatibilidad directa con el frontend
+            'public_image1' => $this->public_image1,
+            'public_image2' => $this->public_image2,
+            'public_image3' => $this->public_image3,
+            'url_image1' => $this->url_image1,
+            'url_image2' => $this->url_image2,
+            'url_image3' => $this->url_image3,
+            'alt_image1' => $this->alt_image1,
+            'alt_image2' => $this->alt_image2,
+            'alt_image3' => $this->alt_image3,
+            'title_image1' => $this->title_image1,
+            'title_image2' => $this->title_image2,
+            'title_image3' => $this->title_image3,
         ];
     }
 }
