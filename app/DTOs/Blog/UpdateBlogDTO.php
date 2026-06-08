@@ -10,10 +10,10 @@ class UpdateBlogDTO
         public readonly int $id_blog_head,
         public readonly int $id_blog_body,
         public readonly int $id_blog_footer,
-        public readonly int $id_card,
         public readonly int $id_empleado,
         public readonly string $link,
-        public readonly ?string $descripcion
+        public readonly ?string $descripcion = null,
+        public readonly ?string $fecha = null
     ) {}
 
     public static function fromRequest(UpdateBlogRequest $request, string $generatedLink): self
@@ -23,22 +23,26 @@ class UpdateBlogDTO
             id_blog_head: $data['id_blog_head'],
             id_blog_body: $data['id_blog_body'],
             id_blog_footer: $data['id_blog_footer'],
-            id_card: $data['id_card'],
             id_empleado: $data['id_empleado'],
             link: $generatedLink,
-            descripcion: $data['descripcion'] ?? null
+            descripcion: $data['descripcion'] ?? null,
+            fecha: $data['fecha'] ?? null
         );
     }
 
     public function toArray(): array
     {
-        return [
+        $data = [
             'id_blog_head' => $this->id_blog_head,
             'id_blog_body' => $this->id_blog_body,
             'id_blog_footer' => $this->id_blog_footer,
-            'id_card' => $this->id_card,
-            'id_empleado' => $this->id_empleado,
             'link' => $this->link,
         ];
+
+        if ($this->fecha !== null) {
+            $data['fecha'] = $this->fecha;
+        }
+
+        return $data;
     }
 }

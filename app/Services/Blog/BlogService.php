@@ -70,21 +70,20 @@ class BlogService
         
         $slug = $this->slugService->generateUniqueSlug($blogHead->titulo ?? 'blog');
         
-        $dto = new CreateBlogDTO(
+$dto = new CreateBlogDTO(
             id_blog_head: $data['id_blog_head'],
             id_blog_body: $data['id_blog_body'],
             id_blog_footer: $data['id_blog_footer'],
-            id_card: $data['id_card'],
-            id_empleado: $data['id_empleado'],
-            link: $slug
+            link: $slug,
+            fecha: $data['fecha'] ?? null
         );
-        
+
         $blog = $this->blogRepository->create($dto);
-        
+
         // Registrar auditoría
         AuditoriaService::registrar(
             $blog->id_blog,
-            $dto->id_empleado,
+            $data['id_empleado'],
             'CREAR',
             $blogHead->titulo ?? 'blog'
         );
@@ -107,10 +106,10 @@ class BlogService
             id_blog_head: $data['id_blog_head'],
             id_blog_body: $data['id_blog_body'],
             id_blog_footer: $data['id_blog_footer'],
-            id_card: $data['id_card'],
             id_empleado: $data['id_empleado'],
             link: $slug,
-            descripcion: $data['descripcion'] ?? null
+            descripcion: $data['descripcion'] ?? null,
+            fecha: $data['fecha'] ?? null
         );
         
         $this->blogRepository->update($blog, $dto);
@@ -118,7 +117,7 @@ class BlogService
         // Registrar auditoría
         AuditoriaService::registrar(
             $blog->id_blog,
-            $dto->id_empleado,
+            $data['id_empleado'],
             'ACTUALIZAR',
             $blogHead->titulo ?? 'blog',
             $dto->descripcion

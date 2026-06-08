@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class PlantillaEmail extends Model
 {
@@ -11,11 +12,13 @@ class PlantillaEmail extends Model
     protected $primaryKey = 'id_plantilla_email';
 
     protected $fillable = [
-        'id_servicio',
+        'plantillable_id',
+        'plantillable_type',
         'numero_plantilla',
         'nombre',
         'asunto',
         'encabezado',
+        'color',
         'imagen_url',
         'mensaje',
         'mensaje_boton',
@@ -30,96 +33,76 @@ class PlantillaEmail extends Model
     ];
 
     protected $casts = [
+        'plantillable_id'  => 'integer',
         'numero_plantilla' => 'integer',
-        'id_servicio' => 'integer',
-        'created_by' => 'integer',
-        'updated_by' => 'integer',
+        'created_by'       => 'integer',
+        'updated_by'       => 'integer',
     ];
 
-    /**
-     * Relación con el servicio
-     */
-    public function servicio(): BelongsTo
+    public function plantillable(): MorphTo
     {
-        return $this->belongsTo(servicios::class, 'id_servicio', 'id_servicio');
+        return $this->morphTo();
     }
 
-    /**
-     * Usuario que creó la plantilla
-     */
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by', 'id');
     }
 
-    /**
-     * Usuario que actualizó la plantilla
-     */
     public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by', 'id');
     }
 
-    /**
-     * Scope para obtener plantillas por servicio
-     */
-    public function scopeByServicio($query, int $idServicio)
+    public function getIdServicioAttribute(): ?int
     {
-        return $query->where('id_servicio', $idServicio);
+        if ($this->plantillable_type === servicios::class) {
+            return $this->plantillable_id;
+        }
+
+        if ($this->plantillable_type === Subservicio::class && $this->relationLoaded('plantillable') && $this->plantillable) {
+            return $this->plantillable->id_servicio;
+        }
+
+        return null;
     }
 
-    /**
-     * Scope para obtener una plantilla específica
-     */
+    public function getPlantillableTypeNameAttribute(): string
+    {
+        return match ($this->plantillable_type) {
+            servicios::class   => 'servicio',
+            Subservicio::class => 'subservicio',
+            default            => 'desconocido',
+        };
+    }
+
+    public function scopeByServicio($query, int $idServicio)
+    {
+        return $query->where('plantillable_type', servicios::class)
+                     ->where('plantillable_id', $idServicio);
+    }
+
+    public function scopeBySubservicio($query, int $idSubservicio)
+    {
+        return $query->where('plantillable_type', Subservicio::class)
+                     ->where('plantillable_id', $idSubservicio);
+    }
+
     public function scopeByNumero($query, int $numero)
     {
         return $query->where('numero_plantilla', $numero);
     }
 
-    /**
-     * Reemplaza los placeholders en el mensaje
-     */
-    public function getMensajeProcessed(array $params = []): string
-    {
-        $mensaje = $this->mensaje;
-        
-        foreach ($params as $key => $value) {
-            $mensaje = str_replace("{{$key}}", $value, $mensaje);
-        }
-        
-        return $mensaje;
-    }
-
-    /**
-     * Obtiene la URL completa de la imagen
-     */
-    public function getImagenFullUrl(): string
-    {
-        // Si ya es URL completa (http/https), retornarla directamente
-        if (str_starts_with($this->imagen_url, 'http')) {
-            return $this->imagen_url;
-        }
-        
-        // Si es ruta local, construir URL completa
-        return url($this->imagen_url);
-    }
-
-    /**
-     * Obtiene las redes sociales configuradas
-     */
     public function getRedesSociales(): array
     {
         return array_filter([
-            'facebook' => $this->red_facebook,
-            'tiktok' => $this->red_tiktok,
+            'facebook'  => $this->red_facebook,
+            'tiktok'    => $this->red_tiktok,
             'instagram' => $this->red_instagram,
-            'linkedin' => $this->red_linkedin,
+            'linkedin'  => $this->red_linkedin,
         ]);
     }
 
-    /**
-     * Verifica si tiene botón CTA configurado
-     */
     public function hasBotonCta(): bool
     {
         return !empty($this->mensaje_boton) && !empty($this->url_boton);

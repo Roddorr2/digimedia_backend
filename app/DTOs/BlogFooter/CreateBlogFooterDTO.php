@@ -23,7 +23,10 @@ class CreateBlogFooterDTO
         public readonly ?string $title_image3,
         public readonly ?bool $estado,
         public readonly ?string $palabra,
-        public readonly ?string $enlace
+        public readonly ?string $enlace,
+        public readonly ?string $bg_color,
+        public readonly ?string $bg_type,
+        public readonly ?string $bg_colors
     ) {}
 
     public static function fromRequest(FormRequest $request): static
@@ -46,7 +49,10 @@ class CreateBlogFooterDTO
             title_image3: $data['title_image3'] ?? null,
             estado: isset($data['estado']) ? (bool)$data['estado'] : null,
             palabra: $data['palabra'] ?? null,
-            enlace: $data['enlace'] ?? null
+            enlace: $data['enlace'] ?? null,
+            bg_color: $data['bg_color'] ?? null,
+            bg_type: $data['bg_type'] ?? null,
+            bg_colors: $data['bg_colors'] ?? null
         );
     }
 

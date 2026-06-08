@@ -28,6 +28,10 @@ class BlogFooterResource extends JsonResource
                 'enlace' => $this->enlace,
             ],
 
+            'bg_color' => $this->bg_color,
+            'bg_type' => $this->bg_type,
+            'bg_colors' => $this->bg_colors,
+
             'imagenes' => [
                 [
                     'public_image' => $this->public_image1,

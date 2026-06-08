@@ -26,7 +26,10 @@ class CreateBlogBodyDTO
         public readonly ?bool $flag_consejos,
         public readonly ?bool $flag_informacion,
         public readonly ?string $service_url,
-        public readonly ?string $titulo_tarjeta
+        public readonly ?string $titulo_tarjeta,
+        public readonly ?string $bg_color,
+        public readonly ?string $bg_type,
+        public readonly ?string $bg_colors
     ) {}
 
     public static function fromRequest(BaseBlogBodyRequest $request): static
@@ -53,6 +56,9 @@ class CreateBlogBodyDTO
             flag_informacion: $data['flag_informacion'] ?? null,
             service_url: $data['service_url'] ?? null,
             titulo_tarjeta: $data['titulo_tarjeta'] ?? null,
+            bg_color: $data['bg_color'] ?? null,
+            bg_type: $data['bg_type'] ?? null,
+            bg_colors: $data['bg_colors'] ?? null,
         );
     }
 
