@@ -24,9 +24,10 @@ class UpdatePlantillaEmailRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'asunto' => 'required|string|max:255',
+            'asunto'     => 'required|string|max:255',
             'encabezado' => 'required|string|max:500',
-            'mensaje' => 'required|string|max:10000',
+            'color'      => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'mensaje'    => 'required|string|max:10000',
             'imagen' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120', // 5MB
             'mensaje_boton' => 'nullable|string|max:100',
             'url_boton' => 'nullable|url|max:500',

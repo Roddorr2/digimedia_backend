@@ -124,6 +124,7 @@ class PlantillasEmailController extends Controller
                     'id_plantilla_email' => $plantilla->id_plantilla_email,
                     'asunto'             => $plantilla->asunto,
                     'encabezado'         => $plantilla->encabezado,
+                    'color'              => $plantilla->color ?? '#8a2be2',
                     'mensaje'            => $plantilla->mensaje,
                     'imagen_url'         => $plantilla->imagen_url,
                     'mensaje_boton'      => $plantilla->mensaje_boton,

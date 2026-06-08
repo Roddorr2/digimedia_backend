@@ -18,6 +18,7 @@ class PlantillaEmail extends Model
         'nombre',
         'asunto',
         'encabezado',
+        'color',
         'imagen_url',
         'mensaje',
         'mensaje_boton',
