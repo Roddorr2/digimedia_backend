@@ -21,7 +21,10 @@ class BlogHead extends Model
         'alt',
         'title',
         'meta_title',
-        'meta_descripcion'
+        'meta_descripcion',
+        'bg_color',
+        'bg_type',
+        'bg_colors'
     ];
 
     // public function blog(){

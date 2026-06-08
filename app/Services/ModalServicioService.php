@@ -83,14 +83,14 @@ class ModalServicioService
                 ];
 
                 // AQUI SE ENVÍA EL PRIMER CORREO (inmediato)
-                dispatch(new SendCustomEmailJob($dto->correo, $data, $dto->id_servicio, 1));
+                dispatch(new SendCustomEmailJob($dto->correo, $data, $dto->id_servicio, 1, $dto->id_subservicio));
 
                 // AQUI SE ENVÍA EL SEGUNDO CORREO (+30 minutos después)
-                dispatch(new SendCustomEmailJob($dto->correo, $data, $dto->id_servicio, 2))
+                dispatch(new SendCustomEmailJob($dto->correo, $data, $dto->id_servicio, 2, $dto->id_subservicio))
                     ->delay(now()->addMinutes(30));
 
                 // AQUI SE ENVÍA EL TERCER CORREO (+1 hora después)
-                dispatch(new SendCustomEmailJob($dto->correo, $data, $dto->id_servicio, 3))
+                dispatch(new SendCustomEmailJob($dto->correo, $data, $dto->id_servicio, 3, $dto->id_subservicio))
                     ->delay(now()->addHours(1));
 
                 // ------- AQUI SE ENVIAN MENSAJES WHATSAPP -------
@@ -98,18 +98,18 @@ class ModalServicioService
 
                 $wat1 = $whatsapps->firstWhere('number_message', 1);
                 if ($wat1) {
-                    dispatch(new SendWhatsAppJob($wat1, $data, $dto->id_servicio));
+                    dispatch(new SendWhatsAppJob($wat1, $data, $dto->id_servicio, $dto->id_subservicio));
                 }
 
                 $wat2 = $whatsapps->firstWhere('number_message', 2);
                 if ($wat2) {
-                    dispatch(new SendWhatsAppJob($wat2, $data, $dto->id_servicio))
+                    dispatch(new SendWhatsAppJob($wat2, $data, $dto->id_servicio, $dto->id_subservicio))
                         ->delay(now()->addMinutes(30));
                 }
 
                 $wat3 = $whatsapps->firstWhere('number_message', 3);
                 if ($wat3) {
-                    dispatch(new SendWhatsAppJob($wat3, $data, $dto->id_servicio))
+                    dispatch(new SendWhatsAppJob($wat3, $data, $dto->id_servicio, $dto->id_subservicio))
                         ->delay(now()->addHours(1));
                 }
 

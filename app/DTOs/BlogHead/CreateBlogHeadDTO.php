@@ -8,17 +8,17 @@ class CreateBlogHeadDTO
 {
     public function __construct(
         public readonly string $titulo,
-        public readonly string $meta_description,
-        public readonly ?string $meta_keywords,
-        public readonly ?string $meta_author,
-        public readonly ?string $og_title,
-        public readonly ?string $og_description,
-        public readonly ?string $og_image,
-        public readonly ?string $twitter_card,
-        public readonly ?string $twitter_title,
-        public readonly ?string $twitter_description,
-        public readonly ?string $twitter_image,
-        public readonly ?string $canonical_url
+        public readonly string $texto_frase,
+        public readonly string $texto_descripcion,
+        public readonly string $public_image,
+        public readonly ?string $url_image,
+        public readonly ?string $alt,
+        public readonly ?string $title,
+        public readonly ?string $meta_title,
+        public readonly ?string $meta_descripcion,
+        public readonly ?string $bg_color,
+        public readonly ?string $bg_type,
+        public readonly ?string $bg_colors
     ) {}
 
     public static function fromRequest(FormRequest $request): static
@@ -26,17 +26,17 @@ class CreateBlogHeadDTO
         $data = $request->validated();
         return new static(
             titulo: $data['titulo'],
-            meta_description: $data['meta_description'],
-            meta_keywords: $data['meta_keywords'] ?? null,
-            meta_author: $data['meta_author'] ?? null,
-            og_title: $data['og_title'] ?? null,
-            og_description: $data['og_description'] ?? null,
-            og_image: $data['og_image'] ?? null,
-            twitter_card: $data['twitter_card'] ?? null,
-            twitter_title: $data['twitter_title'] ?? null,
-            twitter_description: $data['twitter_description'] ?? null,
-            twitter_image: $data['twitter_image'] ?? null,
-            canonical_url: $data['canonical_url'] ?? null
+            texto_frase: $data['texto_frase'],
+            texto_descripcion: $data['texto_descripcion'],
+            public_image: $data['public_image'],
+            url_image: $data['url_image'] ?? null,
+            alt: $data['alt'] ?? null,
+            title: $data['title'] ?? null,
+            meta_title: $data['meta_title'] ?? null,
+            meta_descripcion: $data['meta_descripcion'] ?? null,
+            bg_color: $data['bg_color'] ?? null,
+            bg_type: $data['bg_type'] ?? null,
+            bg_colors: $data['bg_colors'] ?? null
         );
     }
 
