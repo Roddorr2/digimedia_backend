@@ -161,7 +161,7 @@ class PopupConfigController extends Controller
                 'service_color'       => 'required|regex:/^#[0-9A-Fa-f]{6}$/',
                 'service_color_2'     => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
                 'gradient_direction'  => 'nullable|string|in:to bottom,to top,to right,to left,to bottom right,to bottom left',
-                'trigger_time'        => 'required|in:3,5,8',
+                'trigger_time'        => 'nullable|integer|min:1|max:999',
                 'trigger_type'        => 'nullable|in:time,click',
                 'layout'              => 'nullable|in:left-image,right-image',
                 'show_logo'           => 'nullable|boolean',
@@ -229,7 +229,7 @@ class PopupConfigController extends Controller
                 'service_color'       => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
                 'service_color_2'     => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
                 'gradient_direction'  => 'nullable|string|in:to bottom,to top,to right,to left,to bottom right,to bottom left',
-                'trigger_time'        => 'nullable|in:3,5,8',
+                'trigger_time'        => 'nullable|integer|min:1|max:999',
                 'trigger_type'        => 'nullable|in:time,click',
                 'layout'              => 'nullable|in:left-image,right-image',
                 'show_logo'           => 'nullable|boolean',
@@ -243,6 +243,9 @@ class PopupConfigController extends Controller
                 'mobile_image'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
                 'mobile_opacity'      => 'nullable|integer|min:0|max:100',
                 'mobile_alt'          => 'nullable|string|max:255',
+                'remove_left_image'   => 'nullable|in:0,1',
+                'remove_right_image'  => 'nullable|in:0,1',
+                'remove_mobile_image' => 'nullable|in:0,1',
             ]);
 
             if ($validator->fails()) {

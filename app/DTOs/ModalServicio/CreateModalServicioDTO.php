@@ -10,7 +10,8 @@ class CreateModalServicioDTO
         public readonly string $nombre,
         public readonly string $telefono,
         public readonly string $correo,
-        public readonly int $id_servicio
+        public readonly int $id_servicio,
+        public readonly ?int $id_subservicio = null,
     ) {}
 
     public static function fromRequest(Request $request): self
@@ -19,17 +20,19 @@ class CreateModalServicioDTO
             nombre: $request->input('nombre'),
             telefono: $request->input('telefono'),
             correo: $request->input('correo'),
-            id_servicio: (int)$request->input('id_servicio')
+            id_servicio: (int) $request->input('id_servicio'),
+            id_subservicio: $request->input('id_subservicio') ? (int) $request->input('id_subservicio') : null,
         );
     }
 
     public function toArray(): array
     {
         return [
-            'nombre' => $this->nombre,
-            'telefono' => $this->telefono,
-            'correo' => $this->correo,
-            'id_servicio' => $this->id_servicio,
+            'nombre'         => $this->nombre,
+            'telefono'       => $this->telefono,
+            'correo'         => $this->correo,
+            'id_servicio'    => $this->id_servicio,
+            'id_subservicio' => $this->id_subservicio,
         ];
     }
 }

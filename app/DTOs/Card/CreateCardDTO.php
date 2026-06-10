@@ -12,9 +12,7 @@ class CreateCardDTO
         public readonly int $id_empleado,
         public readonly string $titulo,
         public readonly string $descripcion,
-        public readonly bool $estado_publicacion,
-        public readonly ?string $logo,
-        public readonly ?string $url_logo
+        public readonly ?bool $estado_publicacion
     ) {}
 
     public static function fromRequest(StoreCardRequest $request): self
@@ -26,23 +24,26 @@ class CreateCardDTO
             id_empleado: $data['id_empleado'],
             titulo: $data['titulo'],
             descripcion: $data['descripcion'],
-            estado_publicacion: $data['estado_publicacion'] ?? false,
-            logo: $data['logo'] ?? null,
-            url_logo: $data['url_logo'] ?? null
+            estado_publicacion: $data['estado_publicacion'] ?? null
         );
     }
 
     public function toArray(): array
     {
-        return [
+        $data = [
             'id_plantilla' => $this->id_plantilla,
             'id_blog' => $this->id_blog,
             'id_empleado' => $this->id_empleado,
             'titulo' => $this->titulo,
             'descripcion' => $this->descripcion,
-            'estado_publicacion' => $this->estado_publicacion,
-            'logo' => $this->logo,
-            'url_logo' => $this->url_logo,
+            'public_image' => '/blog/fondo_blog_extend.webp',
+            'url_image' => '',
         ];
+        
+        if ($this->estado_publicacion !== null) {
+            $data['estado_publicacion'] = $this->estado_publicacion;
+        }
+        
+        return $data;
     }
 }

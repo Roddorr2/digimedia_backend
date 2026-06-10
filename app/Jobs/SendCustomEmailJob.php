@@ -13,23 +13,18 @@ class SendCustomEmailJob implements ShouldQueue
 {
     use InteractsWithQueue, Queueable, SerializesModels;
 
-    public $correo;
-    public $data;
-    public $idServicio;
-    public $tipoCorreo;
+    public function __construct(
+        public $correo,
+        public $data,
+        public $idServicio,
+        public $tipoCorreo,
+        public ?int $idSubservicio = null,
+    ) {}
 
-    public function __construct($correo, $data, $idServicio, $tipoCorreo)
-    {
-        $this->correo = $correo;
-        $this->data = $data;
-        $this->idServicio = $idServicio;
-        $this->tipoCorreo = $tipoCorreo;
-    }
-
-    public function handle()
+    public function handle(): void
     {
         Mail::to($this->correo)->send(
-            new MailService($this->tipoCorreo, $this->data, $this->idServicio)
+            new MailService($this->tipoCorreo, $this->data, $this->idServicio, $this->idSubservicio)
         );
     }
 }

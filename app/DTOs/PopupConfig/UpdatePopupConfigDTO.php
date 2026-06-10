@@ -17,7 +17,8 @@ class UpdatePopupConfigDTO
             'button_text', 'button_color', 'service_color', 'service_color_2', 
             'gradient_direction', 'trigger_time', 'trigger_type', 'layout', 
             'left_text', 'left_opacity', 'right_opacity', 'mobile_opacity',
-            'left_alt', 'right_alt', 'mobile_alt'
+            'left_alt', 'right_alt', 'mobile_alt',
+            'remove_left_image', 'remove_right_image', 'remove_mobile_image'
         ];
         
         $data = [];

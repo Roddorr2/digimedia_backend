@@ -10,6 +10,7 @@ class UpdatePlantillaEmailDTO
     public function __construct(
         public readonly string $asunto,
         public readonly string $encabezado,
+        public readonly ?string $color,
         public readonly string $mensaje,
         public readonly ?UploadedFile $imagen,
         public readonly ?string $mensaje_boton,
@@ -26,6 +27,7 @@ class UpdatePlantillaEmailDTO
         return new self(
             asunto: $request->input('asunto'),
             encabezado: $request->input('encabezado'),
+            color: $request->input('color'),
             mensaje: $request->input('mensaje'),
             imagen: $request->file('imagen'),
             mensaje_boton: $request->input('mensaje_boton'),
@@ -41,16 +43,17 @@ class UpdatePlantillaEmailDTO
     public function toArray(): array
     {
         return [
-            'asunto' => $this->asunto,
-            'encabezado' => $this->encabezado,
-            'mensaje' => $this->mensaje,
+            'asunto'        => $this->asunto,
+            'encabezado'    => $this->encabezado,
+            'color'         => $this->color ?? '#8a2be2',
+            'mensaje'       => $this->mensaje,
             'mensaje_boton' => $this->mensaje_boton,
-            'url_boton' => $this->url_boton,
-            'footer' => $this->footer,
-            'red_facebook' => $this->red_facebook,
-            'red_tiktok' => $this->red_tiktok,
+            'url_boton'     => $this->url_boton,
+            'footer'        => $this->footer,
+            'red_facebook'  => $this->red_facebook,
+            'red_tiktok'    => $this->red_tiktok,
             'red_instagram' => $this->red_instagram,
-            'red_linkedin' => $this->red_linkedin,
+            'red_linkedin'  => $this->red_linkedin,
         ];
     }
 }
