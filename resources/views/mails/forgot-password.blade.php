@@ -218,7 +218,7 @@
 <body>
     <div class="email-container">
         <div class="email-header">
-            <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-v2gYpX1AexbpAeLB3A5QD7xRprduZF.png" alt="DIGIMEDIA MARKETING">
+            <img src="{{ rtrim(config('app.url'), '/') }}/assets/images/logo-digimedia.png" alt="DIGIMEDIA MARKETING">
             <h1>Restablecimiento de Contraseña</h1>
         </div>
 
