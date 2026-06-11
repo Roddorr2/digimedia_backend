@@ -20,6 +20,7 @@ class ModalServicioResource extends JsonResource
             'telefono'         => $this->telefono,
             'correo'           => $this->correo,
             'id_servicio'      => $this->id_servicio,
+            'id_subservicio'   => $this->id_subservicio,
             'estado'           => (bool)$this->estado,
             'created_at'       => $this->created_at,
             'updated_at'       => $this->updated_at,
@@ -29,7 +30,13 @@ class ModalServicioResource extends JsonResource
                     'nombre'          => $this->servicio->nombre,
                     'nombre_servicio' => $this->servicio->nombre_servicio ?? $this->servicio->nombre,
                 ];
-            })
+            }),
+            'subservicio'      => $this->whenLoaded('subservicio', function() {
+                return [
+                    'id_subservicio' => $this->subservicio->id_subservicio,
+                    'nombre'         => $this->subservicio->nombre,
+                ];
+            }),
         ];
     }
 }
