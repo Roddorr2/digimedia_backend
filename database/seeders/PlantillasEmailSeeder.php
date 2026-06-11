@@ -93,10 +93,10 @@ class PlantillasEmailSeeder extends Seeder
         ];
 
         $imgs = [
-            [1 => 'desarrollo-diseño/flyer-modal-1-1-v2.jpg', 2 => 'desarrollo-diseño/flyer-modal-1-2-v2.jpg', 3 => 'desarrollo-diseño/flyer-modal-1-3-v2.jpg'],
+            [1 => 'desarrollo-diseno/flyer-modal-1-1-v2.jpg', 2 => 'desarrollo-diseno/flyer-modal-1-2-v2.jpg', 3 => 'desarrollo-diseno/flyer-modal-1-3-v2.jpg'],
             [1 => 'gestion-redes/flyer-modal-2-1-v2.jpg', 2 => 'gestion-redes/flyer-modal-2-2-v2.jpg', 3 => 'gestion-redes/flyer-modal-2-3-v2.jpg'],
             [1 => 'marketing-gestion/flyer-modal-3-1-v2.jpg', 2 => 'marketing-gestion/flyer-modal-3-2-v2.jpg', 3 => 'marketing-gestion/flyer-modal-3-3-v2.jpg'],
-            [1 => 'branding-diseño/flyer-modal-4-1-v2.jpg', 2 => 'branding-diseño/flyer-modal-4-2-v2.jpg', 3 => 'branding-diseño/flyer-modal-4-3-v2.jpg'],
+            [1 => 'branding-diseno/flyer-modal-4-1-v2.jpg', 2 => 'branding-diseno/flyer-modal-4-2-v2.jpg', 3 => 'branding-diseno/flyer-modal-4-3-v2.jpg'],
         ];
 
         $srvNames = [1 => 'Diseño Web', 2 => 'Redes Sociales', 3 => 'Marketing Digital', 4 => 'Branding'];
@@ -110,10 +110,10 @@ class PlantillasEmailSeeder extends Seeder
             'nombre' => $srvNames[$s] . " - Email {$n}",
             'asunto' => $asunto,
             'encabezado' => $encabezado,
-            'imagen_url' => url('assets/images/' . $imgs[$s - 1][$n]),
+            'imagen_url' => 'assets/images/' . $imgs[$s - 1][$n],
             'mensaje' => $mensaje,
             'mensaje_boton' => $cta,
-            'url_boton' => url(self::URL_CONTACTANOS),
+            'url_boton' => self::URL_CONTACTANOS,
             'footer' => 'Quedamos atentos a tu mensaje.<br>Saludos,<br>Equipo Digimedia',
             'red_facebook' => self::FB,
             'red_tiktok' => self::TT,

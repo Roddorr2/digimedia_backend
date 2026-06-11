@@ -115,7 +115,7 @@ class MailService extends Mailable
 
         // Si es una ruta relativa (por ejemplo, "assets/images/..."), anteponer el APP_URL
         if (!preg_match('/^https?:\/\//i', $url)) {
-            return rtrim(config('app.url'), '/') . '/' . ltrim($url, '/');
+            $url = rtrim(config('app.url'), '/') . '/' . ltrim($url, '/');
         }
 
         // Si contiene localhost o 127.0.0.1, y el config('app.url') no es localhost, reemplazarlo
@@ -128,12 +128,32 @@ class MailService extends Mailable
             $appHost = $parsedApp['host'] ?? '';
             
             if ($appHost && $appHost !== 'localhost' && $appHost !== '127.0.0.1') {
-                $scheme = $parsedApp['scheme'] ?? 'http';
+                $scheme = $parsedApp['scheme'] ?? 'https';
                 $port = isset($parsedApp['port']) ? ':' . $parsedApp['port'] : '';
                 $path = $parsedUrl['path'] ?? '';
                 $query = isset($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '';
                 
-                return "{$scheme}://{$appHost}{$port}{$path}{$query}";
+                $url = "{$scheme}://{$appHost}{$port}{$path}{$query}";
+            }
+        }
+
+        // Codificar caracteres no-ASCII en la ruta (e.g., ñ → %C3%B1) para compatibilidad
+        // con proxies de imagen de clientes de correo como Gmail
+        $parts = parse_url($url);
+        if (isset($parts['path'])) {
+            $segments = explode('/', $parts['path']);
+            $encodedSegments = array_map(function ($segment) {
+                return rawurlencode(rawurldecode($segment));
+            }, $segments);
+            $parts['path'] = implode('/', $encodedSegments);
+
+            $url = ($parts['scheme'] ?? 'https') . '://' . ($parts['host'] ?? '');
+            if (isset($parts['port'])) {
+                $url .= ':' . $parts['port'];
+            }
+            $url .= $parts['path'];
+            if (isset($parts['query'])) {
+                $url .= '?' . $parts['query'];
             }
         }
 
