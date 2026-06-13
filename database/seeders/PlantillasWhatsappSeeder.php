@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\PlantillaWhatsapp;
 use App\Models\servicios;
+use App\Models\Subservicio;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -15,11 +16,29 @@ class PlantillasWhatsappSeeder extends Seeder
             PlantillaWhatsapp::updateOrCreate(
                 [
                     'plantillable_type' => $plantilla['plantillable_type'],
-                    'plantillable_id' => $plantilla['plantillable_id'],
-                    'numero_plantilla' => $plantilla['numero_plantilla'],
+                    'plantillable_id'   => $plantilla['plantillable_id'],
+                    'numero_plantilla'  => $plantilla['numero_plantilla'],
                 ],
                 $plantilla
             );
+        }
+
+        // Plantillas WhatsApp específicas por subservicio
+        $landingPage = Subservicio::where('slug', 'landing-page')->first();
+        if ($landingPage) {
+            foreach ($this->buildLandingPageWhatsapp($landingPage->id_subservicio) as $plantilla) {
+                PlantillaWhatsapp::updateOrCreate(
+                    [
+                        'plantillable_type' => $plantilla['plantillable_type'],
+                        'plantillable_id'   => $plantilla['plantillable_id'],
+                        'numero_plantilla'  => $plantilla['numero_plantilla'],
+                    ],
+                    $plantilla
+                );
+            }
+            $this->command->info("Plantillas WhatsApp creadas para subservicio Landing Page (ID: {$landingPage->id_subservicio})");
+        } else {
+            $this->command->warn("Subservicio 'landing-page' no encontrado — omitiendo sus plantillas WhatsApp.");
         }
     }
 
@@ -80,5 +99,34 @@ class PlantillasWhatsappSeeder extends Seeder
             '4-2' => " Hola {nombre} 👋.\n\nEn *DIGIMEDIA* trabajamos la identidad de tu marca para que se vea profesional, comunique con claridad y genere confianza desde el primer contacto. 🚀\n\n*👉 Escríbenos y te ayudamos con tu marca*\n",
             '4-3' => "\nEn *DIGIMEDIA* trabajamos tu marca para que se vea profesional, comunique con claridad y genere confianza real 🚀\n\n✅ Identidad de marca clara y bien definida.\n\n✅ Estrategia pensada para atraer, convertir y crecer.\n\n✅ Imagen profesional que genera confianza al vender.\n\n✅ Resultados medibles con una marca coherente y sólida.\n\n👉 *Escríbenos para más información*\n",
         ];
+    }
+
+    private function buildLandingPageWhatsapp(int $id): array
+    {
+        $textos = [
+            1 => "Hola {nombre} 👋.\n\nGracias por contactarnos. Soy de DIGIMEDIA 🚀\nA continuación, te contamos los principales beneficios que obtendrás con nuestro servicio de *Landing Page* 👇\n\n✅ Una página diseñada específicamente para convertir visitas en clientes.\n\n✅ Mensajes claros y persuasivos que guían al visitante hacia la acción.\n\n✅ Carga rápida y diseño optimizado para móviles y buscadores.\n\n*Escríbenos y comencemos a crear tu landing page 🚀*\n",
+            2 => "Hola {nombre} 👋.\n\nEn *DIGIMEDIA* creamos landing pages diseñadas para convertir visitantes en clientes reales. 🚀\n\n*👉 Escríbenos y te ayudamos con tu landing page*\n",
+            3 => "Hola {nombre} 👋.\n\nEn *DIGIMEDIA* trabajamos tu landing page para que genere conversiones y resultados reales 🚀\n\n✅ Página enfocada 100% en convertir visitas en clientes.\n\n✅ Mensajes persuasivos que impulsan la acción del usuario.\n\n✅ Diseño optimizado para móviles y buscadores.\n\n✅ CTA estratégico para facilitar el contacto o la compra.\n\n👉 *Escríbenos para más información*\n",
+        ];
+
+        // Usa imágenes de desarrollo_web hasta que existan imágenes propias de landing page
+        $imgs = [1 => 'desarrollo_web/1-1-v2.png', 2 => 'desarrollo_web/1-2-v2.png', 3 => 'desarrollo_web/1-3-v2.png'];
+
+        $all = [];
+        foreach ([1, 2, 3] as $num) {
+            $all[] = array_merge([
+                'plantillable_type' => Subservicio::class,
+                'plantillable_id'   => $id,
+                'numero_plantilla'  => $num,
+                'nombre'            => "Landing Page - Plantilla {$num}",
+                'mensaje'           => $textos[$num],
+                'imagen_url'        => url("imagenes/{$imgs[$num]}"),
+            ], [
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return $all;
     }
 }

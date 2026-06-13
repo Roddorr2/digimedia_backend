@@ -404,8 +404,37 @@ class PopupConfigSeeder extends Seeder
             }
         }
 
+        // Landing Page — buscado por slug para garantizar el ID correcto
+        $landingPageSub = Subservicio::where('slug', 'landing-page')->first();
+        if ($landingPageSub) {
+            PopupConfig::updateOrCreate(
+                [
+                    'popupable_type' => Subservicio::class,
+                    'popupable_id'   => $landingPageSub->id_subservicio,
+                ],
+                [
+                    'button_text'        => 'HAZLO YA',
+                    'button_color'       => '#6e26db',
+                    'service_color'      => '#8B5CF6',
+                    'service_color_2'    => '#10B981',
+                    'gradient_direction' => 'to bottom right',
+                    'trigger_time'       => 5,
+                    'trigger_type'       => 'time',
+                    'layout'             => 'left-image',
+                    'show_logo'          => true,
+                    'left_text'          => 'Convertimos visitantes en clientes con landing pages de alto impacto',
+                    'left_alt'           => 'Landing page de alta conversión para empresas',
+                    'right_alt'          => 'Diseño de landing page profesional y efectivo',
+                    'mobile_alt'         => 'Landing page optimizada para móviles',
+                ]
+            );
+            $this->command->info("Pop-up configurado para SUBSERVICIO: Landing Page (ID: {$landingPageSub->id_subservicio})");
+        } else {
+            $this->command->warn("Subservicio 'landing-page' no encontrado — ejecuta SubservicioSeeder primero.");
+        }
+
         DB::statement('SET FOREIGN_KEY_CHECKS=1');
-        
+
         $this->command->info("\nSeeding completado!");
         $this->command->info("Total pop-ups: " . PopupConfig::count());
     }
