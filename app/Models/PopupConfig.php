@@ -14,6 +14,8 @@ class PopupConfig extends Model
     public $timestamps = true;
 
     protected $fillable = [
+        'popupable_type',
+        'popupable_id',
         'button_text',
         'button_color',       
         'service_color',
