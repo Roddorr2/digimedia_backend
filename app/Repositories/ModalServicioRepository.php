@@ -13,12 +13,12 @@ class ModalServicioRepository
 
     public function findByIdWithServicio(int $id): ?modalservicios
     {
-        return modalservicios::where('id_modalservicio', $id)->with('servicio')->first();
+        return modalservicios::where('id_modalservicio', $id)->with(['servicio', 'subservicio'])->first();
     }
 
     public function getPaginated(string $search, int $perPage)
     {
-        $query = modalservicios::with('servicio');
+        $query = modalservicios::with(['servicio', 'subservicio']);
 
         if (!empty($search)) {
             $query->where(function($q) use ($search) {

@@ -24,9 +24,9 @@ class BlogService
         private BlogStorageService $storageService
     ) {}
 
-    public function getAllBlogs(): array
+    public function getAllBlogs(): Collection
     {
-        return $this->blogRepository->getAll()->toArray();
+        return $this->blogRepository->getAll();
     }
 
     public function getBlogsByFilters(FiltrosBlogDTO $filters): Collection
@@ -90,12 +90,20 @@ $dto = new CreateBlogDTO(
     {
         $blog = $this->getBlogById($id);
         
-        $blogHead = $this->blogHeadRepository->findById($data['id_blog_head']);
+        $idBlogHead = $data['id_blog_head'] ?? $blog->id_blog_head;
+        $idBlogBody = $data['id_blog_body'] ?? $blog->id_blog_body;
+        $idBlogFooter = $data['id_blog_footer'] ?? $blog->id_blog_footer;
+        $fecha = $data['fecha'] ?? $blog->fecha;
+        
+        $blogHead = $this->blogHeadRepository->findById($idBlogHead);
         if (!$blogHead) {
             throw new ModelNotFoundException('BlogHead no encontrado');
         }
         
-        $slug = $this->slugService->generateUniqueSlug($blogHead->titulo ?? 'blog', $id);
+        $slug = $blog->link;
+        if ($idBlogHead !== $blog->id_blog_head) {
+            $slug = $this->slugService->generateUniqueSlug($blogHead->titulo ?? 'blog', $id);
+        }
         
         $dto = new UpdateBlogDTO(
             id_blog_head: $data['id_blog_head'],
