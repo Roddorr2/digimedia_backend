@@ -22,6 +22,7 @@ class SubservicioSeeder extends Seeder
             ['id_servicio' => 1, 'nombre' => 'Optimización SEO', 'slug' => 'seo'],
             ['id_servicio' => 1, 'nombre' => 'Desarrollo Responsive', 'slug' => 'desarrollo-responsive'],
             ['id_servicio' => 1, 'nombre' => 'Integraciones Digitales', 'slug' => 'integraciones-digitales'],
+            ['id_servicio' => 1, 'nombre' => 'Landing Page', 'slug' => 'landing-page'],
 
             // Gestión de Redes Sociales (id_servicio = 2)
             ['id_servicio' => 2, 'nombre' => 'Estrategia de Contenido', 'slug' => 'estrategia-de-contenido'],
