@@ -85,6 +85,9 @@ class CreateBlogBodyDTO
             flag_informacion: $data['flag_informacion'] ?? null,
             service_url: $data['service_url'] ?? null,
             titulo_tarjeta: $data['titulo_tarjeta'] ?? null,
+            bg_color: $data['bg_color'] ?? null,
+            bg_type: $data['bg_type'] ?? null,
+            bg_colors: $data['bg_colors'] ?? null,
         );
     }
 
