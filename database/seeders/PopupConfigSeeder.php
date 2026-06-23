@@ -90,25 +90,22 @@ class PopupConfigSeeder extends Seeder
             ],
         ];
 
-        // Insertar pop-ups para servicios
         foreach ($serviciosConfigs as $config) {
+
             $servicioId = $config['servicio_id'];
             unset($config['servicio_id']);
-            
+
             $servicio = servicios::find($servicioId);
-            
+
             if ($servicio) {
-                PopupConfig::updateOrCreate(
+
+                PopupConfig::firstOrCreate(
                     [
                         'popupable_type' => servicios::class,
-                        'popupable_id' => $servicioId
+                        'popupable_id'   => $servicioId,
                     ],
                     $config
                 );
-                
-                $this->command->info("Pop-up configurado para SERVICIO ID: {$servicioId}");
-            } else {
-                $this->command->warn("Servicio ID {$servicioId} no encontrado");
             }
         }
 
@@ -119,7 +116,7 @@ class PopupConfigSeeder extends Seeder
         $subserviciosConfigs = [
             // Servicio 1: Diseño Web y Desarrollo Web
             [
-                'subservicio_id' => 1,
+                'subservicio_slug' => 'experiencia-usuario',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -135,7 +132,7 @@ class PopupConfigSeeder extends Seeder
                 'mobile_alt' => 'Diseño UX UI para móviles',
             ],
             [
-                'subservicio_id' => 2,
+                'subservicio_slug' => 'seo',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -151,7 +148,7 @@ class PopupConfigSeeder extends Seeder
                 'mobile_alt' => 'SEO para dispositivos móviles',
             ],
             [
-                'subservicio_id' => 3,
+                'subservicio_slug' => 'desarrollo-responsive',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -167,7 +164,7 @@ class PopupConfigSeeder extends Seeder
                 'mobile_alt' => 'Diseño responsive',
             ],
             [
-                'subservicio_id' => 4,
+                'subservicio_slug' => 'integraciones-digitales',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -185,7 +182,7 @@ class PopupConfigSeeder extends Seeder
 
             // Servicio 2: Gestión de Redes Sociales
             [
-                'subservicio_id' => 5,
+                'subservicio_slug' => 'estrategia-de-contenido',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -201,7 +198,7 @@ class PopupConfigSeeder extends Seeder
                 'mobile_alt' => 'Contenido para móviles',
             ],
             [
-                'subservicio_id' => 6,
+                'subservicio_slug' => 'diseno-pautas',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -217,7 +214,7 @@ class PopupConfigSeeder extends Seeder
                 'mobile_alt' => 'Anuncios para móviles',
             ],
             [
-                'subservicio_id' => 7,
+                'subservicio_slug' => 'produccion-pautas',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -233,7 +230,7 @@ class PopupConfigSeeder extends Seeder
                 'mobile_alt' => 'Videos para móviles',
             ],
             [
-                'subservicio_id' => 8,
+                'subservicio_slug' => 'ui',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -251,7 +248,7 @@ class PopupConfigSeeder extends Seeder
 
             // Servicio 3: Marketing y Gestión Digital
             [
-                'subservicio_id' => 9,
+                'subservicio_slug' => 'analisis-y-benchmarking',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -267,7 +264,7 @@ class PopupConfigSeeder extends Seeder
                 'mobile_alt' => 'Análisis móvil',
             ],
             [
-                'subservicio_id' => 10,
+                'subservicio_slug' => 'publicidad-digital',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -283,7 +280,7 @@ class PopupConfigSeeder extends Seeder
                 'mobile_alt' => 'Campañas para móviles',
             ],
             [
-                'subservicio_id' => 11,
+                'subservicio_slug' => 'identidad-visual',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -299,7 +296,7 @@ class PopupConfigSeeder extends Seeder
                 'mobile_alt' => 'Identidad visual móvil',
             ],
             [
-                'subservicio_id' => 12,
+                'subservicio_slug' => 'monitoreo-y-reporting',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -317,7 +314,7 @@ class PopupConfigSeeder extends Seeder
 
             // Servicio 4: Branding y Diseño
             [
-                'subservicio_id' => 13,
+                'subservicio_slug' => 'desarrollo-briefs',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -333,7 +330,7 @@ class PopupConfigSeeder extends Seeder
                 'mobile_alt' => 'Brief para móviles',
             ],
             [
-                'subservicio_id' => 14,
+                'subservicio_slug' => 'planificacion-estrategica',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -349,7 +346,7 @@ class PopupConfigSeeder extends Seeder
                 'mobile_alt' => 'Planificación móvil',
             ],
             [
-                'subservicio_id' => 15,
+                'subservicio_slug' => 'naming-logo-slogan',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -365,7 +362,8 @@ class PopupConfigSeeder extends Seeder
                 'mobile_alt' => 'Logo para móviles',
             ],
             [
-                'subservicio_id' => 16,
+                
+                'subservicio_slug' => 'manual-marca',
                 'button_text' => 'HAZLO YA',
                 'button_color' => '#6e26db',
                 'service_color' => '#8B5CF6',
@@ -380,39 +378,8 @@ class PopupConfigSeeder extends Seeder
                 'right_alt' => 'Guía de uso de marca',
                 'mobile_alt' => 'Manual de marca móvil',
             ],
-        ];
-
-        // Insertar pop-ups para subservicios
-        foreach ($subserviciosConfigs as $config) {
-            $subservicioId = $config['subservicio_id'];
-            unset($config['subservicio_id']);
-            
-            $subservicio = Subservicio::find($subservicioId);
-            
-            if ($subservicio) {
-                PopupConfig::updateOrCreate(
-                    [
-                        'popupable_type' => Subservicio::class,
-                        'popupable_id' => $subservicioId
-                    ],
-                    $config
-                );
-                
-                $this->command->info("Pop-up configurado para SUBSERVICIO ID: {$subservicioId}");
-            } else {
-                $this->command->warn("Subservicio ID {$subservicioId} no encontrado");
-            }
-        }
-
-        // Landing Page — buscado por slug para garantizar el ID correcto
-        $landingPageSub = Subservicio::where('slug', 'landing-page')->first();
-        if ($landingPageSub) {
-            PopupConfig::updateOrCreate(
-                [
-                    'popupable_type' => Subservicio::class,
-                    'popupable_id'   => $landingPageSub->id_subservicio,
-                ],
-                [
+            [
+                    'subservicio_slug' => 'landing-page',
                     'button_text'        => 'HAZLO YA',
                     'button_color'       => '#6e26db',
                     'service_color'      => '#8B5CF6',
@@ -427,10 +394,28 @@ class PopupConfigSeeder extends Seeder
                     'right_alt'          => 'Diseño de landing page profesional y efectivo',
                     'mobile_alt'         => 'Landing page optimizada para móviles',
                 ]
+        ];
+
+        // Insertar pop-ups para subservicios
+        foreach ($subserviciosConfigs as $config) {
+
+            $slug = $config['subservicio_slug'];
+            unset($config['subservicio_slug']);
+
+            $subservicio = Subservicio::where('slug', $slug)->first();
+
+            if (! $subservicio) {
+                $this->command->warn("Subservicio {$slug} no encontrado");
+                continue;
+            }
+
+            PopupConfig::firstOrCreate(
+                [
+                    'popupable_type' => Subservicio::class,
+                    'popupable_id'   => $subservicio->id_subservicio,
+                ],
+                $config
             );
-            $this->command->info("Pop-up configurado para SUBSERVICIO: Landing Page (ID: {$landingPageSub->id_subservicio})");
-        } else {
-            $this->command->warn("Subservicio 'landing-page' no encontrado — ejecuta SubservicioSeeder primero.");
         }
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1');

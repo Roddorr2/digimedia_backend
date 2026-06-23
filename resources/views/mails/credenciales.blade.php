@@ -4,26 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bienvenido a DIGIMEDIA MARKETING</title>
+    <!--[if mso]>
+    <style type="text/css">
+        body, table, td { font-family: Arial, sans-serif !important; }
+    </style>
+    <![endif]-->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-        :root {
-            --primary-color: #8A4FFF;
-            --primary-dark: #7340E0;
-            --primary-light: #F0EBFF;
-            --text-on-primary: #FFFFFF;
-            --text-primary: #333333;
-            --text-secondary: #555555;
-            --background-light: #F8F6FF;
-            --warning-color: #F59E0B;
-            --warning-dark: #B45309;
-            --warning-light: #FFFBEB;
-        }
-
         body {
             font-family: 'Poppins', Arial, sans-serif;
             line-height: 1.6;
-            color: var(--text-primary);
+            color: #333333;
             background-color: #f5f5f5;
             margin: 0;
             padding: 0;
@@ -50,7 +40,7 @@
         }
 
         .email-header h1 {
-            color: var(--text-on-primary);
+            color: #FFFFFF;
             margin: 20px 0 0;
             font-weight: 600;
             font-size: 24px;
@@ -69,12 +59,12 @@
 
         .message {
             margin-bottom: 30px;
-            color: var(--text-secondary);
+            color: #555555;
             font-size: 16px;
         }
 
         .credentials-box {
-            background-color: var(--background-light);
+            background-color: #F8F6FF;
             border-radius: 12px;
             padding: 25px;
             margin-bottom: 30px;
@@ -122,7 +112,6 @@
             height: 18px;
             display: inline-block;
             vertical-align: middle;
-            filter: brightness(0) invert(1);
         }
 
         .credential-content {
@@ -141,7 +130,7 @@
         .credential-value {
             font-weight: 500;
             font-size: 16px;
-            color: var(--text-primary);
+            color: #333333;
             word-break: break-all;
         }
 
@@ -155,19 +144,14 @@
             font-weight: 600;
             text-align: center;
             margin: 30px 0;
-            transition: background-color 0.3s;
             box-shadow: 0 4px 10px rgba(138, 79, 255, 0.2);
         }
 
-        .cta-button:hover {
-            background-color: #7340E0;
-        }
-
         .security-note {
-            background-color: var(--warning-light);
+            background-color: #FFFBEB;
             border-radius: 12px;
             padding: 15px;
-            border-left: 4px solid var(--warning-color);
+            border-left: 4px solid #F59E0B;
             margin-bottom: 30px;
         }
 
@@ -175,7 +159,7 @@
             display: table;
             width: 100%;
             font-weight: 600;
-            color: var(--warning-dark);
+            color: #B45309;
             margin-bottom: 5px;
         }
 
@@ -203,7 +187,7 @@
         }
 
         .email-footer {
-            background-color: var(--background-light);
+            background-color: #F8F6FF;
             padding: 25px 30px;
             text-align: center;
             border-top: 1px solid #E9E4FF;
@@ -228,11 +212,6 @@
             width: 24px;
             height: 24px;
             opacity: 0.7;
-            transition: opacity 0.3s;
-        }
-
-        .social-link:hover img {
-            opacity: 1;
         }
 
         .copyright {
@@ -268,7 +247,7 @@
 <body>
     <div class="email-container">
         <div class="email-header">
-            <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-v2gYpX1AexbpAeLB3A5QD7xRprduZF.png" alt="DIGIMEDIA MARKETING" />
+            <img src="{{ rtrim(config('app.url'), '/') }}/assets/images/logo-digimedia.png" alt="DIGIMEDIA MARKETING" />
             <h1>¡Bienvenido a nuestra plataforma!</h1>
         </div>
 
@@ -366,4 +345,3 @@
     </div>
 </body>
 </html>
-

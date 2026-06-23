@@ -40,7 +40,7 @@ class BlogBodyService
         
         $this->repository->update($blogBody, $dto->toArray());
         
-        return $blogBody;
+        return $blogBody->refresh();
     }
 
     public function delete(int $id): void

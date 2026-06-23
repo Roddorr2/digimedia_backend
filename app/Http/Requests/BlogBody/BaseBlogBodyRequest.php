@@ -11,6 +11,54 @@ abstract class BaseBlogBodyRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $data = [];
+
+        if ($this->has('imagenes')) {
+            $imagenes = $this->input('imagenes', []);
+            if (is_array($imagenes)) {
+                foreach ($imagenes as $index => $imagen) {
+                    $slot = $index + 1;
+                    if (!is_array($imagen)) {
+                        continue;
+                    }
+                    if (array_key_exists('public_image', $imagen)) {
+                        $data["public_image{$slot}"] = $imagen['public_image'];
+                    }
+                    if (array_key_exists('url_image', $imagen)) {
+                        $data["url_image{$slot}"] = $imagen['url_image'];
+                    }
+                    if (array_key_exists('alt', $imagen)) {
+                        $data["alt_image{$slot}"] = $imagen['alt'];
+                    }
+                    if (array_key_exists('title', $imagen)) {
+                        $data["title_image{$slot}"] = $imagen['title'];
+                    }
+                }
+            }
+        }
+
+        if ($this->has('flags')) {
+            $flags = $this->input('flags', []);
+            if (is_array($flags)) {
+                if (array_key_exists('galeria', $flags)) {
+                    $data['flag_galeria'] = $flags['galeria'];
+                }
+                if (array_key_exists('consejos', $flags)) {
+                    $data['flag_consejos'] = $flags['consejos'];
+                }
+                if (array_key_exists('informacion', $flags)) {
+                    $data['flag_informacion'] = $flags['informacion'];
+                }
+            }
+        }
+
+        if (!empty($data)) {
+            $this->merge($data);
+        }
+    }
+
     public function rules(): array
     {
         return [

@@ -21,7 +21,7 @@ class PlantillasEmailSeeder extends Seeder
     public function run(): void
     {
         foreach ($this->buildAll() as $plantilla) {
-            PlantillaEmail::updateOrCreate(
+            PlantillaEmail::firstOrCreate(
                 [
                     'plantillable_type' => $plantilla['plantillable_type'],
                     'plantillable_id'   => $plantilla['plantillable_id'],
@@ -31,11 +31,12 @@ class PlantillasEmailSeeder extends Seeder
             );
         }
 
-        // Plantillas específicas por subservicio
+        // Subservicio Landing Page (solo este sí usa slug)
         $landingPage = Subservicio::where('slug', 'landing-page')->first();
+
         if ($landingPage) {
             foreach ($this->buildLandingPageEmails($landingPage->id_subservicio) as $plantilla) {
-                PlantillaEmail::updateOrCreate(
+                PlantillaEmail::firstOrCreate(
                     [
                         'plantillable_type' => $plantilla['plantillable_type'],
                         'plantillable_id'   => $plantilla['plantillable_id'],
@@ -44,33 +45,52 @@ class PlantillasEmailSeeder extends Seeder
                     $plantilla
                 );
             }
-            $this->command->info("Plantillas email creadas para subservicio Landing Page (ID: {$landingPage->id_subservicio})");
+
+            $this->command->info(
+                "Plantillas email creadas para Landing Page (ID: {$landingPage->id_subservicio})"
+            );
         } else {
-            $this->command->warn("Subservicio 'landing-page' no encontrado — omitiendo sus plantillas email.");
+            $this->command->warn("Subservicio 'landing-page' no encontrado");
         }
+
+        $this->command->info("Total plantillas email: " . PlantillaEmail::count());
     }
 
     private function buildAll(): array
     {
         $all = [];
-        for ($servicio = 1; $servicio <= 4; $servicio++) {
+
+        $servicios = servicios::all();
+
+        foreach ($servicios as $servicio) {
             for ($num = 1; $num <= 3; $num++) {
-                $all[] = $this->build($servicio, $num);
+                $all[] = $this->build(
+                    $servicio->id_servicio,
+                    $num,
+                    $servicio->id_servicio
+                );
             }
         }
+
         return $all;
     }
 
-    private function build(int $serv, int $num): array
+    private function build(int $serv, int $num, int $servicioId): array
     {
-        $data = $this->getData($serv, $num);
-        return array_merge($data, [
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        return array_merge(
+            $this->getData($serv, $num, $servicioId),
+            [
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
     }
 
-    private function getData(int $s, int $n): array
+    private function getData(
+    int $s,
+    int $n,
+    int $servicioId
+): array
     {
         $map = [
             '1-1' => ['IMPULSA TU ÉXITO ONLINE CON DIGIMEDIA! 🌐', 'Renueva tu web y conquista a tu competencia',
@@ -112,10 +132,10 @@ class PlantillasEmailSeeder extends Seeder
         ];
 
         $imgs = [
-            [1 => 'desarrollo-diseño/flyer-modal-1-1-v2.jpg', 2 => 'desarrollo-diseño/flyer-modal-1-2-v2.jpg', 3 => 'desarrollo-diseño/flyer-modal-1-3-v2.jpg'],
+            [1 => 'desarrollo-diseno/flyer-modal-1-1-v2.jpg', 2 => 'desarrollo-diseno/flyer-modal-1-2-v2.jpg', 3 => 'desarrollo-diseno/flyer-modal-1-3-v2.jpg'],
             [1 => 'gestion-redes/flyer-modal-2-1-v2.jpg', 2 => 'gestion-redes/flyer-modal-2-2-v2.jpg', 3 => 'gestion-redes/flyer-modal-2-3-v2.jpg'],
             [1 => 'marketing-gestion/flyer-modal-3-1-v2.jpg', 2 => 'marketing-gestion/flyer-modal-3-2-v2.jpg', 3 => 'marketing-gestion/flyer-modal-3-3-v2.jpg'],
-            [1 => 'branding-diseño/flyer-modal-4-1-v2.jpg', 2 => 'branding-diseño/flyer-modal-4-2-v2.jpg', 3 => 'branding-diseño/flyer-modal-4-3-v2.jpg'],
+            [1 => 'branding-diseno/flyer-modal-4-1-v2.jpg', 2 => 'branding-diseno/flyer-modal-4-2-v2.jpg', 3 => 'branding-diseno/flyer-modal-4-3-v2.jpg'],
         ];
 
         $srvNames = [1 => 'Diseño Web', 2 => 'Redes Sociales', 3 => 'Marketing Digital', 4 => 'Branding'];
@@ -124,15 +144,15 @@ class PlantillasEmailSeeder extends Seeder
 
         return [
             'plantillable_type' => servicios::class,
-            'plantillable_id' => $s,
+            'plantillable_id' => $servicioId,
             'numero_plantilla' => $n,
             'nombre' => $srvNames[$s] . " - Email {$n}",
             'asunto' => $asunto,
             'encabezado' => $encabezado,
-            'imagen_url' => url('assets/images/' . $imgs[$s - 1][$n]),
+            'imagen_url' => 'assets/images/' . $imgs[$s - 1][$n],
             'mensaje' => $mensaje,
             'mensaje_boton' => $cta,
-            'url_boton' => url(self::URL_CONTACTANOS),
+            'url_boton' => self::URL_CONTACTANOS,
             'footer' => 'Quedamos atentos a tu mensaje.<br>Saludos,<br>Equipo Digimedia',
             'red_facebook' => self::FB,
             'red_tiktok' => self::TT,

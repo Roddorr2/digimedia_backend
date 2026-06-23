@@ -13,12 +13,20 @@ class PlantillasWhatsappSeeder extends Seeder
     public function run(): void
     {
         foreach ($this->buildAll() as $plantilla) {
-            PlantillaWhatsapp::updateOrCreate(
-                [
-                    'plantillable_type' => $plantilla['plantillable_type'],
-                    'plantillable_id'   => $plantilla['plantillable_id'],
-                    'numero_plantilla'  => $plantilla['numero_plantilla'],
-                ],
+
+            $unique = [
+                'plantillable_type' => $plantilla['plantillable_type'],
+                'plantillable_id'   => $plantilla['plantillable_id'],
+                'numero_plantilla'  => $plantilla['numero_plantilla'],
+            ];
+
+            unset(
+                $plantilla['created_at'],
+                $plantilla['updated_at']
+            );
+
+            PlantillaWhatsapp::firstOrCreate(
+                $unique,
                 $plantilla
             );
         }
@@ -26,19 +34,29 @@ class PlantillasWhatsappSeeder extends Seeder
         // Plantillas WhatsApp específicas por subservicio
         $landingPage = Subservicio::where('slug', 'landing-page')->first();
         if ($landingPage) {
+
             foreach ($this->buildLandingPageWhatsapp($landingPage->id_subservicio) as $plantilla) {
-                PlantillaWhatsapp::updateOrCreate(
-                    [
-                        'plantillable_type' => $plantilla['plantillable_type'],
-                        'plantillable_id'   => $plantilla['plantillable_id'],
-                        'numero_plantilla'  => $plantilla['numero_plantilla'],
-                    ],
+
+                $unique = [
+                    'plantillable_type' => $plantilla['plantillable_type'],
+                    'plantillable_id'   => $plantilla['plantillable_id'],
+                    'numero_plantilla'  => $plantilla['numero_plantilla'],
+                ];
+
+                unset(
+                    $plantilla['created_at'],
+                    $plantilla['updated_at']
+                );
+
+                PlantillaWhatsapp::firstOrCreate(
+                    $unique,
                     $plantilla
                 );
             }
-            $this->command->info("Plantillas WhatsApp creadas para subservicio Landing Page (ID: {$landingPage->id_subservicio})");
-        } else {
-            $this->command->warn("Subservicio 'landing-page' no encontrado — omitiendo sus plantillas WhatsApp.");
+
+            $this->command->info(
+                "Plantillas WhatsApp creadas para subservicio Landing Page (ID: {$landingPage->id_subservicio})"
+            );
         }
     }
 
@@ -69,7 +87,7 @@ class PlantillasWhatsappSeeder extends Seeder
             [1 => 'desarrollo_web/1-1-v2.png', 2 => 'desarrollo_web/1-2-v2.png', 3 => 'desarrollo_web/1-3-v2.png'],
             [1 => 'gestion_redes/2-1-v2.png', 2 => 'gestion_redes/2-2-v2.png', 3 => 'gestion_redes/2-3-v2.png'],
             [1 => 'marketing_digital/3-1-v2.png', 2 => 'marketing_digital/3-2-v2.png', 3 => 'marketing_digital/3-3-v2.png'],
-            [1 => 'branding_diseño/4-1-v2.png', 2 => 'branding_diseño/4-2-v2.png', 3 => 'branding_diseño/4-3-v2.png'],
+            [1 => 'branding_diseno/4-1-v2.png', 2 => 'branding_diseno/4-2-v2.png', 3 => 'branding_diseno/4-3-v2.png'],
         ];
         $nombres = [1 => 'Diseño Web', 2 => 'Redes Sociales', 3 => 'Marketing Digital', 4 => 'Branding'];
 
@@ -79,7 +97,7 @@ class PlantillasWhatsappSeeder extends Seeder
             'numero_plantilla' => $n,
             'nombre' => $nombres[$s] . " - Plantilla {$n}",
             'mensaje' => $textos["{$s}-{$n}"],
-            'imagen_url' => url('imagenes/' . $imgs[$s - 1][$n]),
+            'imagen_url' => 'imagenes/' . $imgs[$s - 1][$n],
         ];
     }
 
