@@ -27,6 +27,9 @@ class UpdateBlogBodyRequest extends BaseBlogBodyRequest
             'flag_informacion' => 'sometimes|nullable|boolean',
             'service_url' => 'sometimes|nullable|string|max:255',
             'titulo_tarjeta' => 'sometimes|nullable|string',
+            'bg_color' => 'sometimes|nullable|string|max:7',
+            'bg_type' => 'sometimes|nullable|string|in:solid,gradient|max:20',
+            'bg_colors' => 'sometimes|nullable|string|max:50',
         ];
     }
 }
