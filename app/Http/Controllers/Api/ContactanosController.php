@@ -18,7 +18,8 @@ class ContactanosController extends Controller
 
     public function get(Request $request)
     {
-        $contactos = $this->contactanosService->getContactos(4);
+        //llamaba a solo 4 contactos ahora se corrigio a 10
+        $contactos = $this->contactanosService->getContactos(10);
         return response()->json($contactos, 200);
     }
 

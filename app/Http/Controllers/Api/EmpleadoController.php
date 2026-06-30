@@ -55,7 +55,7 @@ class EmpleadoController extends Controller
             $params = [
                 'search' => $request->get('search', ''),
                 'rol' => $request->get('rol', 'all'),
-                'limit' => $request->get('limit', 5),
+                'limit' => $request->get('limit', 10),
                 'sortBy' => $request->get('sortBy', 'id_empleado'),
                 'sortOrder' => $request->get('sortOrder', 'asc'),
             ];
