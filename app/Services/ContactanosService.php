@@ -15,7 +15,7 @@ class ContactanosService
         private ContactanosRepository $repository
     ) {}
 
-    public function getContactos(int $perPage = 4): LengthAwarePaginator
+    public function getContactos(int $perPage = 10): LengthAwarePaginator
     {
         return $this->repository->getPaginated($perPage);
     }
