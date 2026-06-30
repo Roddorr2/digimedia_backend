@@ -9,7 +9,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class ContactanosRepository
 {
-    public function getPaginated(int $perPage = 4): LengthAwarePaginator
+    public function getPaginated(int $perPage = 10): LengthAwarePaginator
     {
         return Contactanos::paginate($perPage);
     }
