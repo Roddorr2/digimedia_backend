@@ -15,6 +15,8 @@ class Contactanos extends Model
         'email',
         'numero',
         'mensaje',
+        //agregando servicio
+        'servicio',
         'fecha',
         'estado',
     ];
