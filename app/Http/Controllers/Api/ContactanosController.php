@@ -40,10 +40,11 @@ class ContactanosController extends Controller
     public function create(Request $request)
     {
         $validated = Validator::make($request->all(), [
-            'nombre' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'numero' => 'required|string|max:20',
-            'mensaje' => 'required|string|max:1050',
+            'nombre'   => 'required|string|max:255',
+            'email'    => 'required|email|max:255',
+            'numero'   => 'required|string|max:20',
+            'mensaje'  => 'required|string|max:1050',
+            'servicio' => 'nullable|string|max:100',
         ]);
 
         if ($validated->fails()) {
