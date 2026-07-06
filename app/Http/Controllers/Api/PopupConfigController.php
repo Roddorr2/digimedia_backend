@@ -7,6 +7,7 @@ use App\Services\PopupConfigService;
 use App\DTOs\PopupConfig\CreatePopupConfigDTO;
 use App\DTOs\PopupConfig\UpdatePopupConfigDTO;
 use App\Models\Subservicio;
+use App\Models\PopupConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +19,35 @@ class PopupConfigController extends Controller
         private PopupConfigService $popupConfigService
     ) {}
 
+    private function formatPopupPublic(PopupConfig $popup): array
+    {
+        return [
+            'id_popup_config' => $popup->id_popup_config,
+            'button_text' => $popup->button_text,
+            'button_color' => $popup->button_color,
+            'service_color' => $popup->service_color,
+            'service_color_2' => $popup->service_color_2,
+            'gradient_direction' => $popup->gradient_direction,
+            'trigger_time' => $popup->trigger_time,
+            'trigger_type' => $popup->trigger_type,
+            'layout' => $popup->layout,
+            'show_logo' => $popup->show_logo,
+            'left_text' => $popup->left_text,
+            'left_image_url' => $popup->left_image_url,
+            'left_opacity' => $popup->left_opacity,
+            'left_alt' => $popup->left_alt,
+            'right_image_url' => $popup->right_image_url,
+            'right_opacity' => $popup->right_opacity,
+            'right_alt' => $popup->right_alt,
+            'mobile_image_url' => $popup->mobile_image_url,
+            'mobile_opacity' => $popup->mobile_opacity,
+            'mobile_alt' => $popup->mobile_alt,
+            'id_servicio' => $popup->popupable_type === Subservicio::class
+                ? $popup->popupable->id_servicio
+                : $popup->popupable_id
+        ];
+    }
+
     // ENDPOINT PUBLICO UNIFICADO
     public function showByOwnerPublic(string $type, int $id): JsonResponse
     {
@@ -26,31 +56,7 @@ class PopupConfigController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'id_popup_config' => $popup->id_popup_config,
-                    'button_text' => $popup->button_text,
-                    'button_color' => $popup->button_color,
-                    'service_color' => $popup->service_color,
-                    'service_color_2' => $popup->service_color_2,
-                    'gradient_direction' => $popup->gradient_direction,
-                    'trigger_time' => $popup->trigger_time,
-                    'trigger_type' => $popup->trigger_type,
-                    'layout' => $popup->layout,
-                    'show_logo' => $popup->show_logo,
-                    'left_text' => $popup->left_text,
-                    'left_image_url' => $popup->left_image_url,
-                    'left_opacity' => $popup->left_opacity,
-                    'left_alt' => $popup->left_alt,
-                    'right_image_url' => $popup->right_image_url,
-                    'right_opacity' => $popup->right_opacity,
-                    'right_alt' => $popup->right_alt,
-                    'mobile_image_url' => $popup->mobile_image_url,
-                    'mobile_opacity' => $popup->mobile_opacity,
-                    'mobile_alt' => $popup->mobile_alt,
-                    'id_servicio' => $popup->popupable_type === Subservicio::class 
-                        ? $popup->popupable->id_servicio 
-                        : $popup->popupable_id
-                ]
+                'data' => $this->formatPopupPublic($popup)
             ]);
         } catch (\InvalidArgumentException $e) {
             return response()->json([
@@ -80,6 +86,30 @@ class PopupConfigController extends Controller
     public function showByServicioPublic(int $id_servicio): JsonResponse
     {
         return $this->showByOwnerPublic('servicio', $id_servicio);
+    }
+
+    // ENDPOINT PUBLICO POR SLUG (estable ante cambios de ID en la BD)
+    public function showBySubservicioSlugPublic(string $slug): JsonResponse
+    {
+        try {
+            $popup = $this->popupConfigService->getPopupBySubservicioSlug($slug);
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->formatPopupPublic($popup)
+            ]);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener pop-up',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 
     // LISTAR TODOS
@@ -224,6 +254,8 @@ class PopupConfigController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
+                'id_servicio'         => 'sometimes|nullable|integer|exists:servicios,id_servicio',
+                'id_subservicio'      => 'sometimes|nullable|integer|exists:subservicios,id_subservicio',
                 'button_text'         => 'nullable|string|min:2|max:25',
                 'button_color'        => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
                 'service_color'       => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
@@ -281,11 +313,12 @@ class PopupConfigController extends Controller
                 'message' => 'Pop-up no encontrado'
             ], 404);
         } catch (\Exception $e) {
+            $status = $e->getCode() === 422 ? 422 : 500;
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar pop-up',
+                'message' => $status === 422 ? $e->getMessage() : 'Error al actualizar pop-up',
                 'error'   => config('app.debug') ? $e->getMessage() : null
-            ], 500);
+            ], $status);
         }
     }
 
