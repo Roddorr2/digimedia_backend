@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\PlantillaEmail;
 use App\Models\servicios;
+use App\Models\Subservicio;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -20,38 +21,76 @@ class PlantillasEmailSeeder extends Seeder
     public function run(): void
     {
         foreach ($this->buildAll() as $plantilla) {
-            PlantillaEmail::updateOrCreate(
+            PlantillaEmail::firstOrCreate(
                 [
                     'plantillable_type' => $plantilla['plantillable_type'],
-                    'plantillable_id' => $plantilla['plantillable_id'],
-                    'numero_plantilla' => $plantilla['numero_plantilla'],
+                    'plantillable_id'   => $plantilla['plantillable_id'],
+                    'numero_plantilla'  => $plantilla['numero_plantilla'],
                 ],
                 $plantilla
             );
         }
+
+        // Subservicio Landing Page (solo este sí usa slug)
+        $landingPage = Subservicio::where('slug', 'landing-page')->first();
+
+        if ($landingPage) {
+            foreach ($this->buildLandingPageEmails($landingPage->id_subservicio) as $plantilla) {
+                PlantillaEmail::firstOrCreate(
+                    [
+                        'plantillable_type' => $plantilla['plantillable_type'],
+                        'plantillable_id'   => $plantilla['plantillable_id'],
+                        'numero_plantilla'  => $plantilla['numero_plantilla'],
+                    ],
+                    $plantilla
+                );
+            }
+
+            $this->command->info(
+                "Plantillas email creadas para Landing Page (ID: {$landingPage->id_subservicio})"
+            );
+        } else {
+            $this->command->warn("Subservicio 'landing-page' no encontrado");
+        }
+
+        $this->command->info("Total plantillas email: " . PlantillaEmail::count());
     }
 
     private function buildAll(): array
     {
         $all = [];
-        for ($servicio = 1; $servicio <= 4; $servicio++) {
+
+        $servicios = servicios::all();
+
+        foreach ($servicios as $servicio) {
             for ($num = 1; $num <= 3; $num++) {
-                $all[] = $this->build($servicio, $num);
+                $all[] = $this->build(
+                    $servicio->id_servicio,
+                    $num,
+                    $servicio->id_servicio
+                );
             }
         }
+
         return $all;
     }
 
-    private function build(int $serv, int $num): array
+    private function build(int $serv, int $num, int $servicioId): array
     {
-        $data = $this->getData($serv, $num);
-        return array_merge($data, [
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        return array_merge(
+            $this->getData($serv, $num, $servicioId),
+            [
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
     }
 
-    private function getData(int $s, int $n): array
+    private function getData(
+    int $s,
+    int $n,
+    int $servicioId
+): array
     {
         $map = [
             '1-1' => ['IMPULSA TU ÉXITO ONLINE CON DIGIMEDIA! 🌐', 'Renueva tu web y conquista a tu competencia',
@@ -93,10 +132,10 @@ class PlantillasEmailSeeder extends Seeder
         ];
 
         $imgs = [
-            [1 => 'desarrollo-diseño/flyer-modal-1-1-v2.jpg', 2 => 'desarrollo-diseño/flyer-modal-1-2-v2.jpg', 3 => 'desarrollo-diseño/flyer-modal-1-3-v2.jpg'],
+            [1 => 'desarrollo-diseno/flyer-modal-1-1-v2.jpg', 2 => 'desarrollo-diseno/flyer-modal-1-2-v2.jpg', 3 => 'desarrollo-diseno/flyer-modal-1-3-v2.jpg'],
             [1 => 'gestion-redes/flyer-modal-2-1-v2.jpg', 2 => 'gestion-redes/flyer-modal-2-2-v2.jpg', 3 => 'gestion-redes/flyer-modal-2-3-v2.jpg'],
             [1 => 'marketing-gestion/flyer-modal-3-1-v2.jpg', 2 => 'marketing-gestion/flyer-modal-3-2-v2.jpg', 3 => 'marketing-gestion/flyer-modal-3-3-v2.jpg'],
-            [1 => 'branding-diseño/flyer-modal-4-1-v2.jpg', 2 => 'branding-diseño/flyer-modal-4-2-v2.jpg', 3 => 'branding-diseño/flyer-modal-4-3-v2.jpg'],
+            [1 => 'branding-diseno/flyer-modal-4-1-v2.jpg', 2 => 'branding-diseno/flyer-modal-4-2-v2.jpg', 3 => 'branding-diseno/flyer-modal-4-3-v2.jpg'],
         ];
 
         $srvNames = [1 => 'Diseño Web', 2 => 'Redes Sociales', 3 => 'Marketing Digital', 4 => 'Branding'];
@@ -105,20 +144,78 @@ class PlantillasEmailSeeder extends Seeder
 
         return [
             'plantillable_type' => servicios::class,
-            'plantillable_id' => $s,
+            'plantillable_id' => $servicioId,
             'numero_plantilla' => $n,
             'nombre' => $srvNames[$s] . " - Email {$n}",
             'asunto' => $asunto,
             'encabezado' => $encabezado,
-            'imagen_url' => url('assets/images/' . $imgs[$s - 1][$n]),
+            'imagen_url' => 'assets/images/' . $imgs[$s - 1][$n],
             'mensaje' => $mensaje,
             'mensaje_boton' => $cta,
-            'url_boton' => url(self::URL_CONTACTANOS),
+            'url_boton' => self::URL_CONTACTANOS,
             'footer' => 'Quedamos atentos a tu mensaje.<br>Saludos,<br>Equipo Digimedia',
             'red_facebook' => self::FB,
             'red_tiktok' => self::TT,
             'red_instagram' => self::IG,
             'red_linkedin' => self::LI,
         ];
+    }
+
+    private function buildLandingPageEmails(int $id): array
+    {
+        $textos = [
+            1 => [
+                'asunto'    => '¡Tu Landing Page puede duplicar tus ventas! 🚀',
+                'encabezado' => 'Renueva tu presencia y convierte más visitantes en clientes',
+                'mensaje'   => '¡Hola {nombre}! 👋🏼<br><br>Te saludamos por parte del equipo de <strong>DIGIMEDIA 🚀</strong><br><br>Queremos contarte los principales beneficios que obtendrás con nuestro servicio de <strong>Landing Page</strong>:<br><br>✅ Una <strong>página diseñada para convertir</strong> visitas en clientes desde el primer contacto.<br>✅ <strong>Mensajes claros y persuasivos</strong> que guían al visitante hacia la acción deseada.<br>✅ <strong>Carga rápida y diseño optimizado</strong> para móviles y buscadores.<br><br>Si estás buscando que tu presencia digital <strong>genere resultados concretos</strong>, estaremos encantados de acompañarte.<br><br>👉 <strong>Escríbenos y comencemos a crear tu landing page.</strong>',
+                'cta'       => self::CTA_TRABAJAR . ' en tu landing page',
+            ],
+            2 => [
+                'asunto'    => '¿Tu web no convierte? Una landing page lo cambia todo. 💻',
+                'encabezado' => '¡Hola {nombre}! Tu negocio merece más conversiones',
+                'mensaje'   => '¡Hola {nombre}! 👋🏼<br><br>En <strong>DIGIMEDIA</strong> creamos <strong>landing pages</strong> diseñadas para <strong>convertir visitantes en clientes reales 🚀</strong><br><br><strong>Una página enfocada en resultados</strong><br>Cada elemento visual y de texto trabaja para <strong>impulsar la acción del usuario</strong>.<br><br>Si quieres que tu inversión digital <strong>realmente te genere ventas</strong>, conversemos.<br><br>👉 <strong>Escríbenos y lo vemos contigo.</strong>',
+                'cta'       => self::CTA_VER,
+            ],
+            3 => [
+                'asunto'    => '¿Listo para multiplicar tus conversiones con una landing page? 💻',
+                'encabezado' => '¡Hola {nombre}! Maximiza tus resultados online',
+                'mensaje'   => '¡Hola {nombre}! 👋🏼<br><br>En <strong>DIGIMEDIA</strong> trabajamos <strong>landing pages</strong> pensadas para <strong>convertir y generar resultados reales para tu negocio 🚀</strong><br><br>Con nuestro servicio de <strong>Landing Page</strong> obtendrás:<br><br>✅ Una <strong>página diseñada para convertir</strong> visitas en clientes desde el primer contacto.<br>✅ <strong>Mensajes claros y persuasivos</strong> que guían al visitante hacia la acción deseada.<br>✅ <strong>Carga rápida y diseño optimizado</strong> para móviles y buscadores.<br>✅ Un <strong>formulario o CTA estratégico</strong> que facilita que el visitante te contacte o compre.<br><br>Si quieres que tu página <strong>deje de ser solo informativa</strong> y empiece a <strong>generar leads y ventas</strong>, conversemos.<br><br>👉 <strong>Escríbenos y lo vemos contigo.</strong>',
+                'cta'       => self::CTA_VER,
+            ],
+        ];
+
+        // Usa imágenes de desarrollo-diseño hasta que existan imágenes propias de landing page
+        $imgs = [
+            1 => 'desarrollo-diseño/flyer-modal-1-1-v2.jpg',
+            2 => 'desarrollo-diseño/flyer-modal-1-2-v2.jpg',
+            3 => 'desarrollo-diseño/flyer-modal-1-3-v2.jpg',
+        ];
+
+        $all = [];
+        foreach ([1, 2, 3] as $num) {
+            $t = $textos[$num];
+            $all[] = array_merge([
+                'plantillable_type' => Subservicio::class,
+                'plantillable_id'   => $id,
+                'numero_plantilla'  => $num,
+                'nombre'            => "Landing Page - Email {$num}",
+                'asunto'            => $t['asunto'],
+                'encabezado'        => $t['encabezado'],
+                'imagen_url'        => url("assets/images/{$imgs[$num]}"),
+                'mensaje'           => $t['mensaje'],
+                'mensaje_boton'     => $t['cta'],
+                'url_boton'         => url(self::URL_CONTACTANOS),
+                'footer'            => 'Quedamos atentos a tu mensaje.<br>Saludos,<br>Equipo Digimedia',
+                'red_facebook'      => self::FB,
+                'red_tiktok'        => self::TT,
+                'red_instagram'     => self::IG,
+                'red_linkedin'      => self::LI,
+            ], [
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return $all;
     }
 }

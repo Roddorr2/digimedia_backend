@@ -50,12 +50,23 @@ class PopupConfigService
         }
 
         $popup = $this->repository->findByOwner($ownerType, $id);
-        
+
         if (!$popup) {
             throw new ModelNotFoundException("Pop-up no encontrado para este {$type}");
         }
-        
+
         return $popup;
+    }
+
+    public function getPopupBySubservicioSlug(string $slug): PopupConfig
+    {
+        $subservicio = \App\Models\Subservicio::where('slug', $slug)->first();
+
+        if (!$subservicio) {
+            throw new ModelNotFoundException("Subservicio '{$slug}' no encontrado");
+        }
+
+        return $this->getPopupByOwner('subservicio', $subservicio->id_subservicio);
     }
 
     public function createPopup(CreatePopupConfigDTO $dto, array $files = []): PopupConfig
@@ -117,9 +128,36 @@ class PopupConfigService
     public function updatePopup(int $id, UpdatePopupConfigDTO $dto, array $files = []): PopupConfig
     {
         $popup = $this->getPopupById($id);
-        
+
         $data = $dto->data;
-        
+
+        // Reasignar owner (servicio/subservicio) si vino un cambio en el request
+        $newOwnerType = null;
+        $newOwnerId = null;
+        if ($dto->id_subservicio) {
+            $newOwnerType = \App\Models\Subservicio::class;
+            $newOwnerId = $dto->id_subservicio;
+        } elseif ($dto->id_servicio) {
+            $newOwnerType = \App\Models\servicios::class;
+            $newOwnerId = $dto->id_servicio;
+        }
+
+        if ($newOwnerType !== null
+            && ($newOwnerType !== $popup->popupable_type || $newOwnerId !== $popup->popupable_id)
+        ) {
+            $owner = $newOwnerType::find($newOwnerId);
+            if (!$owner) {
+                throw new ModelNotFoundException('Owner no encontrado');
+            }
+
+            if ($this->repository->existsForOwner($newOwnerType, $newOwnerId)) {
+                throw new \Exception('Ya existe un pop-up configurado para este elemento', 422);
+            }
+
+            $data['popupable_type'] = $newOwnerType;
+            $data['popupable_id'] = $newOwnerId;
+        }
+
         // Manejar subida de imagenes
         if (isset($files['left_image'])) {
             if ($popup->left_image_url && str_contains($popup->left_image_url, 'cloudinary')) {

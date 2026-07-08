@@ -34,7 +34,7 @@ use App\Http\Controllers\Api\ConfiguracionTiempoController;
 // ============================================================
 
 Route::middleware('throttle:5,1')->post('/register', [AuthController::class, 'register']);
-Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login']);
+Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login'])->name('login');
 Route::middleware('throttle:5,1')->post('/reset_password', [AuthController::class, "forgotPassword"]);
 Route::middleware('throttle:5,1')->post('/update_password', [AuthController::class, "updatePassword"]);
 
@@ -52,6 +52,8 @@ Route::get('/blog_footer/{id}', [BlogFooterController::class, "show"]);
 Route::get('/blog_body/{id}', [BlogBodyController::class, "show"]);
 
 // Pop-ups públicos
+// Slug PRIMERO para evitar colisión con {id_subservicio}
+Route::get('/public/popup-configs/subservicio/slug/{slug}', [PopupConfigController::class, 'showBySubservicioSlugPublic']);
 Route::get('/public/popup-configs/subservicio/{id_subservicio}', [PopupConfigController::class, 'showBySubservicioPublic']);
 Route::get('/public/popup-configs/servicio/{id_servicio}', [PopupConfigController::class, 'showByServicioPublic']);
 

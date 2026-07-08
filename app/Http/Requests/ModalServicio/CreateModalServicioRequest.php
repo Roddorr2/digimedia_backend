@@ -25,8 +25,8 @@ class CreateModalServicioRequest extends FormRequest
             'nombre'         => 'required|string|max:100',
             'telefono'       => 'required|string|max:9',
             'correo'         => 'required|email|max:200',
-            'id_servicio'    => 'required|integer|min:1',
-            'id_subservicio' => 'nullable|integer|min:1',
+            'id_servicio'    => 'required|integer|exists:servicios,id_servicio',
+            'id_subservicio' => 'nullable|integer|exists:subservicios,id_subservicio',
         ];
     }
 }
