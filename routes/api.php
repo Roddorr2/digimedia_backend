@@ -52,6 +52,8 @@ Route::get('/blog_footer/{id}', [BlogFooterController::class, "show"]);
 Route::get('/blog_body/{id}', [BlogBodyController::class, "show"]);
 
 // Pop-ups públicos
+// Slug PRIMERO para evitar colisión con {id_subservicio}
+Route::get('/public/popup-configs/subservicio/slug/{slug}', [PopupConfigController::class, 'showBySubservicioSlugPublic']);
 Route::get('/public/popup-configs/subservicio/{id_subservicio}', [PopupConfigController::class, 'showBySubservicioPublic']);
 Route::get('/public/popup-configs/servicio/{id_servicio}', [PopupConfigController::class, 'showByServicioPublic']);
 
