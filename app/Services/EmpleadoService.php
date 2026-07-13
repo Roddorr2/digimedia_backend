@@ -191,7 +191,7 @@ class EmpleadoService
             array_keys($filteredParams),
             $filteredParams
         ));
-        $signatureString .= env('CLOUDINARY_SECRET');
+        $signatureString .= env('CLOUDINARY_API_SECRET');
 
         return hash('sha256', $signatureString);
     }
