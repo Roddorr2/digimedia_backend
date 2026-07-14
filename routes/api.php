@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\PopupConfigController;
 use App\Http\Controllers\Api\SubservicioController;
 use App\Http\Controllers\Api\CampaniasController;
 use App\Http\Controllers\Api\ConfiguracionTiempoController;
+use App\Http\Controllers\Api\TestimonioController;
 
 // ============================================================
 // RUTAS PÚBLICAS (sin autenticación)
@@ -51,7 +52,12 @@ Route::get('/blog_head/{id}', [BlogHeadController::class, "show"]);
 Route::get('/blog_footer/{id}', [BlogFooterController::class, "show"]);
 Route::get('/blog_body/{id}', [BlogBodyController::class, "show"]);
 
+//Testimonio crud
+Route::middleware('throttle:60,1')->get('/testimonios', [TestimonioController::class, 'indexPublic']);
+
 // Pop-ups públicos
+// Slug PRIMERO para evitar colisión con {id_subservicio}
+Route::get('/public/popup-configs/subservicio/slug/{slug}', [PopupConfigController::class, 'showBySubservicioSlugPublic']);
 Route::get('/public/popup-configs/subservicio/{id_subservicio}', [PopupConfigController::class, 'showBySubservicioPublic']);
 Route::get('/public/popup-configs/servicio/{id_servicio}', [PopupConfigController::class, 'showByServicioPublic']);
 
@@ -191,6 +197,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:ver-blogs')->get('/metrics/frecuencia_publicacion_cards_todos_empleados', [MetricasController::class, "frecuenciaPublicacionCardsTodosEmpleados"]);
     Route::middleware('permission:ver-blogs')->get('/metrics/tiempo_creacion_edicion_publicacion_card', [MetricasController::class, "tiempoCreacionEdicionPublicacionCard"]);
     
+    // Testimonios (panel admin)
+    Route::middleware('permission:ver-testimonios')->get('/testimonios/panel', [TestimonioController::class, 'index']);
+    Route::middleware('permission:ver-testimonios')->get('/testimonios/panel/{id}', [TestimonioController::class, 'show']);
+    Route::middleware('permission:crear-testimonios')->post('/testimonios', [TestimonioController::class, 'store']);
+    Route::middleware('permission:editar-testimonios')->put('/testimonios/{id}', [TestimonioController::class, 'update']);
+    Route::middleware('permission:eliminar-testimonios')->delete('/testimonios/{id}', [TestimonioController::class, 'destroy']);
+
+    // Testimonios (imagen vía Cloudinary)
+    Route::middleware('permission:crear-testimonios,editar-testimonios')->post('/testimonios/{id}/upload-signature', [TestimonioController::class, 'generateUploadSignature']);
+    Route::middleware('permission:crear-testimonios,editar-testimonios')->post('/testimonios/{id}/image', [TestimonioController::class, 'updateImage']);
+    Route::middleware('permission:editar-testimonios')->delete('/testimonios/{id}/image', [TestimonioController::class, 'deleteImage']);
+    Route::middleware('permission:editar-testimonios')->put('/testimonios/{id}/toggle-activo', [TestimonioController::class, 'toggleActivo']);
+    
     // Campañas de WhatsApp (marketing y admin)
     Route::middleware('role:marketing,administrador')->group(function () {
         Route::get('/whatsapp/campaign/preview/{service}', [WhatsAppCampaignController::class, 'previewCampaign']);
@@ -237,6 +256,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/popup-configs', [PopupConfigController::class, 'store']);
         Route::post('/popup-configs/{id}/actualizar', [PopupConfigController::class, 'update']);
         Route::delete('/popup-configs/{id}', [PopupConfigController::class, 'destroy']);
+
     });
 
     // fixes

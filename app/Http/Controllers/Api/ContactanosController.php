@@ -18,7 +18,8 @@ class ContactanosController extends Controller
 
     public function get(Request $request)
     {
-        $contactos = $this->contactanosService->getContactos(4);
+        //llamaba a solo 4 contactos ahora se corrigio a 10
+        $contactos = $this->contactanosService->getContactos(10);
         return response()->json($contactos, 200);
     }
 
@@ -39,10 +40,11 @@ class ContactanosController extends Controller
     public function create(Request $request)
     {
         $validated = Validator::make($request->all(), [
-            'nombre' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'numero' => 'required|string|max:20',
-            'mensaje' => 'required|string|max:1050',
+            'nombre'   => 'required|string|max:255',
+            'email'    => 'required|email|max:255',
+            'numero'   => 'required|string|max:20',
+            'mensaje'  => 'required|string|max:1050',
+            'servicio' => 'nullable|string|max:100',
         ]);
 
         if ($validated->fails()) {

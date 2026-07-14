@@ -120,9 +120,9 @@ class CardService
         $fileName = "{$baseName}_{$timestamp}.webp";
         $filePath = "{$relativePath}/{$fileName}";
 
-        // Procesar imagen
-        $image = Image::read($dto->file)->cover(1900, 800);
-        Storage::disk('public')->put($filePath, (string) $image->toWebp());
+        // Procesar imagen: redimensionar respetando aspecto y guardar con calidad 92
+        $image = Image::read($dto->file)->scaleDown(1280, 600);
+        Storage::disk('public')->put($filePath, (string) $image->toWebp(92));
 
         $basePath = '/storage/';
         $fullUrl = $this->urlApi . $basePath . $filePath;
@@ -161,9 +161,9 @@ class CardService
             Storage::disk('public')->delete($filePath);
         }
 
-        // Procesar imagen
-        $image = Image::read($dto->file)->cover(600, 350);
-        Storage::disk('public')->put($filePath, (string) $image->toWebp());
+        // Procesar imagen: redimensionar respetando aspecto y guardar con calidad 90
+        $image = Image::read($dto->file)->scaleDown(1200, 900);
+        Storage::disk('public')->put($filePath, (string) $image->toWebp(90));
 
         $basePath = '/storage/';
         $fullUrl = $this->urlApi . $basePath . $filePath;
@@ -211,9 +211,9 @@ class CardService
             Storage::disk('public')->delete($filePath);
         }
 
-        // Procesar imagen
-        $image = Image::read($dto->file)->cover(250, 200);
-        Storage::disk('public')->put($filePath, (string) $image->toWebp());
+        // Procesar imagen: redimensionar respetando aspecto y guardar con calidad 90
+        $image = Image::read($dto->file)->scaleDown(600, 500);
+        Storage::disk('public')->put($filePath, (string) $image->toWebp(90));
 
         $basePath = '/storage/';
         $fullUrl = $this->urlApi . $basePath . $filePath;

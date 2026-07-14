@@ -193,7 +193,7 @@ class EmpleadoService
         ));
         $signatureString .= env('CLOUDINARY_SECRET');
 
-        return hash('sha256', $signatureString);
+        return sha1($signatureString);
     }
 
     public function updateProfileImage(int $id, UpdateProfileImageDTO $dto, User $currentUser): array
@@ -324,7 +324,7 @@ class EmpleadoService
                 $cloudinary = new Cloudinary([
                     'cloud' => [
                         'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
-                        'api_key'    => env('CLOUDINARY_API_KEY'),
+                        'api_key'    => env('CLOUDINARY_KEY'),
                         'api_secret' => env('CLOUDINARY_SECRET'),
                     ]
                 ]);
