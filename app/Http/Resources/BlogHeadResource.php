@@ -25,16 +25,19 @@ class BlogHeadResource extends JsonResource
             'texto_frase' => $this->texto_frase,
             'texto_descripcion' => $this->texto_descripcion,
 
+            'public_image' => $imagePath,
+            'url_image' => $this->url_image,
+            'alt' => $this->alt,
+            'title' => $this->title,
+
             'imagen' => [
-                'path' => $imagePath, // ✅ solo ruta tipo /blog/xxx.webp
+                'path' => $imagePath,
                 'alt' => $this->alt,
                 'title' => $this->title,
             ],
 
-            'seo' => [
-                'meta_title' => $this->meta_title,
-                'meta_descripcion' => $this->meta_descripcion,
-            ],
+            'meta_title' => $this->meta_title,
+            'meta_descripcion' => $this->meta_descripcion,
 
             'bg_color' => $this->bg_color,
             'bg_type' => $this->bg_type,

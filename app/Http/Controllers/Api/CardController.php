@@ -114,7 +114,9 @@ class CardController extends Controller
                 $request->file('file'),
                 'imagenPrincipal',
                 'header',
-                $id
+                $id,
+                $request->input('alt'),
+                $request->input('title')
             );
             $fullUrl = $this->cardService->uploadHeaderImage($dto);
 
