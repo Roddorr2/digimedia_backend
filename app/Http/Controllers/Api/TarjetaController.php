@@ -65,6 +65,8 @@ class TarjetaController extends Controller
             $validator = Validator::make($request->all(), [
                 'titulo' => 'required|string|max:140',
                 'descripcion' => 'required|string',
+                'enlace' => 'nullable|string',
+                'palabra' => 'nullable|string',
                 'id_blog_body' => 'required|integer|exists:blog_bodies,id_blog_body',
             ]);
 

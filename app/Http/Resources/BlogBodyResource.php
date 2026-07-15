@@ -69,8 +69,7 @@ class BlogBodyResource extends JsonResource
 
             'commend_tarjeta' => $this->whenLoaded('commend_tarjeta'),
 
-            'tarjetas' => $this->whenLoaded('tarjetas'),
+            'tarjetas' => TarjetaResource::collection($this->whenLoaded('tarjetas')),
         ];
     }
 }
-
