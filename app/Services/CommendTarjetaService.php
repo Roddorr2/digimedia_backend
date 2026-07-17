@@ -15,6 +15,17 @@ class CommendTarjetaService
         private CommendTarjetaRepository $repository
     ) {}
 
+    public function getTarjetaById(int $id): CommendTarjeta
+    {
+        $tarjeta = $this->repository->findById($id);
+
+        if (!$tarjeta) {
+            throw new ModelNotFoundException('CommendTarjeta no encontrada');
+        }
+
+        return $tarjeta;
+    }
+
     public function createTarjeta(CreateCommendTarjetaDTO $dto): CommendTarjeta
     {
         DB::beginTransaction();

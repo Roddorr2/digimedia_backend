@@ -29,7 +29,9 @@ class CreateBlogBodyDTO
         public readonly ?string $titulo_tarjeta,
         public readonly ?string $bg_color,
         public readonly ?string $bg_type,
-        public readonly ?string $bg_colors
+        public readonly ?string $bg_colors,
+        public readonly ?string $palabra = null,
+        public readonly ?string $enlace = null
     ) {}
 
     public static function fromRequest(BaseBlogBodyRequest $request): static
@@ -59,6 +61,8 @@ class CreateBlogBodyDTO
             bg_color: $data['bg_color'] ?? null,
             bg_type: $data['bg_type'] ?? null,
             bg_colors: $data['bg_colors'] ?? null,
+            palabra: $data['palabra'] ?? null,
+            enlace: $data['enlace'] ?? null,
         );
     }
 
@@ -88,6 +92,8 @@ class CreateBlogBodyDTO
             bg_color: $data['bg_color'] ?? null,
             bg_type: $data['bg_type'] ?? null,
             bg_colors: $data['bg_colors'] ?? null,
+            palabra: $data['palabra'] ?? null,
+            enlace: $data['enlace'] ?? null,
         );
     }
 
@@ -117,6 +123,8 @@ class CreateBlogBodyDTO
             'bg_color' => $this->bg_color,
             'bg_type' => $this->bg_type,
             'bg_colors' => $this->bg_colors,
+            'palabra' => $this->palabra,
+            'enlace' => $this->enlace,
         ];
     }
 }

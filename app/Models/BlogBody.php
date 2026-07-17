@@ -36,6 +36,8 @@ class BlogBody extends Model
         'bg_color',
         'bg_type',
         'bg_colors',
+        'palabra',
+        'enlace',
     ];
 
     public function blog(){

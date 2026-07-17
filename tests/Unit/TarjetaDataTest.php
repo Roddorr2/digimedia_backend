@@ -27,6 +27,23 @@ class TarjetaDataTest extends TestCase
         $this->assertSame('https://example.com/destino', $data['enlace']);
     }
 
+    public function test_update_dto_defaults_word_and_link_to_null_when_omitted(): void
+    {
+        $request = Request::create('/tarjeta/10', 'PUT', [
+            'titulo' => 'Título actualizado',
+            'descripcion' => 'Descripción sin palabra enlazada',
+            'id_blog_body' => 5,
+        ]);
+
+        $data = UpdateTarjetaDTO::fromRequest($request)->toArray();
+
+        $this->assertNull($data['palabra']);
+        $this->assertNull($data['enlace']);
+        $this->assertSame('Título actualizado', $data['titulo']);
+        $this->assertSame('Descripción sin palabra enlazada', $data['descripcion']);
+        $this->assertSame(5, $data['id_blog_body']);
+    }
+
     public function test_blog_body_resource_returns_word_and_link_for_each_card(): void
     {
         $body = new BlogBody();

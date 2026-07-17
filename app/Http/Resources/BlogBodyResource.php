@@ -20,6 +20,8 @@ class BlogBodyResource extends JsonResource
             'titulo' => $this->titulo,
 
             'descripcion' => $this->descripcion,
+            'palabra' => $this->palabra,
+            'enlace' => $this->enlace,
 
             'flag_informacion' => $this->flag_informacion,
             'flag_galeria' => $this->flag_galeria,

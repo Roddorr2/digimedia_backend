@@ -20,6 +20,8 @@ class CommendTarjeta extends Model
         'texto3',
         'texto4',
         'texto5',
+        'palabra',
+        'enlace',
     ];
 
     public function blog_body(){

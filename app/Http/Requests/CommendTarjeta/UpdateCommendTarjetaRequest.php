@@ -30,6 +30,8 @@ class UpdateCommendTarjetaRequest extends FormRequest
             'texto3' => 'nullable|string|max:255',
             'texto4' => 'nullable|string|max:255',
             'texto5' => 'nullable|string|max:255',
+            'palabra' => 'nullable|string|max:255',
+            'enlace' => 'nullable|string|max:255',
         ];
     }
 
