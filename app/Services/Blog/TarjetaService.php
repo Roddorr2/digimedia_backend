@@ -53,7 +53,9 @@ class TarjetaService
         try {
             DB::beginTransaction();
             $tarjeta = $this->getTarjetaById($id);
-            $this->repository->update($tarjeta, $dto);
+            if (!$this->repository->update($tarjeta, $dto)) {
+                throw new \RuntimeException('No se pudo actualizar la tarjeta');
+            }
             DB::commit();
             
             return $tarjeta->fresh();
