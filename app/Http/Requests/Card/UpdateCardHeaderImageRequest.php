@@ -25,6 +25,8 @@ class UpdateCardHeaderImageRequest extends FormRequest
     {
         return [
             'file' => 'required|image|mimes:jpeg,png,jpg,gif,webp,avif,jfif|max:20480',
+            'alt' => 'nullable|string|min:10|max:240',
+            'title' => 'nullable|string|min:10|max:140',
         ];
     }
 
