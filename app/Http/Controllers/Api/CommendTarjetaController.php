@@ -18,6 +18,22 @@ class CommendTarjetaController extends Controller
         private CommendTarjetaService $commendTarjetaService
     ) {}
 
+    public function show(int $id): JsonResponse
+    {
+        try {
+            $tarjeta = $this->commendTarjetaService->getTarjetaById($id);
+
+            return response()->json([
+                "status" => 200,
+                "data" => new CommendTarjetaResource($tarjeta)
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'CommendTarjeta no encontrada'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     public function create(StoreCommendTarjetaRequest $request): JsonResponse
     {
         try {

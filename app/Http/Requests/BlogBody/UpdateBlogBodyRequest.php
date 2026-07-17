@@ -30,6 +30,8 @@ class UpdateBlogBodyRequest extends BaseBlogBodyRequest
             'bg_color' => 'sometimes|nullable|string|max:7',
             'bg_type' => 'sometimes|nullable|string|in:solid,gradient|max:20',
             'bg_colors' => 'sometimes|nullable|string|max:50',
+            'palabra' => 'sometimes|nullable|string',
+            'enlace' => 'sometimes|nullable|string',
         ];
     }
 }

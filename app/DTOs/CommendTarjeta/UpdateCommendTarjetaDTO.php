@@ -12,7 +12,7 @@ class UpdateCommendTarjetaDTO
 
     public static function fromRequest(Request $request): self
     {
-        $fields = ['titulo', 'texto1', 'texto2', 'texto3', 'texto4', 'texto5'];
+        $fields = ['titulo', 'texto1', 'texto2', 'texto3', 'texto4', 'texto5', 'palabra', 'enlace'];
         $data = [];
         foreach ($fields as $field) {
             if ($request->has($field)) {

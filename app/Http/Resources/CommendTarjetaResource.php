@@ -17,6 +17,8 @@ class CommendTarjetaResource extends JsonResource
         return [
             'id' => $this->id_commend_tarjeta,
             'titulo' => $this->titulo,
+            'palabra' => $this->palabra,
+            'enlace' => $this->enlace,
             'textos' => [
                 'texto1' => $this->texto1,
                 'texto2' => $this->texto2,

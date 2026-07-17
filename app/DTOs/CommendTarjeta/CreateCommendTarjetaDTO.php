@@ -12,7 +12,9 @@ class CreateCommendTarjetaDTO
         public readonly ?string $texto2,
         public readonly ?string $texto3,
         public readonly ?string $texto4,
-        public readonly ?string $texto5
+        public readonly ?string $texto5,
+        public readonly ?string $palabra = null,
+        public readonly ?string $enlace = null
     ) {}
 
     public static function fromRequest(Request $request): self
@@ -23,7 +25,9 @@ class CreateCommendTarjetaDTO
             texto2: $request->input('texto2'),
             texto3: $request->input('texto3'),
             texto4: $request->input('texto4'),
-            texto5: $request->input('texto5')
+            texto5: $request->input('texto5'),
+            palabra: $request->input('palabra'),
+            enlace: $request->input('enlace')
         );
     }
 
@@ -36,6 +40,8 @@ class CreateCommendTarjetaDTO
             'texto3' => $this->texto3,
             'texto4' => $this->texto4,
             'texto5' => $this->texto5,
+            'palabra' => $this->palabra,
+            'enlace' => $this->enlace,
         ];
     }
 }
