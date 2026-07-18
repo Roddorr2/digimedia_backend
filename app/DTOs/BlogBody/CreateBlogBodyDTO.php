@@ -9,7 +9,6 @@ class CreateBlogBodyDTO
     public function __construct(
         public readonly string $titulo,
         public readonly string $descripcion,
-        public readonly ?int $id_commend_tarjeta,
         public readonly ?string $public_image1,
         public readonly ?string $url_image1,
         public readonly ?string $alt_image1,
@@ -27,6 +26,7 @@ class CreateBlogBodyDTO
         public readonly ?bool $flag_informacion,
         public readonly ?string $service_url,
         public readonly ?string $titulo_tarjeta,
+        public readonly ?string $titulo_consejos,
         public readonly ?string $bg_color,
         public readonly ?string $bg_type,
         public readonly ?string $bg_colors,
@@ -40,7 +40,6 @@ class CreateBlogBodyDTO
         return new static(
             titulo: $data['titulo'],
             descripcion: $data['descripcion'],
-            id_commend_tarjeta: $data['id_commend_tarjeta'] ?? null,
             public_image1: $data['public_image1'] ?? null,
             url_image1: $data['url_image1'] ?? null,
             alt_image1: $data['alt_image1'] ?? null,
@@ -58,6 +57,7 @@ class CreateBlogBodyDTO
             flag_informacion: $data['flag_informacion'] ?? null,
             service_url: $data['service_url'] ?? null,
             titulo_tarjeta: $data['titulo_tarjeta'] ?? null,
+            titulo_consejos: $data['titulo_consejos'] ?? null,
             bg_color: $data['bg_color'] ?? null,
             bg_type: $data['bg_type'] ?? null,
             bg_colors: $data['bg_colors'] ?? null,
@@ -71,7 +71,6 @@ class CreateBlogBodyDTO
         return new static(
             titulo: $data['titulo'],
             descripcion: $data['descripcion'],
-            id_commend_tarjeta: $data['id_commend_tarjeta'] ?? null,
             public_image1: $data['public_image1'] ?? null,
             url_image1: $data['url_image1'] ?? null,
             alt_image1: $data['alt_image1'] ?? null,
@@ -89,6 +88,7 @@ class CreateBlogBodyDTO
             flag_informacion: $data['flag_informacion'] ?? null,
             service_url: $data['service_url'] ?? null,
             titulo_tarjeta: $data['titulo_tarjeta'] ?? null,
+            titulo_consejos: $data['titulo_consejos'] ?? null,
             bg_color: $data['bg_color'] ?? null,
             bg_type: $data['bg_type'] ?? null,
             bg_colors: $data['bg_colors'] ?? null,
@@ -102,7 +102,6 @@ class CreateBlogBodyDTO
         return [
             'titulo' => $this->titulo,
             'descripcion' => $this->descripcion,
-            'id_commend_tarjeta' => $this->id_commend_tarjeta,
             'public_image1' => $this->public_image1,
             'url_image1' => $this->url_image1,
             'alt_image1' => $this->alt_image1,
@@ -120,6 +119,7 @@ class CreateBlogBodyDTO
             'flag_informacion' => $this->flag_informacion,
             'service_url' => $this->service_url,
             'titulo_tarjeta' => $this->titulo_tarjeta,
+            'titulo_consejos' => $this->titulo_consejos,
             'bg_color' => $this->bg_color,
             'bg_type' => $this->bg_type,
             'bg_colors' => $this->bg_colors,

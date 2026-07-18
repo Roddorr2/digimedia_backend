@@ -17,7 +17,7 @@ use App\Http\Controllers\Api\ServiciosController;
 use App\Http\Controllers\Api\BlogFooterController;
 use App\Http\Controllers\Api\ContactanosController;
 use App\Http\Controllers\Api\ReclamacionesController;
-use App\Http\Controllers\Api\CommendTarjetaController;
+use App\Http\Controllers\Api\ConsejoController;
 use App\Http\Controllers\ImagePathController;
 use App\Http\Controllers\Api\BlogAuditoriaController;
 use App\Http\Controllers\Api\MetricasController;
@@ -98,7 +98,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:ver-servicios')->get('/servicios', [ServiciosController::class, "get"]);
     Route::middleware('permission:ver-blogs')->get('/cards/blog/{id?}', [CardController::class, "get"]);
     Route::middleware('permission:ver-blogs')->get('/blogs_auditoria', [BlogAuditoriaController::class, 'show']);
-    Route::middleware('permission:ver-blogs')->get('/commend_tarjeta/{id}', [CommendTarjetaController::class, "show"]);
+    Route::middleware('permission:ver-blogs')->get('/consejos/{id}', [ConsejoController::class, "showAll"]);
     Route::middleware('permission:ver-contactos')->get('/contactanos/{id}', [ContactanosController::class, "getById"]);
     Route::middleware('permission:ver-reclamaciones')->get('/reclamaciones/{id}', [ReclamacionesController::class, "getById"]);
     Route::middleware('permission:ver-modales')->get('/modales/{id}', [ModalesController::class, "getById"]);
@@ -130,7 +130,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:crear-blogs', 'throttle:60,1')->post('/blog_head', [BlogHeadController::class, "create"]);
     Route::middleware('permission:crear-blogs', 'throttle:60,1')->post('/blog_body', [BlogBodyController::class, "create"]);
     Route::middleware('permission:crear-blogs', 'throttle:60,1')->post('/blog_footer', [BlogFooterController::class, "create"]);
-    Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/commend_tarjeta', [CommendTarjetaController::class, "create"]);
+    Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/consejo', [ConsejoController::class, "create"]);
     Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/tarjeta', [TarjetaController::class, "create"]);
     Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/card/blog/image_head/{id}', [CardController::class, "imageHeader"]);
     Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/card/blog/images_body/{id}', [CardController::class, "imagesBody"]);
@@ -142,7 +142,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:editar-blogs')->put('/blog_head/{id}', [BlogHeadController::class, "update"]);
     Route::middleware('permission:editar-blogs')->put('/blog_body/{id}', [BlogBodyController::class, "update"]);
     Route::middleware('permission:editar-blogs')->put('/blog_footer/{id}', [BlogFooterController::class, "update"]);
-    Route::middleware('permission:editar-blogs')->put('/commend_tarjeta/{id}', [CommendTarjetaController::class, "update"]);
+    Route::middleware('permission:editar-blogs')->put('/consejo/{id}', [ConsejoController::class, "update"]);
     Route::middleware('permission:editar-blogs')->put('/tarjeta/{id}', [TarjetaController::class, "update"]);
 
     // Deletes blog (administrativos)
@@ -151,7 +151,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:eliminar-blogs')->delete('/blog_head/{id}', [BlogHeadController::class, "destroy"]);
     Route::middleware('permission:eliminar-blogs')->delete('/blog_body/{id}', [BlogBodyController::class, "destroy"]);
     Route::middleware('permission:eliminar-blogs')->delete('/blog_footer/{id}', [BlogFooterController::class, "destroy"]);
-    Route::middleware('permission:eliminar-tarjetas')->delete('/commend_tarjeta/{id}', [CommendTarjetaController::class, "destroy"]);
+    Route::middleware('permission:eliminar-tarjetas')->delete('/consejo/{id}', [ConsejoController::class, "destroy"]);
+    Route::middleware('permission:eliminar-tarjetas')->delete('/consejos_delete/{id}', [ConsejoController::class, "destroyAll"]);
     Route::middleware('permission:eliminar-tarjetas')->delete('/tarjetas_delete/{id}', [TarjetaController::class, "destroyAll"]);
     Route::middleware('permission:editar-blogs')->delete('/delete_carpet/{id}', [CardController::class, "deleteCarpetaImages"]);
 

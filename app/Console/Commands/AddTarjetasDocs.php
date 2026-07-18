@@ -59,42 +59,40 @@ class AddTarjetasDocs extends Command
                     'id_blog_body' => ['type' => 'integer'],
                 ]
             ],
-            'CommendTarjetaCreateRequest' => [
+            'ConsejoCreateRequest' => [
                 'type' => 'object',
-                'title' => 'Commend Tarjeta Create Request',
+                'title' => 'Consejo Create Request',
+                'required' => ['texto', 'id_blog_body'],
                 'properties' => [
-                    'titulo' => ['type' => 'string', 'nullable' => true, 'example' => 'Título de recomendación', 'maxLength' => 255],
-                    'texto1' => ['type' => 'string', 'nullable' => true, 'example' => 'Primer texto', 'maxLength' => 255],
-                    'texto2' => ['type' => 'string', 'nullable' => true, 'example' => 'Segundo texto', 'maxLength' => 255],
-                    'texto3' => ['type' => 'string', 'nullable' => true, 'example' => 'Tercer texto', 'maxLength' => 255],
-                    'texto4' => ['type' => 'string', 'nullable' => true, 'example' => 'Cuarto texto', 'maxLength' => 255],
-                    'texto5' => ['type' => 'string', 'nullable' => true, 'example' => 'Quinto texto', 'maxLength' => 255],
+                    'texto' => ['type' => 'string', 'example' => 'Opta por colores que reflejen la personalidad de tu bar.'],
+                    'enlace' => ['type' => 'string', 'nullable' => true, 'example' => 'https://example.com'],
+                    'palabra' => ['type' => 'string', 'nullable' => true, 'example' => 'clave'],
+                    'orden' => ['type' => 'integer', 'nullable' => true, 'example' => 0],
+                    'id_blog_body' => ['type' => 'integer', 'example' => 1],
                 ]
             ],
-            'CommendTarjetaUpdateRequest' => [
+            'ConsejoUpdateRequest' => [
                 'type' => 'object',
-                'title' => 'Commend Tarjeta Update Request',
-                'required' => ['titulo', 'texto1', 'texto2', 'texto3'],
+                'title' => 'Consejo Update Request',
+                'required' => ['texto', 'id_blog_body'],
                 'properties' => [
-                    'titulo' => ['type' => 'string', 'example' => 'Título actualizado', 'maxLength' => 255],
-                    'texto1' => ['type' => 'string', 'example' => 'Primer texto', 'maxLength' => 255],
-                    'texto2' => ['type' => 'string', 'example' => 'Segundo texto', 'maxLength' => 255],
-                    'texto3' => ['type' => 'string', 'example' => 'Tercer texto', 'maxLength' => 255],
-                    'texto4' => ['type' => 'string', 'nullable' => true, 'example' => 'Cuarto texto', 'maxLength' => 255],
-                    'texto5' => ['type' => 'string', 'nullable' => true, 'example' => 'Quinto texto', 'maxLength' => 255],
+                    'texto' => ['type' => 'string', 'example' => 'Texto actualizado'],
+                    'enlace' => ['type' => 'string', 'nullable' => true],
+                    'palabra' => ['type' => 'string', 'nullable' => true],
+                    'orden' => ['type' => 'integer', 'nullable' => true],
+                    'id_blog_body' => ['type' => 'integer', 'example' => 1],
                 ]
             ],
-            'CommendTarjetaResponse' => [
+            'ConsejoResponse' => [
                 'type' => 'object',
-                'title' => 'Commend Tarjeta Response',
+                'title' => 'Consejo Response',
                 'properties' => [
-                    'id_commend_tarjeta' => ['type' => 'integer', 'example' => 1],
-                    'titulo' => ['type' => 'string', 'example' => 'Título de recomendación'],
-                    'texto1' => ['type' => 'string', 'example' => 'Primer texto'],
-                    'texto2' => ['type' => 'string', 'example' => 'Segundo texto'],
-                    'texto3' => ['type' => 'string', 'example' => 'Tercer texto'],
-                    'texto4' => ['type' => 'string', 'nullable' => true],
-                    'texto5' => ['type' => 'string', 'nullable' => true],
+                    'id_consejo' => ['type' => 'integer', 'example' => 1],
+                    'texto' => ['type' => 'string', 'example' => 'Opta por colores que reflejen la personalidad de tu bar.'],
+                    'enlace' => ['type' => 'string', 'nullable' => true],
+                    'palabra' => ['type' => 'string', 'nullable' => true],
+                    'orden' => ['type' => 'integer'],
+                    'id_blog_body' => ['type' => 'integer'],
                 ]
             ],
         ];
@@ -171,19 +169,19 @@ class AddTarjetasDocs extends Command
                     ],
                 ]
             ],
-            '/commend_tarjeta' => [
+            '/consejo' => [
                 'post' => [
-                    'operationId' => 'createCommendTarjeta',
-                    'tags' => ['Tarjetas Recomendadas'],
-                    'summary' => 'Crear tarjeta recomendada',
-                    'description' => 'Crea una nueva tarjeta recomendada en el sistema.',
+                    'operationId' => 'createConsejo',
+                    'tags' => ['Consejos'],
+                    'summary' => 'Crear consejo',
+                    'description' => 'Crea un nuevo consejo dentro de un blog body. Solo usuarios con permiso crear-tarjetas.',
                     'security' => [['sanctum' => []]],
                     'requestBody' => [
                         'required' => true,
-                        'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/CommendTarjetaCreateRequest']]],
+                        'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/ConsejoCreateRequest']]],
                     ],
                     'responses' => [
-                        '200' => ['description' => 'CommendTarjeta creada correctamente'],
+                        '200' => ['description' => 'Consejo creado correctamente'],
                         '400' => ['description' => 'Error de validación'],
                         '401' => ['description' => 'No autenticado'],
                         '403' => ['description' => 'Sin permiso para crear tarjetas'],
@@ -191,43 +189,81 @@ class AddTarjetasDocs extends Command
                     ],
                 ]
             ],
-            '/commend_tarjeta/{id}' => [
+            '/consejo/{id}' => [
                 'put' => [
-                    'operationId' => 'updateCommendTarjeta',
-                    'tags' => ['Tarjetas Recomendadas'],
-                    'summary' => 'Actualizar tarjeta recomendada',
-                    'description' => 'Actualiza la información de una tarjeta recomendada.',
+                    'operationId' => 'updateConsejo',
+                    'tags' => ['Consejos'],
+                    'summary' => 'Actualizar consejo',
+                    'description' => 'Actualiza la información de un consejo existente.',
                     'security' => [['sanctum' => []]],
                     'parameters' => [
-                        ['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer'], 'description' => 'ID de la tarjeta recomendada']
+                        ['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer'], 'description' => 'ID del consejo']
                     ],
                     'requestBody' => [
                         'required' => true,
-                        'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/CommendTarjetaUpdateRequest']]],
+                        'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/ConsejoUpdateRequest']]],
                     ],
                     'responses' => [
-                        '200' => ['description' => 'Tarjeta actualizada'],
+                        '200' => ['description' => 'Consejo actualizado correctamente'],
                         '400' => ['description' => 'Error de validación'],
                         '401' => ['description' => 'No autenticado'],
                         '403' => ['description' => 'Sin permiso'],
-                        '404' => ['description' => 'Tarjeta no encontrada'],
+                        '404' => ['description' => 'Consejo no encontrado'],
                         '500' => ['description' => 'Error del servidor'],
                     ],
                 ],
                 'delete' => [
-                    'operationId' => 'deleteCommendTarjeta',
-                    'tags' => ['Tarjetas Recomendadas'],
-                    'summary' => 'Eliminar tarjeta recomendada',
-                    'description' => 'Elimina una tarjeta recomendada del sistema.',
+                    'operationId' => 'deleteConsejo',
+                    'tags' => ['Consejos'],
+                    'summary' => 'Eliminar consejo',
+                    'description' => 'Elimina un consejo del sistema.',
                     'security' => [['sanctum' => []]],
                     'parameters' => [
-                        ['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer'], 'description' => 'ID de la tarjeta recomendada']
+                        ['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer'], 'description' => 'ID del consejo']
                     ],
                     'responses' => [
-                        '200' => ['description' => 'Tarjeta eliminada correctamente'],
+                        '200' => ['description' => 'Consejo eliminado correctamente'],
                         '401' => ['description' => 'No autenticado'],
                         '403' => ['description' => 'Sin permiso para eliminar tarjetas'],
-                        '404' => ['description' => 'Tarjeta no encontrada'],
+                        '404' => ['description' => 'Consejo no encontrado'],
+                        '500' => ['description' => 'Error del servidor'],
+                    ],
+                ]
+            ],
+            '/consejos/{id}' => [
+                'get' => [
+                    'operationId' => 'listConsejos',
+                    'tags' => ['Consejos'],
+                    'summary' => 'Listar consejos de un blog body',
+                    'description' => 'Obtiene todos los consejos asociados a un blog body.',
+                    'security' => [['sanctum' => []]],
+                    'parameters' => [
+                        ['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer'], 'description' => 'ID del blog_body']
+                    ],
+                    'responses' => [
+                        '200' => ['description' => 'Lista de consejos'],
+                        '401' => ['description' => 'No autenticado'],
+                        '403' => ['description' => 'Sin permiso'],
+                        '404' => ['description' => 'No se encontraron consejos'],
+                        '500' => ['description' => 'Error del servidor'],
+                    ],
+                ]
+            ],
+            '/consejos_delete/{id}' => [
+                'delete' => [
+                    'operationId' => 'deleteConsejos',
+                    'tags' => ['Consejos'],
+                    'summary' => 'Eliminar consejos por blog_body',
+                    'description' => 'Elimina todos los consejos asociados a un blog_body específico.',
+                    'security' => [['sanctum' => []]],
+                    'parameters' => [
+                        ['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer'], 'description' => 'ID del blog_body']
+                    ],
+                    'responses' => [
+                        '200' => ['description' => 'Consejos eliminados correctamente'],
+                        '401' => ['description' => 'No autenticado'],
+                        '403' => ['description' => 'Sin permiso para eliminar tarjetas'],
+                        '404' => ['description' => 'No se encontraron consejos'],
                         '500' => ['description' => 'Error del servidor'],
                     ],
                 ]
