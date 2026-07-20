@@ -18,7 +18,7 @@ class BlogBodyRepository
 
     public function findWithRelations(int $id): ?BlogBody
     {
-        return BlogBody::with(['commend_tarjeta', 'tarjetas'])->find($id);
+        return BlogBody::with(['consejos', 'tarjetas'])->find($id);
     }
 
     public function update(BlogBody $blogBody, array $data): bool

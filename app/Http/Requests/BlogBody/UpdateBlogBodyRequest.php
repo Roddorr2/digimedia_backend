@@ -9,7 +9,6 @@ class UpdateBlogBodyRequest extends BaseBlogBodyRequest
         return [
             'titulo' => 'sometimes|string|max:255',
             'descripcion' => 'sometimes|string',
-            'id_commend_tarjeta' => 'sometimes|nullable|integer|exists:commend_tarjetas,id_commend_tarjeta',
             'public_image1' => 'sometimes|nullable|string',
             'url_image1' => 'sometimes|nullable|string',
             'alt_image1' => 'sometimes|nullable|string|min:10|max:240',
@@ -27,6 +26,7 @@ class UpdateBlogBodyRequest extends BaseBlogBodyRequest
             'flag_informacion' => 'sometimes|nullable|boolean',
             'service_url' => 'sometimes|nullable|string|max:255',
             'titulo_tarjeta' => 'sometimes|nullable|string',
+            'titulo_consejos' => 'sometimes|nullable|string',
             'bg_color' => 'sometimes|nullable|string|max:7',
             'bg_type' => 'sometimes|nullable|string|in:solid,gradient|max:20',
             'bg_colors' => 'sometimes|nullable|string|max:50',

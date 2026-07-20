@@ -123,7 +123,6 @@ class BlogController extends Controller
     {
         $bodySpecific = Arr::hasAny($validated, [
             'descripcion',
-            'id_commend_tarjeta',
             'public_image1',
             'url_image1',
             'alt_image1',
@@ -141,6 +140,7 @@ class BlogController extends Controller
             'flag_informacion',
             'service_url',
             'titulo_tarjeta',
+            'titulo_consejos',
         ]);
 
         return $bodySpecific || Arr::hasAny($validated, ['titulo', 'descripcion']) && !$this->shouldUpdateBlogHead($validated);
@@ -171,7 +171,6 @@ class BlogController extends Controller
         return [
             'titulo',
             'descripcion',
-            'id_commend_tarjeta',
             'public_image1',
             'url_image1',
             'alt_image1',
@@ -189,6 +188,7 @@ class BlogController extends Controller
             'flag_informacion',
             'service_url',
             'titulo_tarjeta',
+            'titulo_consejos',
         ];
     }
 

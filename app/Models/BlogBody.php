@@ -15,7 +15,6 @@ class BlogBody extends Model
     protected $fillable = [
         'titulo',
         'descripcion',
-        'id_commend_tarjeta',
         'public_image1',
         'url_image1',
         'alt_image1',
@@ -33,6 +32,7 @@ class BlogBody extends Model
         'flag_informacion',
         'service_url',
         'titulo_tarjeta',
+        'titulo_consejos',
         'bg_color',
         'bg_type',
         'bg_colors',
@@ -44,8 +44,8 @@ class BlogBody extends Model
         return $this->hasOne(Blog::class, 'id_blog_body', 'id_blog_body');
     }
 
-    public function commend_tarjeta(){
-        return $this->hasOne(CommendTarjeta::class, 'id_commend_tarjeta', 'id_commend_tarjeta');
+    public function consejos(){
+        return $this->hasMany(Consejo::class, 'id_blog_body', 'id_blog_body')->orderBy('orden');
     }
 
     public function tarjetas(){

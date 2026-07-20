@@ -64,7 +64,6 @@ abstract class BaseBlogBodyRequest extends FormRequest
         return [
             'titulo' => 'required|string|max:255',
             'descripcion' => 'required|string',
-            'id_commend_tarjeta' => 'nullable|integer|exists:commend_tarjetas,id_commend_tarjeta',
             'public_image1' => 'nullable|string',
             'url_image1' => 'nullable|string',
 'alt_image1' => 'nullable|string|min:10|max:240',
@@ -82,6 +81,7 @@ abstract class BaseBlogBodyRequest extends FormRequest
             'flag_informacion' => 'nullable|boolean',
             'service_url' => 'nullable|string|max:255',
             'titulo_tarjeta' => 'nullable|string',
+            'titulo_consejos' => 'nullable|string',
             'bg_color' => 'nullable|string|max:7',
             'bg_type' => 'nullable|string|in:solid,gradient|max:20',
             'bg_colors' => 'nullable|string|max:50',

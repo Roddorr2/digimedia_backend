@@ -43,7 +43,6 @@ class UpdateBlogRequest extends FormRequest
              'meta_descripcion' => 'sometimes|nullable|string|min:10|max:255',
 
              // BlogBody fields
-             'id_commend_tarjeta' => 'sometimes|nullable|integer|exists:commend_tarjetas,id_commend_tarjeta',
              'public_image1' => 'sometimes|nullable|string',
              'url_image1' => 'sometimes|nullable|string',
              'alt_image1' => 'sometimes|nullable|string|min:10|max:240',
@@ -61,6 +60,7 @@ class UpdateBlogRequest extends FormRequest
             'flag_informacion' => 'sometimes|nullable|boolean',
             'service_url' => 'sometimes|nullable|string|max:255',
             'titulo_tarjeta' => 'sometimes|nullable|string',
+            'titulo_consejos' => 'sometimes|nullable|string',
         ];
     }
 
