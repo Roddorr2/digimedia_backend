@@ -55,6 +55,9 @@ Route::get('/blog_body/{id}', [BlogBodyController::class, "show"]);
 //Testimonio crud
 Route::middleware('throttle:60,1')->get('/testimonios', [TestimonioController::class, 'indexPublic']);
 
+// Testimonios paginados — usado por el bloque de comentarios en Inicio (misma fuente de datos que Nosotros)
+Route::middleware('throttle:60,1')->get('/testimonios/home', [TestimonioController::class, 'indexHome']);
+
 // Pop-ups públicos
 // Slug PRIMERO para evitar colisión con {id_subservicio}
 Route::get('/public/popup-configs/subservicio/slug/{slug}', [PopupConfigController::class, 'showBySubservicioSlugPublic']);

@@ -22,6 +22,11 @@ class TestimonioService
         return $this->repository->getAllPublic();
     }
 
+    public function getAllPublicPaginated(int $perPage)
+    {
+        return $this->repository->getAllPublicPaginated($perPage);
+    }
+
     public function getPaginated(array $params): array
     {
         $paginated = $this->repository->getAllPaginated(
