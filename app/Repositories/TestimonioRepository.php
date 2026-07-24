@@ -19,13 +19,6 @@ class TestimonioRepository
         ->get();
     }
 
-    public function getAllPublicPaginated(int $perPage): LengthAwarePaginator
-    {
-        return Testimonio::where('activo', true)
-        ->orderBy('created_at', 'desc')
-        ->paginate($perPage);
-    }
-
     public function getAllPaginated(string $search, string $sortBy, string $sortOrder, int $limit): LengthAwarePaginator
     {
         return Testimonio::when($search, function ($query, $search) {

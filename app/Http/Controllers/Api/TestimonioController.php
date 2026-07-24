@@ -9,11 +9,9 @@ use App\Http\Requests\Testimonio\UpdateTestimonioImageRequest;
 use App\DTOs\Testimonio\CreateTestimonioDTO;
 use App\DTOs\Testimonio\UpdateTestimonioDTO;
 use App\DTOs\Testimonio\UpdateTestimonioImageDTO;
-use App\Http\Resources\TestimonioResource;
 use App\Services\TestimonioService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class TestimonioController extends Controller
@@ -26,17 +24,6 @@ class TestimonioController extends Controller
     public function indexPublic(): JsonResponse
     {
         return response()->json($this->service->getAllPublic());
-    }
-
-    // Público — usado por el bloque de comentarios en Inicio (misma fuente de datos que Nosotros, paginado para "Mostrar más")
-    public function indexHome(Request $request): AnonymousResourceCollection
-    {
-        $perPage = (int) $request->query('limit', 6);
-        $perPage = $perPage > 0 ? min($perPage, 50) : 6;
-
-        $paginated = $this->service->getAllPublicPaginated($perPage);
-
-        return TestimonioResource::collection($paginated);
     }
 
     // Admin — listado paginado
