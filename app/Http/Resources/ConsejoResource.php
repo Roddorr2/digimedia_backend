@@ -12,6 +12,7 @@ class ConsejoResource extends JsonResource
         return [
             'id_consejo' => $this->id_consejo,
             'texto' => $this->texto,
+            'texto_color' => $this->texto_color,
             'enlace' => $this->enlace,
             'palabra' => $this->palabra,
             'orden' => $this->orden,

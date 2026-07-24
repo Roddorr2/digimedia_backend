@@ -32,6 +32,10 @@ class UpdateBlogBodyRequest extends BaseBlogBodyRequest
             'bg_colors' => 'sometimes|nullable|string|max:50',
             'palabra' => 'sometimes|nullable|string',
             'enlace' => 'sometimes|nullable|string',
+            'titulo_color' => 'sometimes|nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+            'descripcion_color' => 'sometimes|nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+            'titulo_tarjeta_color' => 'sometimes|nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+            'titulo_consejos_color' => 'sometimes|nullable|regex:/^#[0-9A-Fa-f]{6}$/',
         ];
     }
 }

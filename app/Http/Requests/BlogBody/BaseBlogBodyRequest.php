@@ -87,6 +87,10 @@ abstract class BaseBlogBodyRequest extends FormRequest
             'bg_colors' => 'nullable|string|max:50',
             'palabra' => 'nullable|string',
             'enlace' => 'nullable|string',
+            'titulo_color' => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+            'descripcion_color' => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+            'titulo_tarjeta_color' => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+            'titulo_consejos_color' => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
         ];
     }
 }

@@ -66,6 +66,8 @@ class BlogFooterResource extends JsonResource
             'title_image1' => $this->title_image1,
             'title_image2' => $this->title_image2,
             'title_image3' => $this->title_image3,
+            'titulo_color' => $this ->titulo_color,
+            'descripcion_color' => $this -> descripcion_color
         ];
     }
 }

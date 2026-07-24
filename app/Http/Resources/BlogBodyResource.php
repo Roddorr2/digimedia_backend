@@ -73,6 +73,10 @@ class BlogBodyResource extends JsonResource
             'consejos' => ConsejoResource::collection($this->whenLoaded('consejos')),
 
             'tarjetas' => TarjetaResource::collection($this->whenLoaded('tarjetas')),
+            'titulo_color' => $this->titulo_color,
+            'descripcion_color' => $this->descripcion_color,
+            'titulo_tarjeta_color' => $this->titulo_tarjeta_color,
+            'titulo_consejos_color' => $this->titulo_consejos_color,
         ];
     }
 }

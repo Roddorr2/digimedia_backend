@@ -31,7 +31,11 @@ class CreateBlogBodyDTO
         public readonly ?string $bg_type,
         public readonly ?string $bg_colors,
         public readonly ?string $palabra = null,
-        public readonly ?string $enlace = null
+        public readonly ?string $enlace = null,
+        public readonly ?string $titulo_color = null,
+        public readonly ?string $descripcion_color = null,
+        public readonly ?string $titulo_tarjeta_color = null,
+        public readonly ?string $titulo_consejos_color = null,
     ) {}
 
     public static function fromRequest(BaseBlogBodyRequest $request): static
@@ -63,6 +67,12 @@ class CreateBlogBodyDTO
             bg_colors: $data['bg_colors'] ?? null,
             palabra: $data['palabra'] ?? null,
             enlace: $data['enlace'] ?? null,
+            titulo_color: $data['titulo_color'] ?? null,
+            descripcion_color: $data['descripcion_color'] ?? null,
+            titulo_tarjeta_color: $data['titulo_tarjeta_color'] ?? null,
+            titulo_consejos_color: $data['titulo_consejos_color'] ?? null,
+
+
         );
     }
 
@@ -94,6 +104,11 @@ class CreateBlogBodyDTO
             bg_colors: $data['bg_colors'] ?? null,
             palabra: $data['palabra'] ?? null,
             enlace: $data['enlace'] ?? null,
+            titulo_color: $data['titulo_color'] ?? null,
+            descripcion_color: $data['descripcion_color'] ?? null,
+            titulo_tarjeta_color: $data['titulo_tarjeta_color'] ?? null,
+            titulo_consejos_color: $data['titulo_consejos_color'] ?? null,
+
         );
     }
 
@@ -125,6 +140,11 @@ class CreateBlogBodyDTO
             'bg_colors' => $this->bg_colors,
             'palabra' => $this->palabra,
             'enlace' => $this->enlace,
+            'titulo_color' => $this->titulo_color,
+            'descripcion_color' => $this->descripcion_color,
+            'titulo_tarjeta_color' => $this->titulo_tarjeta_color,
+            'titulo_consejos_color' => $this->titulo_consejos_color
+
         ];
     }
 }
