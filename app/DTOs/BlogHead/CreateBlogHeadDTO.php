@@ -18,7 +18,10 @@ class CreateBlogHeadDTO
         public readonly ?string $meta_descripcion,
         public readonly ?string $bg_color,
         public readonly ?string $bg_type,
-        public readonly ?string $bg_colors
+        public readonly ?string $bg_colors,
+        public readonly ?string $titulo_color,
+        public readonly ?string $texto_frase_color,
+        public readonly ?string $texto_descripcion_color,
     ) {}
 
     public static function fromArray(array $data): static
@@ -36,6 +39,9 @@ class CreateBlogHeadDTO
         bg_color: $data['bg_color'] ?? null,
         bg_type: $data['bg_type'] ?? null,
         bg_colors: $data['bg_colors'] ?? null,
+        titulo_color: $data['titulo_color'] ?? null,
+        texto_frase_color: $data['texto_frase_color'] ?? null,
+        texto_descripcion_color: $data['texto_descripcion_color'] ?? null,
     );
 }
 
@@ -54,7 +60,10 @@ class CreateBlogHeadDTO
             meta_descripcion: $data['meta_descripcion'] ?? null,
             bg_color: $data['bg_color'] ?? null,
             bg_type: $data['bg_type'] ?? null,
-            bg_colors: $data['bg_colors'] ?? null
+            bg_colors: $data['bg_colors'] ?? null,
+            titulo_color: $data['titulo_color'] ?? null,
+            texto_frase_color: $data['texto_frase_color'] ?? null,
+            texto_descripcion_color: $data['texto_descripcion_color'] ?? null,
         );
     }
 

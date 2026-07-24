@@ -38,6 +38,10 @@ class BlogBody extends Model
         'bg_colors',
         'palabra',
         'enlace',
+        'titulo_color',
+        'descripcion_color',
+        'titulo_tarjeta_color',
+        'titulo_consejos_color',
     ];
 
     public function blog(){

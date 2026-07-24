@@ -33,7 +33,9 @@ class BlogFooter extends Model
         'enlace',
         'bg_color',
         'bg_type',
-        'bg_colors'
+        'bg_colors',
+        'titulo_color',
+        'descripcion_color',
     ];
 
     public function blog(){

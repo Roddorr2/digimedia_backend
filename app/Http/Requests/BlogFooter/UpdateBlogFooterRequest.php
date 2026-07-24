@@ -92,6 +92,8 @@ class UpdateBlogFooterRequest extends FormRequest
             'bg_color' => 'nullable|string|max:7',
             'bg_type' => 'nullable|string|in:solid,gradient|max:20',
             'bg_colors' => 'nullable|string|max:50',
+            'titulo_color' => 'sometimes|nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+            'descripcion_color' => 'sometimes|nullable|regex:/^#[0-9A-Fa-f]{6}$/',
         ];
     }
 

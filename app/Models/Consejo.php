@@ -11,7 +11,7 @@ class Consejo extends Model
     protected $table = 'consejos';
     protected $primaryKey = 'id_consejo';
     public $timestamps = false;
-    protected $fillable = ['texto', 'palabra', 'enlace', 'orden', 'id_blog_body'];
+    protected $fillable = ['texto', 'palabra', 'enlace', 'orden', 'id_blog_body', 'texto_color'];
 
     public function blog_body(){
         return $this->belongsTo(BlogBody::class, 'id_blog_body', 'id_blog_body');

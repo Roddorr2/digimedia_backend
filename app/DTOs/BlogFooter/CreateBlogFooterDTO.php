@@ -26,7 +26,10 @@ class CreateBlogFooterDTO
         public readonly ?string $enlace,
         public readonly ?string $bg_color,
         public readonly ?string $bg_type,
-        public readonly ?string $bg_colors
+        public readonly ?string $bg_colors,
+        public readonly ?string $titulo_color,
+        public readonly ?string $descripcion_color,
+
     ) {}
 
     public static function fromRequest(FormRequest $request): static
@@ -52,7 +55,9 @@ class CreateBlogFooterDTO
             enlace: $data['enlace'] ?? null,
             bg_color: $data['bg_color'] ?? null,
             bg_type: $data['bg_type'] ?? null,
-            bg_colors: $data['bg_colors'] ?? null
+            bg_colors: $data['bg_colors'] ?? null,
+            titulo_color: $data['titulo_color'] ?? null,
+            descripcion_color: $data['descripcion_color'] ?? null,
         );
     }
 
