@@ -20,6 +20,8 @@ class BlogBodyResource extends JsonResource
             'titulo' => $this->titulo,
 
             'descripcion' => $this->descripcion,
+            'palabra' => $this->palabra,
+            'enlace' => $this->enlace,
 
             'flag_informacion' => $this->flag_informacion,
             'flag_galeria' => $this->flag_galeria,
@@ -27,6 +29,7 @@ class BlogBodyResource extends JsonResource
             'service_url' => $this->service_url,
 
             'titulo_tarjeta' => $this->titulo_tarjeta,
+            'titulo_consejos' => $this->titulo_consejos,
 
             'bg_color' => $this->bg_color,
             'bg_type' => $this->bg_type,
@@ -67,10 +70,13 @@ class BlogBodyResource extends JsonResource
             'title_image2' => $this->title_image2,
             'title_image3' => $this->title_image3,
 
-            'commend_tarjeta' => $this->whenLoaded('commend_tarjeta'),
+            'consejos' => ConsejoResource::collection($this->whenLoaded('consejos')),
 
-            'tarjetas' => $this->whenLoaded('tarjetas'),
+            'tarjetas' => TarjetaResource::collection($this->whenLoaded('tarjetas')),
+            'titulo_color' => $this->titulo_color,
+            'descripcion_color' => $this->descripcion_color,
+            'titulo_tarjeta_color' => $this->titulo_tarjeta_color,
+            'titulo_consejos_color' => $this->titulo_consejos_color,
         ];
     }
 }
-

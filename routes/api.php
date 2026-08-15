@@ -17,7 +17,7 @@ use App\Http\Controllers\Api\ServiciosController;
 use App\Http\Controllers\Api\BlogFooterController;
 use App\Http\Controllers\Api\ContactanosController;
 use App\Http\Controllers\Api\ReclamacionesController;
-use App\Http\Controllers\Api\CommendTarjetaController;
+use App\Http\Controllers\Api\ConsejoController;
 use App\Http\Controllers\ImagePathController;
 use App\Http\Controllers\Api\BlogAuditoriaController;
 use App\Http\Controllers\Api\MetricasController;
@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\PopupConfigController;
 use App\Http\Controllers\Api\SubservicioController;
 use App\Http\Controllers\Api\CampaniasController;
 use App\Http\Controllers\Api\ConfiguracionTiempoController;
+use App\Http\Controllers\Api\TestimonioController;
 
 // ============================================================
 // RUTAS PÚBLICAS (sin autenticación)
@@ -50,6 +51,9 @@ Route::middleware('throttle:60,1')->get('/blogs', [BlogController::class, "index
 Route::get('/blog_head/{id}', [BlogHeadController::class, "show"]);
 Route::get('/blog_footer/{id}', [BlogFooterController::class, "show"]);
 Route::get('/blog_body/{id}', [BlogBodyController::class, "show"]);
+
+//Testimonio crud
+Route::middleware('throttle:60,1')->get('/testimonios', [TestimonioController::class, 'indexPublic']);
 
 // Pop-ups públicos
 // Slug PRIMERO para evitar colisión con {id_subservicio}
@@ -94,6 +98,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:ver-servicios')->get('/servicios', [ServiciosController::class, "get"]);
     Route::middleware('permission:ver-blogs')->get('/cards/blog/{id?}', [CardController::class, "get"]);
     Route::middleware('permission:ver-blogs')->get('/blogs_auditoria', [BlogAuditoriaController::class, 'show']);
+    Route::middleware('permission:ver-blogs')->get('/consejos/{id}', [ConsejoController::class, "showAll"]);
     Route::middleware('permission:ver-contactos')->get('/contactanos/{id}', [ContactanosController::class, "getById"]);
     Route::middleware('permission:ver-reclamaciones')->get('/reclamaciones/{id}', [ReclamacionesController::class, "getById"]);
     Route::middleware('permission:ver-modales')->get('/modales/{id}', [ModalesController::class, "getById"]);
@@ -125,7 +130,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:crear-blogs', 'throttle:60,1')->post('/blog_head', [BlogHeadController::class, "create"]);
     Route::middleware('permission:crear-blogs', 'throttle:60,1')->post('/blog_body', [BlogBodyController::class, "create"]);
     Route::middleware('permission:crear-blogs', 'throttle:60,1')->post('/blog_footer', [BlogFooterController::class, "create"]);
-    Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/commend_tarjeta', [CommendTarjetaController::class, "create"]);
+    Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/consejo', [ConsejoController::class, "create"]);
     Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/tarjeta', [TarjetaController::class, "create"]);
     Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/card/blog/image_head/{id}', [CardController::class, "imageHeader"]);
     Route::middleware('permission:crear-tarjetas', 'throttle:60,1')->post('/card/blog/images_body/{id}', [CardController::class, "imagesBody"]);
@@ -137,7 +142,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:editar-blogs')->put('/blog_head/{id}', [BlogHeadController::class, "update"]);
     Route::middleware('permission:editar-blogs')->put('/blog_body/{id}', [BlogBodyController::class, "update"]);
     Route::middleware('permission:editar-blogs')->put('/blog_footer/{id}', [BlogFooterController::class, "update"]);
-    Route::middleware('permission:editar-blogs')->put('/commend_tarjeta/{id}', [CommendTarjetaController::class, "update"]);
+    Route::middleware('permission:editar-blogs')->put('/consejo/{id}', [ConsejoController::class, "update"]);
     Route::middleware('permission:editar-blogs')->put('/tarjeta/{id}', [TarjetaController::class, "update"]);
 
     // Deletes blog (administrativos)
@@ -146,7 +151,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:eliminar-blogs')->delete('/blog_head/{id}', [BlogHeadController::class, "destroy"]);
     Route::middleware('permission:eliminar-blogs')->delete('/blog_body/{id}', [BlogBodyController::class, "destroy"]);
     Route::middleware('permission:eliminar-blogs')->delete('/blog_footer/{id}', [BlogFooterController::class, "destroy"]);
-    Route::middleware('permission:eliminar-tarjetas')->delete('/commend_tarjeta/{id}', [CommendTarjetaController::class, "destroy"]);
+    Route::middleware('permission:eliminar-tarjetas')->delete('/consejo/{id}', [ConsejoController::class, "destroy"]);
+    Route::middleware('permission:eliminar-tarjetas')->delete('/consejos_delete/{id}', [ConsejoController::class, "destroyAll"]);
     Route::middleware('permission:eliminar-tarjetas')->delete('/tarjetas_delete/{id}', [TarjetaController::class, "destroyAll"]);
     Route::middleware('permission:editar-blogs')->delete('/delete_carpet/{id}', [CardController::class, "deleteCarpetaImages"]);
 
@@ -192,6 +198,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:ver-blogs')->get('/metrics/count_total_cards_by_empleado', [MetricasController::class, "tableCardsByEmpleado"]);
     Route::middleware('permission:ver-blogs')->get('/metrics/frecuencia_publicacion_cards_todos_empleados', [MetricasController::class, "frecuenciaPublicacionCardsTodosEmpleados"]);
     Route::middleware('permission:ver-blogs')->get('/metrics/tiempo_creacion_edicion_publicacion_card', [MetricasController::class, "tiempoCreacionEdicionPublicacionCard"]);
+    
+    // Testimonios (panel admin)
+    Route::middleware('permission:ver-testimonios')->get('/testimonios/panel', [TestimonioController::class, 'index']);
+    Route::middleware('permission:ver-testimonios')->get('/testimonios/panel/{id}', [TestimonioController::class, 'show']);
+    Route::middleware('permission:crear-testimonios')->post('/testimonios', [TestimonioController::class, 'store']);
+    Route::middleware('permission:editar-testimonios')->put('/testimonios/{id}', [TestimonioController::class, 'update']);
+    Route::middleware('permission:eliminar-testimonios')->delete('/testimonios/{id}', [TestimonioController::class, 'destroy']);
+
+    // Testimonios (imagen vía Cloudinary)
+    Route::middleware('permission:crear-testimonios,editar-testimonios')->post('/testimonios/{id}/upload-signature', [TestimonioController::class, 'generateUploadSignature']);
+    Route::middleware('permission:crear-testimonios,editar-testimonios')->post('/testimonios/{id}/image', [TestimonioController::class, 'updateImage']);
+    Route::middleware('permission:editar-testimonios')->delete('/testimonios/{id}/image', [TestimonioController::class, 'deleteImage']);
+    Route::middleware('permission:editar-testimonios')->put('/testimonios/{id}/toggle-activo', [TestimonioController::class, 'toggleActivo']);
     
     // Campañas de WhatsApp (marketing y admin)
     Route::middleware('role:marketing,administrador')->group(function () {
@@ -239,6 +258,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/popup-configs', [PopupConfigController::class, 'store']);
         Route::post('/popup-configs/{id}/actualizar', [PopupConfigController::class, 'update']);
         Route::delete('/popup-configs/{id}', [PopupConfigController::class, 'destroy']);
+
     });
 
     // fixes

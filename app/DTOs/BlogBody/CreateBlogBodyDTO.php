@@ -9,7 +9,6 @@ class CreateBlogBodyDTO
     public function __construct(
         public readonly string $titulo,
         public readonly string $descripcion,
-        public readonly ?int $id_commend_tarjeta,
         public readonly ?string $public_image1,
         public readonly ?string $url_image1,
         public readonly ?string $alt_image1,
@@ -27,9 +26,16 @@ class CreateBlogBodyDTO
         public readonly ?bool $flag_informacion,
         public readonly ?string $service_url,
         public readonly ?string $titulo_tarjeta,
+        public readonly ?string $titulo_consejos,
         public readonly ?string $bg_color,
         public readonly ?string $bg_type,
-        public readonly ?string $bg_colors
+        public readonly ?string $bg_colors,
+        public readonly ?string $palabra = null,
+        public readonly ?string $enlace = null,
+        public readonly ?string $titulo_color = null,
+        public readonly ?string $descripcion_color = null,
+        public readonly ?string $titulo_tarjeta_color = null,
+        public readonly ?string $titulo_consejos_color = null,
     ) {}
 
     public static function fromRequest(BaseBlogBodyRequest $request): static
@@ -38,7 +44,6 @@ class CreateBlogBodyDTO
         return new static(
             titulo: $data['titulo'],
             descripcion: $data['descripcion'],
-            id_commend_tarjeta: $data['id_commend_tarjeta'] ?? null,
             public_image1: $data['public_image1'] ?? null,
             url_image1: $data['url_image1'] ?? null,
             alt_image1: $data['alt_image1'] ?? null,
@@ -56,9 +61,18 @@ class CreateBlogBodyDTO
             flag_informacion: $data['flag_informacion'] ?? null,
             service_url: $data['service_url'] ?? null,
             titulo_tarjeta: $data['titulo_tarjeta'] ?? null,
+            titulo_consejos: $data['titulo_consejos'] ?? null,
             bg_color: $data['bg_color'] ?? null,
             bg_type: $data['bg_type'] ?? null,
             bg_colors: $data['bg_colors'] ?? null,
+            palabra: $data['palabra'] ?? null,
+            enlace: $data['enlace'] ?? null,
+            titulo_color: $data['titulo_color'] ?? null,
+            descripcion_color: $data['descripcion_color'] ?? null,
+            titulo_tarjeta_color: $data['titulo_tarjeta_color'] ?? null,
+            titulo_consejos_color: $data['titulo_consejos_color'] ?? null,
+
+
         );
     }
 
@@ -67,7 +81,6 @@ class CreateBlogBodyDTO
         return new static(
             titulo: $data['titulo'],
             descripcion: $data['descripcion'],
-            id_commend_tarjeta: $data['id_commend_tarjeta'] ?? null,
             public_image1: $data['public_image1'] ?? null,
             url_image1: $data['url_image1'] ?? null,
             alt_image1: $data['alt_image1'] ?? null,
@@ -85,9 +98,17 @@ class CreateBlogBodyDTO
             flag_informacion: $data['flag_informacion'] ?? null,
             service_url: $data['service_url'] ?? null,
             titulo_tarjeta: $data['titulo_tarjeta'] ?? null,
+            titulo_consejos: $data['titulo_consejos'] ?? null,
             bg_color: $data['bg_color'] ?? null,
             bg_type: $data['bg_type'] ?? null,
             bg_colors: $data['bg_colors'] ?? null,
+            palabra: $data['palabra'] ?? null,
+            enlace: $data['enlace'] ?? null,
+            titulo_color: $data['titulo_color'] ?? null,
+            descripcion_color: $data['descripcion_color'] ?? null,
+            titulo_tarjeta_color: $data['titulo_tarjeta_color'] ?? null,
+            titulo_consejos_color: $data['titulo_consejos_color'] ?? null,
+
         );
     }
 
@@ -96,7 +117,6 @@ class CreateBlogBodyDTO
         return [
             'titulo' => $this->titulo,
             'descripcion' => $this->descripcion,
-            'id_commend_tarjeta' => $this->id_commend_tarjeta,
             'public_image1' => $this->public_image1,
             'url_image1' => $this->url_image1,
             'alt_image1' => $this->alt_image1,
@@ -114,9 +134,17 @@ class CreateBlogBodyDTO
             'flag_informacion' => $this->flag_informacion,
             'service_url' => $this->service_url,
             'titulo_tarjeta' => $this->titulo_tarjeta,
+            'titulo_consejos' => $this->titulo_consejos,
             'bg_color' => $this->bg_color,
             'bg_type' => $this->bg_type,
             'bg_colors' => $this->bg_colors,
+            'palabra' => $this->palabra,
+            'enlace' => $this->enlace,
+            'titulo_color' => $this->titulo_color,
+            'descripcion_color' => $this->descripcion_color,
+            'titulo_tarjeta_color' => $this->titulo_tarjeta_color,
+            'titulo_consejos_color' => $this->titulo_consejos_color
+
         ];
     }
 }

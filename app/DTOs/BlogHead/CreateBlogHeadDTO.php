@@ -18,8 +18,32 @@ class CreateBlogHeadDTO
         public readonly ?string $meta_descripcion,
         public readonly ?string $bg_color,
         public readonly ?string $bg_type,
-        public readonly ?string $bg_colors
+        public readonly ?string $bg_colors,
+        public readonly ?string $titulo_color,
+        public readonly ?string $texto_frase_color,
+        public readonly ?string $texto_descripcion_color,
     ) {}
+
+    public static function fromArray(array $data): static
+{
+    return new static(
+        titulo: $data['titulo'],
+        texto_frase: $data['texto_frase'],
+        texto_descripcion: $data['texto_descripcion'],
+        public_image: $data['public_image'],
+        url_image: $data['url_image'] ?? null,
+        alt: $data['alt'] ?? null,
+        title: $data['title'] ?? null,
+        meta_title: $data['meta_title'] ?? null,
+        meta_descripcion: $data['meta_descripcion'] ?? null,
+        bg_color: $data['bg_color'] ?? null,
+        bg_type: $data['bg_type'] ?? null,
+        bg_colors: $data['bg_colors'] ?? null,
+        titulo_color: $data['titulo_color'] ?? null,
+        texto_frase_color: $data['texto_frase_color'] ?? null,
+        texto_descripcion_color: $data['texto_descripcion_color'] ?? null,
+    );
+}
 
     public static function fromRequest(FormRequest $request): static
     {
@@ -36,7 +60,10 @@ class CreateBlogHeadDTO
             meta_descripcion: $data['meta_descripcion'] ?? null,
             bg_color: $data['bg_color'] ?? null,
             bg_type: $data['bg_type'] ?? null,
-            bg_colors: $data['bg_colors'] ?? null
+            bg_colors: $data['bg_colors'] ?? null,
+            titulo_color: $data['titulo_color'] ?? null,
+            texto_frase_color: $data['texto_frase_color'] ?? null,
+            texto_descripcion_color: $data['texto_descripcion_color'] ?? null,
         );
     }
 

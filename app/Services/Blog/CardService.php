@@ -115,10 +115,17 @@ class CardService
         }
 
         $relativePath = "images/templates/plantilla{$card->id_plantilla}/{$card->id_blog}/head";
-        $baseName = "imagenPrincipal";
-        $timestamp = Carbon::now()->format('Ymd_His');
-        $fileName = "{$baseName}_{$timestamp}.webp";
+        
+        // Mantener el nombre original del archivo (sin extensión) y forzar extensión webp
+        $originalName = pathinfo($dto->file->getClientOriginalName(), PATHINFO_FILENAME);
+        $fileName = "{$originalName}.webp";
         $filePath = "{$relativePath}/{$fileName}";
+        
+        // Si el archivo ya existe, agregar un identificador único
+        if (Storage::disk('public')->exists($filePath)) {
+            $fileName = "{$originalName}_" . time() . ".webp";
+            $filePath = "{$relativePath}/{$fileName}";
+        }
 
         // Procesar imagen: redimensionar respetando aspecto y guardar con calidad 92
         $image = Image::read($dto->file)->scaleDown(1280, 600);
@@ -134,6 +141,12 @@ class CardService
 
         $blogHead->public_image = $fullUrl;
         $blogHead->url_image = $relativeUrl;
+        if ($dto->alt) {
+            $blogHead->alt = $dto->alt;
+        }
+        if ($dto->title) {
+            $blogHead->title = $dto->title;
+        }
         $blogHead->save();
 
         return $fullUrl;
@@ -153,12 +166,15 @@ class CardService
             throw new ModelNotFoundException('BlogBody asociado no encontrado');
         }
 
-        $fileName = $dto->name . ".webp";
+        // Mantener el nombre original del archivo para imágenes del body
+        $originalName = pathinfo($dto->file->getClientOriginalName(), PATHINFO_FILENAME);
+        $fileName = "{$originalName}.webp";
         $relativePath = "images/templates/plantilla{$card->id_plantilla}/{$card->id_blog}/body";
         $filePath = "{$relativePath}/{$fileName}";
 
         if (Storage::disk('public')->exists($filePath)) {
-            Storage::disk('public')->delete($filePath);
+            $fileName = "{$originalName}_" . time() . ".webp";
+            $filePath = "{$relativePath}/{$fileName}";
         }
 
         // Procesar imagen: redimensionar respetando aspecto y guardar con calidad 90
@@ -203,12 +219,15 @@ class CardService
             throw new ModelNotFoundException('BlogFooter asociado no encontrado');
         }
 
-        $fileName = $dto->name . ".webp";
+        // Mantener el nombre original del archivo para imágenes del footer
+        $originalName = pathinfo($dto->file->getClientOriginalName(), PATHINFO_FILENAME);
+        $fileName = "{$originalName}.webp";
         $relativePath = "images/templates/plantilla{$card->id_plantilla}/{$card->id_blog}/footer";
         $filePath = "{$relativePath}/{$fileName}";
 
         if (Storage::disk('public')->exists($filePath)) {
-            Storage::disk('public')->delete($filePath);
+            $fileName = "{$originalName}_" . time() . ".webp";
+            $filePath = "{$relativePath}/{$fileName}";
         }
 
         // Procesar imagen: redimensionar respetando aspecto y guardar con calidad 90
