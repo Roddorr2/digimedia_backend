@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('distrito', 250);
             $table->string('ciudad', 250);
             $table->enum('tipoReclamo', ['QUEJA', 'RECLAMO'])->default('RECLAMO');
-            $table->foreignId('id_servicio')->references('id_servicio')->on('servicios')->onDelete('cascade');
+            $table->foreignId('id_servicio')->unique()->references('id_servicio')->on('servicios')->onDelete('cascade');
             $table->text('reclamoPerson');
             $table->boolean('checkReclamoForm')->default(false);
             $table->boolean('aceptaPoliticaPrivacidad')->default(false);
