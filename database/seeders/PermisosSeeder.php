@@ -94,7 +94,6 @@ class PermisosSeeder extends Seeder
                 'Editar modales',
 
                 'Ver reclamaciones',
-                'Editar reclamaciones',
 
                 'Enviar mensajes',
                 'Permisos generales',
