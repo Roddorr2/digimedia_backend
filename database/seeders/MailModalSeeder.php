@@ -4,7 +4,8 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\EmailModal;
+use App\Models\modalservicios;
 
 class MailModalSeeder extends Seeder
 {
@@ -104,6 +105,31 @@ class MailModalSeeder extends Seeder
 
         ];
 
-        DB::table('modal_emails')->insert($mail_modals);
+        $modalMap = [
+            1 => 'ana@gmail.com',
+            2 => 'lorena@gmail.com',
+            3 => 'jose@gmail.com',
+            4 => 'luisito@gmail.com',
+        ];
+
+        foreach ($mail_modals as $mm) {
+            $correo = $modalMap[$mm['id_modalservicio']] ?? null;
+            $modal = $correo ? modalservicios::where('correo', $correo)->first() : null;
+            if (!$modal) {
+                continue;
+            }
+
+            EmailModal::updateOrCreate(
+                [
+                    'id_modalservicio' => $modal->id_modalservicio,
+                    'number_message' => $mm['number_message'],
+                ],
+                [
+                    'estado' => $mm['estado'],
+                    'error' => $mm['error'],
+                    'fecha' => $mm['fecha'],
+                ]
+            );
+        }
     }
 }

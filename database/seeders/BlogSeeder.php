@@ -4,7 +4,10 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\Blog;
+use App\Models\BlogHead;
+use App\Models\BlogBody;
+use App\Models\BlogFooter;
 
 class BlogSeeder extends Seeder
 {
@@ -126,10 +129,15 @@ class BlogSeeder extends Seeder
             ],
         ];
 
-        DB::table('blogs')->truncate();
-        foreach ($blogs as $blog) {
-            DB::table('blogs')->insert($blog);
+        foreach ($blogs as $b) {
+            Blog::updateOrCreate(
+                ['link' => $b['link']],
+                [
+                    'id_blog_head' => $b['id_blog_head'] ?? null,
+                    'id_blog_body' => $b['id_blog_body'] ?? null,
+                    'id_blog_footer' => $b['id_blog_footer'] ?? null,
+                ]
+            );
         }
-
     }
 }

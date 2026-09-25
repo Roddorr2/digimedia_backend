@@ -56,6 +56,11 @@ class BlogService
         return $blog;
     }
 
+    public function getBlogsByLink(string $link): Blog
+    {
+        return $this->getBlogByLink($link);
+    }
+
     public function createBlog(array $data): Blog
     {
         $blogHead = $this->blogHeadRepository->findById($data['id_blog_head']);

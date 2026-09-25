@@ -166,8 +166,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('permission:ver-empleados', 'throttle:60,1')->get('/empleados', [EmpleadoController::class, "getAllByPage"]);
     Route::middleware('permission:ver-empleados')->get('/empleados/{id}', [EmpleadoController::class, "getById"]);
     Route::middleware('permission:crear-empleados', 'throttle:60,1')->post('/empleados', [EmpleadoController::class, "create"]);
-    Route::middleware('permission:permisos-generales')->put('/empleados/{id}', [EmpleadoController::class, "update"]);
-    Route::middleware('permission:permisos-generales')->put('/empleados/pass/{id}', [EmpleadoController::class, "updatePass"]);
+    Route::middleware('permission:editar-empleados')->put('/empleados/{id}', [EmpleadoController::class, "update"]);
+    Route::put('/empleados/pass/{id}', [EmpleadoController::class, "updatePass"]);
     Route::middleware('permission:eliminar-empleados')->delete('/empleados/{id}', [EmpleadoController::class, "delete"]);
 
     // Roles y permisos (solo admin)
@@ -262,5 +262,4 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // fixes
-    // Route::get('/fixImages', [ImagePathController::class, "fixImagePath"]);
 });
