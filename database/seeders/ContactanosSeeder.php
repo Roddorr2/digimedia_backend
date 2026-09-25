@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\Contactanos;
 
 class ContactanosSeeder extends Seeder
 {
@@ -37,6 +37,16 @@ class ContactanosSeeder extends Seeder
             ]
         ];
 
-        DB::table('contactanos')->insert($contactos);
+        foreach ($contactos as $c) {
+            Contactanos::updateOrCreate(
+                ['email' => $c['email'], 'mensaje' => $c['mensaje']],
+                [
+                    'nombre' => $c['nombre'],
+                    'numero' => $c['numero'],
+                    'estado' => $c['estado'],
+                    'fecha' => $c['fecha'] ?? now(),
+                ]
+            );
+        }
     }
 }

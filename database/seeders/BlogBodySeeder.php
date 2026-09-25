@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\BlogBody;
 
 class BlogBodySeeder extends Seeder
 {
@@ -162,10 +161,17 @@ class BlogBodySeeder extends Seeder
             ],
         ];
 
-        DB::table('blog_bodies')->truncate();
-        foreach ($blog_bodies as $body) {
-            DB::table('blog_bodies')->insert($body);
+        foreach ($blog_bodies as $bb) {
+            BlogBody::updateOrCreate(
+                ['titulo' => $bb['titulo']],
+                [
+                    'titulo_consejos' => $bb['titulo_consejos'] ?? null,
+                    'descripcion' => $bb['descripcion'],
+                    'public_image1' => $bb['public_image1'] ?? null,
+                    'public_image2' => $bb['public_image2'] ?? null,
+                    'public_image3' => $bb['public_image3'] ?? null,
+                ]
+            );
         }
-
     }
 }
