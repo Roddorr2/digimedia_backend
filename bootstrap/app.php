@@ -10,6 +10,7 @@ use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\RegisterUser;
 use App\Http\Middleware\ValidateApiKey;
+use App\Http\Middleware\SecurityHeadersMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -30,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
         $middleware->append(RegisterUser::class);
+        $middleware->append(SecurityHeadersMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

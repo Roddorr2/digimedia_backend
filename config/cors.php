@@ -25,6 +25,7 @@ return [
         'http://localhost:3000',
         'https://digimedia-marketing.com',
         'https://www.digimedia-marketing.com',
+        'https://staging.digimedia-marketing.com',
     ],
 
     'allowed_origins_patterns' => [],

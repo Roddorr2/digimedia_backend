@@ -23,13 +23,17 @@ class ConfiguracionTiempoSeeder extends Seeder
         for ($servicio = 1; $servicio <= 4; $servicio++) {
             foreach ($tipos as $tipo) {
                 foreach ($tiempos as $tiempo) {
-                    ConfiguracionTiempo::create([
-                        'id_servicio' => $servicio,
-                        'tipo' => $tipo,
-                        'numero_mensaje' => $tiempo['numero_mensaje'],
-                        'unidad_tiempo' => $tiempo['unidad_tiempo'],
-                        'valor_tiempo' => $tiempo['valor_tiempo'],
-                    ]);
+                    ConfiguracionTiempo::updateOrCreate(
+                        [
+                            'id_servicio' => $servicio,
+                            'tipo' => $tipo,
+                            'numero_mensaje' => $tiempo['numero_mensaje'],
+                        ],
+                        [
+                            'unidad_tiempo' => $tiempo['unidad_tiempo'],
+                            'valor_tiempo' => $tiempo['valor_tiempo'],
+                        ]
+                    );
                 }
             }
         }

@@ -43,13 +43,19 @@ class CheckPermission
             
             if ($rol) {
                 $permissionIdsByRole = array_flip($rol->permisos->pluck('id_permiso')->all());
+                $hasAllPermissions = true;
 
                 foreach ($permissions as $permissionSlug) {
                     $permiso = $permisos->get($permissionSlug);
                     
-                    if ($permiso && isset($permissionIdsByRole[$permiso->id_permiso])) {
-                        return $next($request);
+                    if (!$permiso || !isset($permissionIdsByRole[$permiso->id_permiso])) {
+                        $hasAllPermissions = false;
+                        break;
                     }
+                }
+
+                if ($hasAllPermissions) {
+                    return $next($request);
                 }
             }
         }
