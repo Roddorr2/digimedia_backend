@@ -18,7 +18,7 @@ class CredencialesEmpleadoMail extends Mailable
         $this->user = $user;
         $this->password = $password;
     }
-// HOLA IZAID QUIERO KEKE
+
     public function build()
     {
         return $this->subject('Tus credenciales de acceso')
