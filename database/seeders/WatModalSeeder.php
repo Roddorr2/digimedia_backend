@@ -4,8 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\WatModal;
-use App\Models\modalservicios;
+use Illuminate\Support\Facades\DB;
 
 class WatModalSeeder extends Seeder
 {
@@ -74,32 +73,6 @@ class WatModalSeeder extends Seeder
             ],
         ];
 
-        // Map fixture modalservicio ids to correo used in ModalservicioSeeder
-        $modalMap = [
-            1 => 'ana@gmail.com',
-            2 => 'lorena@gmail.com',
-            3 => 'jose@gmail.com',
-            4 => 'luisito@gmail.com',
-        ];
-
-        foreach ($wat_modals as $wm) {
-            $correo = $modalMap[$wm['id_modalservicio']] ?? null;
-            $modal = $correo ? modalservicios::where('correo', $correo)->first() : null;
-            if (!$modal) {
-                continue;
-            }
-
-            WatModal::updateOrCreate(
-                [
-                    'id_modalservicio' => $modal->id_modalservicio,
-                    'number_message' => $wm['number_message'],
-                ],
-                [
-                    'estado' => $wm['estado'],
-                    'error' => $wm['error'],
-                    'fecha' => $wm['fecha'],
-                ]
-            );
-        }
+        DB::table('modal_wats')->insert($wat_modals);
     }
 }

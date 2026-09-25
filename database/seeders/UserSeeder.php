@@ -8,24 +8,54 @@ use App\Models\User;
 
 class UserSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
-        $PASSWORD = 'F@Q#n64QuJm%';
-        $credentials = [
-            ['name' => 'Staging',                            'email' => 'staging_pruebas@digimedia-marketing.com'],
-            ['name' => 'Kevin Esteeven Parimango Gomez',     'email' => 'keving.kpg@gmail.com'],
-            ['name' => 'Jose Luis Gutierrez',                'email' => 'joseluisjlgd123@gmail.com'],
-            ['name' => 'Juan Carlos Molina Orrego',          'email' => 'tmlighting@hotmail.com'],
-            ['name' => 'Krizzia Martina Saavedra Navarro',   'email' => 'krizzia_saavedra201@hotmail.com'],
-            ['name' => 'Gonzalo Fernando Gallardo Huertas',  'email' => 'gogozgallardo22@gmail.com'],
-            ['name' => 'Diego Arturo Torres Pacherres',      'email' => 'diego_torres_11@hotmail.com'],
-            ['name' => 'Marco Andres Herrera Albites',       'email' => 'marcoandresha@gmail.com'],
+        $users = [
+            [
+                'name' => 'Kevin',
+                'email' => 'keving.kpg@gmail.com',
+                'password' => Hash::make('F@Q#n64QuJm%'),
+            ],
+            [
+                'name' => 'Jose Luis',
+                'email' => 'joseluisjlgd123@gmail.com',
+                'password' => Hash::make('j8#m2%Q2g2SW'),
+            ],
+            [
+                'name' => 'Juan Carlos',
+                'email' => 'tmlighting@hotmail.com',
+                'password' => Hash::make('Vqw&Kk4o$Q7c'),
+            ],
+            [
+                'name' => 'Krizzia Martina',
+                'email' => 'krizzia_saavedra201@hotmail.com',
+                'password' => Hash::make('2XQsrPELv$&Y'),
+            ],
+            [
+                'name' => 'Gonzalo Fernando',
+                'email' => 'gogozgallardo22@gmail.com',
+                'password' => Hash::make('dnqatC8V%st!'),
+            ],
+            [
+                'name' => 'Diego Torres',
+                'email' => 'diego_torres_11@hotmail.com',
+                'password' => Hash::make('wmMXj$KDY9RF'),
+            ],
+            [
+                'name' => 'Marco Andres',
+                'email' => 'marcoandresha@gmail.com',
+                'password' => Hash::make('Tq$duGzhsQ6P'),
+            ],
+
         ];
 
-        foreach ($credentials as $data) {
-            User::updateOrCreate(
-                ['email' => $data['email']],
-                ['name' => $data['name'], 'password' => Hash::make($PASSWORD)]
+        foreach ($users as $user) {
+            User::firstOrCreate(
+                ['email' => $user['email']],
+                $user
             );
         }
     }
