@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Console\Commands;
-//prueba nueva de cambios
+
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
